@@ -1,4 +1,5 @@
-import React from "react";
+import { useNavigate } from 'react-router-dom';
+
 import user from '../assets/user.png'
 import cart from '../assets/cart.png'
 import search from '../assets/search.png'
@@ -90,6 +91,7 @@ const products = [
 const COLUMN_COUNT = 5;
 const ROW_COUNT = Math.ceil(products.length / COLUMN_COUNT);
 
+
 function TrendingList() {
   return (
     <Grid
@@ -120,6 +122,10 @@ function TrendingList() {
 }
 
 export default function Home() {
+  const navigate = useNavigate()
+  function login() { 
+    navigate('/login')
+  }
   return (
     <>  
       {/* Header */}
@@ -135,7 +141,10 @@ export default function Home() {
             <h2 className="text-[22px] text-stone-100 font-bold">Cart</h2>
             <img src={cart} alt="cart" className="w-[30px] h-[30px]" />
           </button>
-          <button className="flex rounded-lg border-2 border-transparent absolute right-20 w-[150px] h-[50px] items-center justify-around bg-red-400 hover:bg-red-700">
+          <button 
+            className="flex rounded-lg border-2 border-transparent absolute right-20 w-[150px] h-[50px] items-center justify-around bg-red-400 hover:bg-red-700"
+            onClick={login}  
+          >
             <h2 className="text-[22px] text-stone-100 font-bold">Log in</h2>
             <img src={user} alt="user" className="w-[30px] h-[30px]" />
           </button>
