@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import contractAPI from '../api/contract.js';
+import customerAPI from '../api/customer.js';
 import generateContractDocxBlob from '../utils/docxHelper.js';
 
 export default function ContractsHR() {
@@ -10,6 +11,7 @@ export default function ContractsHR() {
   const [files, setFiles] = useState({});
   const [actionLoading, setActionLoading] = useState({});
   const [serviceUsages, setServiceUsages] = useState({});
+  const [customerCache, setCustomerCache] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -17,7 +19,30 @@ export default function ContractsHR() {
       setError(null);
       try {
         const data = await contractAPI.getPending();
-        setContracts(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setContracts(list);
+        // preload customer info for contracts that only have customer_id
+        (async function preloadCustomers() {
+          const missing = [];
+          for (const ct of list) {
+            const cid = ct.customer_id || (ct.customer && ct.customer.id) || null;
+            if (cid && !customerCache[cid]) missing.push(cid);
+          }
+          if (missing.length === 0) return;
+          const uniq = Array.from(new Set(missing));
+          try {
+            const promises = uniq.map((id) => customerAPI.getById(id).catch(() => null));
+            const results = await Promise.all(promises);
+            const map = {};
+            results.forEach((r, idx) => {
+              const id = uniq[idx];
+              if (r) map[id] = r;
+            });
+            if (Object.keys(map).length) setCustomerCache((c) => ({ ...c, ...map }));
+          } catch (e) {
+            console.warn('preload customers failed', e);
+          }
+        })();
       } catch (err) {
         console.error('failed to load pending contracts', err);
         setError(err?.message || 'Failed to load pending contracts');
@@ -193,7 +218,7 @@ export default function ContractsHR() {
           {contracts.map((c) => (
             <div key={c.id} className="p-4 border rounded">
               <div className="font-semibold">Contract #{c.id} — {c.contract_number || c.code || 'No code yet'}</div>
-              <div className="text-sm text-gray-700">Customer: {c.customer?.name || c.customer_name || c.customer_temp || 'Unknown'}</div>
+              <div className="text-sm text-gray-700">Customer: {c.customer?.name || customerCache[c.customer_id]?.name || c.customer_name || c.customer_temp || 'Unknown'}</div>
               {c.description && <div className="mt-1 text-sm text-gray-600">{c.description}</div>}
 
               <div className="mt-3 grid grid-cols-3 gap-3">
@@ -223,8 +248,46 @@ export default function ContractsHR() {
                     <button
                       onClick={async () => {
                         try {
-                          const full = await contractAPI.getById(c.id);
-                          const blob = await generateContractDocxBlob(full || {});
+                            const full = await contractAPI.getById(c.id);
+                            // ensure we have customer object (backend sometimes returns only customer_id)
+                            if (!full.customer && full.customer_id) {
+                              full.customer = customerCache[full.customer_id] || null;
+                              if (!full.customer) {
+                                try {
+                                  const c = await customerAPI.getById(full.customer_id);
+                                  full.customer = c;
+                                  setCustomerCache((p) => ({ ...p, [full.customer_id]: c }));
+                                } catch (e) {
+                                  console.warn('failed to fetch customer for docx', e);
+                                }
+                              }
+                            }
+
+                            // first try the contract-level services endpoint
+                            let serviceRows = [];
+                            try {
+                              serviceRows = await contractAPI.getServices(c.id);
+                            } catch (e) {
+                              console.debug('contract.getServices failed', e?.message || e);
+                            }
+
+                            // if empty, try getServiceUsage as alternative
+                            if ((!serviceRows || serviceRows.length === 0) && contractAPI.getServiceUsage) {
+                              try {
+                                serviceRows = await contractAPI.getServiceUsage(c.id);
+                              } catch (e) {
+                                console.debug('contract.getServiceUsage failed', e?.message || e);
+                              }
+                            }
+
+                            // if still empty, open JSON so user can inspect payloads
+                            if (!serviceRows || (Array.isArray(serviceRows) && serviceRows.length === 0)) {
+                              const w = window.open();
+                              w.document.body.innerText = JSON.stringify({ contract: full, services: serviceRows }, null, 2);
+                              alert('Không tìm thấy rows dịch vụ — mở JSON trả về để kiểm tra (một cửa sổ mới).');
+                            }
+
+                            const blob = await generateContractDocxBlob(full || {}, { serviceRows });
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement('a');
                           a.href = url;
