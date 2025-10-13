@@ -10,7 +10,7 @@ const opportunityAPI = {
   },
 
   async getAllPending(config = {}) {
-    const res = await api.get(`${BASE}/pending-opportunities`, config);
+    const res = await api.get(`${BASE}/pending`, config);
     return res.data;
   },
  
