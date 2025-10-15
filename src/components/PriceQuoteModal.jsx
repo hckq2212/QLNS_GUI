@@ -8,7 +8,6 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [error, setError] = useState(null);
     const [chosen, setChosen] = useState({});
     const [reloadCounter, setReloadCounter] = useState(0);
-    const [reloadTimeout, setReloadTimeout] = useState(30000);
 
     useEffect(() => {
         function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -23,8 +22,8 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
             setLoading(true);
             setError(null);
             try {
-                // increase timeout for potentially slow endpoints (reloadTimeout controlled by retry buttons)
-                const requestConfig = { timeout: reloadTimeout };
+                // increase timeout for potentially slow endpoints (30s)
+                const requestConfig = { timeout: 30000 };
                 const data = await opportunityAPI.getService(opportunity.id, requestConfig);
                 const entries = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
 
@@ -56,21 +55,13 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                 setChosen(defaultChosen);
             } catch (err) {
                 if (!mounted) return;
-                // normalize axios/network error
-                const normalized = {
-                    message: err?.message || String(err),
-                    code: err?.code || null,
-                    responseStatus: err?.response?.status || null,
-                    responseData: err?.response?.data || null,
-                    config: err?.config || null,
-                };
-                setError(normalized);
+                setError(err?.message || String(err));
                 setRows([]);
             } finally { if (mounted) setLoading(false); }
         }
         load();
         return () => { mounted = false; };
-    }, [isOpen, opportunity, reloadCounter, reloadTimeout]);
+    }, [isOpen, opportunity, reloadCounter]);
 
     function format(n) { return n == null ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)); }
 
@@ -95,21 +86,11 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     {loading ? (
                         <div className="text-sm text-gray-500">Đang tải hạng mục...</div>
                     ) : error ? (
-                        <div className="text-sm text-red-600 space-y-2">
-                            <div><strong>Lỗi:</strong> {error.message}</div>
-                            {error.responseStatus && (<div><strong>HTTP:</strong> {error.responseStatus}</div>)}
-                            {error.code && (<div><strong>Code:</strong> {error.code}</div>)}
-                            <div className="flex items-center gap-2 mt-2">
-                                <button onClick={() => { setReloadTimeout(30000); setReloadCounter(c => c + 1); }} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Thử lại</button>
-                                <button onClick={() => { setReloadTimeout(60000); setReloadCounter(c => c + 1); }} className="px-3 py-1 bg-yellow-600 text-white rounded text-sm">Thử lại (60s)</button>
-                                <button onClick={async () => { try { await navigator.clipboard.writeText(JSON.stringify(error, null, 2)); alert('Copied error details'); } catch(e) { alert('Copy failed'); } }} className="px-3 py-1 bg-gray-200 text-sm rounded">Copy lỗi</button>
+                        <div className="text-sm text-red-600">
+                            <div>Lỗi: {error}</div>
+                            <div className="mt-2">
+                                <button onClick={() => setReloadCounter((c) => c + 1)} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Thử lại</button>
                             </div>
-                            {error.responseData && (
-                                <details className="mt-2 p-2 bg-gray-50 border rounded text-xs text-gray-700">
-                                    <summary className="cursor-pointer">Xem response body</summary>
-                                    <pre className="mt-2 max-h-48 overflow-auto">{JSON.stringify(error.responseData, null, 2)}</pre>
-                                </details>
-                            )}
                         </div>
                     ) : rows.length === 0 ? (
                         <div className="text-sm text-gray-600">Không có hạng mục nào.</div>
