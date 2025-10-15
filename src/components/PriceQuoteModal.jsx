@@ -8,6 +8,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [error, setError] = useState(null);
     const [chosen, setChosen] = useState({});
     const [reloadCounter, setReloadCounter] = useState(0);
+    const [globalMode, setGlobalMode] = useState(null); // 'min' | 'suggest' | null
 
     useEffect(() => {
         function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -63,6 +64,23 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         return () => { mounted = false; };
     }, [isOpen, opportunity, reloadCounter]);
 
+    function computeDefaultChosen(rowsArr) {
+        const d = {};
+        (rowsArr || rows).forEach((r, i) => d[i] = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice));
+        return d;
+    }
+
+    // When globalMode changes, apply the chosen mode to all rows
+    useEffect(() => {
+        if (!globalMode) return; // only apply when user picks a global mode
+        if (!rows || rows.length === 0) return;
+        const newChosen = {};
+        rows.forEach((r, i) => {
+            newChosen[i] = (globalMode === 'min') ? r.minPrice : r.suggestedPrice;
+        });
+        setChosen(newChosen);
+    }, [globalMode, rows]);
+
     function format(n) { return n == null ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)); }
 
     return (!isOpen) ? null : (
@@ -95,6 +113,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     ) : rows.length === 0 ? (
                         <div className="text-sm text-gray-600">Không có hạng mục nào.</div>
                     ) : (
+                        <>
                         <table className="w-full table-auto border-collapse">
                             <thead>
                                 <tr>
@@ -103,7 +122,6 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá vốn</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán tối thiểu</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán đề xuất</th>
-                                    <th className="text-center border-b px-3 py-2 text-sm">Chọn giá</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Tỉ suất lợi nhuận</th>
                                 </tr>
                             </thead>
@@ -116,13 +134,11 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                             <td className="px-3 py-2 border-b text-sm">{r.name}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{format(r.baseCost)}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{format(r.minPrice)}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{format(r.suggestedPrice)}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-center">
-                                                <div className="flex items-center gap-2 justify-center">
-                                                    <label className="text-xs"><input type="radio" name={`price-${i}`} checked={sel === r.minPrice} onChange={() => setChosen(prev => ({...prev, [i]: r.minPrice}))} /> <span className="ml-1">Min</span></label>
-                                                    <label className="text-xs"><input type="radio" name={`price-${i}`} checked={sel === r.suggestedPrice} onChange={() => setChosen(prev => ({...prev, [i]: r.suggestedPrice}))} /> <span className="ml-1">Suggest</span></label>
-                                                </div>
+                                            <td className="px-3 py-2 border-b text-sm text-right">
+                                                <div>{format(r.minPrice)}</div>
+                                            </td>
+                                            <td className="px-3 py-2 border-b text-sm text-right">
+                                                <div>{format(r.suggestedPrice)}</div>
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{profit ? profit.toFixed(1) + '%' : '—'}</td>
                                         </tr>
@@ -130,6 +146,44 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                 })}
                             </tbody>
                         </table>
+
+                        {/* Global footer: apply min/suggest to all rows */}
+                        <div className="mt-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input type="radio" name="global-price-mode" checked={globalMode === 'min'} onChange={() => setGlobalMode('min')} />
+                                    <span>Chọn giá bán tối thiểu</span>
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input type="radio" name="global-price-mode" checked={globalMode === 'suggest'} onChange={() => setGlobalMode('suggest')} />
+                                    <span>Chọn giá bán đề xuất </span>
+                                </label>
+                            </div>
+
+                            {/* Totals summary on the right */}
+                            <div className="text-sm text-right">
+                                {
+                                    (() => {
+                                        const totalRevenue = Object.keys(chosen).reduce((s, k) => {
+                                            const idx = Number(k);
+                                            const qty = rows[idx]?.quantity || 0;
+                                            const price = Number(chosen[k]) || 0;
+                                            return s + (qty * price);
+                                        }, 0);
+                                        const totalCost = rows.reduce((s, r, idx) => s + (r.baseCost * (r.quantity || 0)), 0);
+                                        const overallMargin = totalRevenue ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0;
+                                        return (
+                                            <div>
+                                                <div><strong>Tổng doanh thu:</strong> {format(totalRevenue)}</div>
+                                                <div><strong>Tổng vốn:</strong> {format(totalCost)}</div>
+                                                <div><strong>Tỉ suất lợi nhuận:</strong> {totalRevenue ? overallMargin.toFixed(1) + '%' : '\u2014'}</div>
+                                            </div>
+                                        );
+                                    })()
+                                }
+                            </div>
+                        </div>
+                        </>
                     )}
                 </div>
             </div>
