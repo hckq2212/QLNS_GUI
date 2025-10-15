@@ -60,6 +60,11 @@ const opportunityAPI = {
     if (!userId) throw new Error('userId required');
     const res = await api.get(`${BASE}/creator/${userId}`, config);
     return res.data;
+  },
+    async getService(opportunityId, config = {}) {
+    if (!opportunityId) throw new Error('opportunityId required');
+    const res = await api.get(`${BASE}/${opportunityId}/services`, config);
+    return res.data;
   }
 };
 

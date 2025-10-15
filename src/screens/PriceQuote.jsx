@@ -68,7 +68,7 @@ export default function PriceQuote() {
 
     return (
         <div>
-            <h2>Cơ hội (status = "approved")</h2>
+            <h2>Cơ hội chờ báo giá</h2>
 
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
