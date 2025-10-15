@@ -87,7 +87,7 @@ export async function generateContractDocxBlob(contract = {}, options = {}) {
   const children = [];
 
   // Section I
-  children.push(new Paragraph({ children: [new TextRun({ text: '🧾 I. THÔNG TIN CHUNG', bold: true })] }));
+  children.push(new Paragraph({ children: [new TextRun({ text: ' I. THÔNG TIN CHUNG', bold: true })] }));
   children.push(new Paragraph({ text: 'Mục đích: định danh hợp đồng, các bên và phạm vi hiệu lực.' }));
 
   const infoHeader = new TableRow({ children: [
@@ -108,7 +108,7 @@ export async function generateContractDocxBlob(contract = {}, options = {}) {
   children.push(infoTable);
 
   // Section II
-  children.push(new Paragraph({ children: [new TextRun({ text: '\n⚙️ II. NỘI DUNG DỊCH VỤ', bold: true })] }));
+  children.push(new Paragraph({ children: [new TextRun({ text: '\n II. NỘI DUNG DỊCH VỤ', bold: true })] }));
   children.push(new Paragraph('Mục này thể hiện các dịch vụ cụ thể trong hợp đồng — nên in ra theo dữ liệu trong DB.'));
 
   // Collect services from options.serviceRows or contract.items / contract.jobs

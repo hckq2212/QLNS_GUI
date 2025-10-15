@@ -13,7 +13,7 @@ export default function ContractsPending() {
       setLoading(true);
       setError(null);
       try {
-        const data = await opportunityAPI.getPending();
+        const data = await opportunityAPI.getAllPending();
         setContracts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('failed to load pending contracts', err);

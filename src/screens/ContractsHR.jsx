@@ -10,7 +10,6 @@ export default function ContractsHR() {
   const [inputs, setInputs] = useState({});
   const [files, setFiles] = useState({});
   const [actionLoading, setActionLoading] = useState({});
-  const [serviceUsages, setServiceUsages] = useState({});
   const [customerCache, setCustomerCache] = useState({});
 
   useEffect(() => {
@@ -75,16 +74,7 @@ export default function ContractsHR() {
     );
   }
 
-  async function fetchServiceUsage(contractId) {
-    setServiceUsages((s) => ({ ...s, [contractId]: { loading: true, rows: null, error: null, open: true } }));
-    try {
-      const rows = await contractAPI.getServiceUsage(contractId);
-      setServiceUsages((s) => ({ ...s, [contractId]: { loading: false, rows: Array.isArray(rows) ? rows : [], error: null, open: true } }));
-    } catch (err) {
-      console.error('failed to fetch service usage', err);
-      setServiceUsages((s) => ({ ...s, [contractId]: { loading: false, rows: null, error: err?.message || String(err), open: true } }));
-    }
-  }
+
 
   function buildContractHtml(contract) {
     const customerName = contract.customer?.name || contract.customer_name || contract.customer_temp || '';
@@ -312,44 +302,9 @@ export default function ContractsHR() {
                     >
                       Tải .docx
                     </button>
-                    <button
-                      onClick={() => fetchServiceUsage(c.id)}
-                      className="ml-2 bg-yellow-600 text-white px-3 py-1 rounded"
-                    >
-                      Xem thống kê dịch vụ
-                    </button>
+                  
                 </div>
               </div>
-                {serviceUsages[c.id] && serviceUsages[c.id].open && (
-                  <div className="mt-3 p-3 bg-gray-50 border rounded">
-                    {serviceUsages[c.id].loading ? (
-                      <div className="text-sm text-gray-500">Đang tải...</div>
-                    ) : serviceUsages[c.id].error ? (
-                      <div className="text-sm text-red-600">Lỗi: {serviceUsages[c.id].error}</div>
-                    ) : Array.isArray(serviceUsages[c.id].rows) && serviceUsages[c.id].rows.length === 0 ? (
-                      <div className="text-sm text-gray-600">Không có dữ liệu dịch vụ cho hợp đồng này.</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-left"><th className="pr-2">Dịch vụ</th><th className="pr-2">Số job</th><th className="pr-2">Tổng sale</th><th className="pr-2">Tổng cost</th><th className="pr-2">Tiến độ TB</th></tr>
-                          </thead>
-                          <tbody>
-                            {serviceUsages[c.id].rows && serviceUsages[c.id].rows.map((r) => (
-                              <tr key={r.service_id}>
-                                <td className="pr-2">{r.service_name || r.name || r.service}</td>
-                                <td className="pr-2">{r.total_jobs ?? r.count ?? r.jobs_count}</td>
-                                <td className="pr-2">{r.total_sale_price ?? r.sum_sale_price ?? r.total_sale}</td>
-                                <td className="pr-2">{r.total_cost ?? r.sum_cost ?? r.total_cost_price}</td>
-                                <td className="pr-2">{r.avg_progress ?? r.average_progress ?? r.progress}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )}
             </div>
           ))}
         </div>
