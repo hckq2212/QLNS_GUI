@@ -58,6 +58,11 @@ const contractAPI = {
     });
     return res.data;
   },
+  async createFromOpportunity(opportunityId, payload = {}, config = {}) {
+    if (!opportunityId) throw new Error('opportunityId required');
+    const res = await api.post(`${BASE}/opportunity/${opportunityId}`, payload, config);
+    return res.data;
+  },
 };
 
 export default contractAPI;

@@ -1,16 +1,15 @@
 // ...existing code...
 import { useState, useEffect } from 'react';
-import PriceQuoteModal from '../components/PriceQuoteModal';
 import opportunityAPI from '../api/opportunity';
 import customerAPI from '../api/customer';
+import contractAPI from '../api/contract';
 
-export default function PriceQuote() {
+export default function CreateConFromOppo() {
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedOpportunity, setSelectedOpportunity] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
     useEffect(() => {
         let mounted = true;
         async function load() {
@@ -19,7 +18,7 @@ export default function PriceQuote() {
                 const data = await opportunityAPI.getAll();
                 if (mounted) {
                     const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-                    const approved = arr.filter(o => o && o.status === 'approved');
+                    const approved = arr.filter(o => o && o.status === 'quoted');
                         // For opportunities that have a customer_id, fetch the customer and use its name.
                         // Otherwise fall back to any provided customerName / customer_temp.name.
                         const withCustomerName = await Promise.all(approved.map(async (o) => {
@@ -68,11 +67,11 @@ export default function PriceQuote() {
 
     return (
         <div>
-            <h2 className='text-2xl font-bold '>Cơ hội chờ báo giá</h2>
+            <h2 className='text-2xl font-bold mb-12 mt-12 '>Tạo hợp đồng từ các cơ hội đã báo giá</h2>
 
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
-            {!loading && opportunities.length === 0 && <p>Không có cơ hội đã được duyệt.</p>}
+            {!loading && opportunities.length === 0 && <p>Không có cơ hội đã báo giá.</p>}
 
             <ul className='flex items-center flex-col'>
                 {opportunities.map(op => (
@@ -85,17 +84,38 @@ export default function PriceQuote() {
                             <small>Mô tả: {op.description || '—'}</small>
                         </div>
                         <button onClick={() => openModal(op)} style={{ marginTop: 6 }}>
-                            Làm báo giá
+                            Tạo hợp đồng
                         </button>
                     </li>
                 ))}
             </ul>
 
-            <PriceQuoteModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                opportunity={selectedOpportunity}
-            />
+            {/* Modal-less simple create flow: confirmation prompt and API call */}
+            {selectedOpportunity && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded shadow-lg w-96">
+                        <h3 className="font-semibold mb-2">Tạo hợp đồng từ cơ hội {selectedOpportunity.id}</h3>
+                        <p className="text-sm mb-4">Khách hàng: {selectedOpportunity.customerName || '—'}</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-3 py-1 rounded bg-blue-600 text-white" onClick={async () => {
+                                try {
+                                    // Prepare payload
+                                    const payload = {
+                                        customerId: selectedOpportunity.customer_id || null,
+                                        totalCost: 0,
+                                        totalRevenue: selectedOpportunity.expected_price ? Number(selectedOpportunity.expected_price) : 0,
+                                        customer_temp: selectedOpportunity.customer_temp || null,
+                                    };
+                                    const res = await contractAPI.createFromOpportunity(selectedOpportunity.id, payload, { timeout: 30000 });
+                                } catch (err) {
+                                    console.error('create contract failed', err);
+                                    alert('Tạo hợp đồng thất bại: ' + (err?.message || String(err)));
+                                }
+                            }}>Tạo</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -9,6 +9,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [chosen, setChosen] = useState({});
     const [reloadCounter, setReloadCounter] = useState(0);
     const [globalMode, setGlobalMode] = useState(null); // 'min' | 'suggest' | null
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState(null);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
 
     useEffect(() => {
         function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -81,6 +84,34 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         setChosen(newChosen);
     }, [globalMode, rows]);
 
+    async function handleSubmitQuote() {
+        if (!opportunity || !opportunity.id) return setSubmitError('Không có cơ hội để báo giá');
+        // compute total revenue from chosen
+        const totalRevenue = Object.keys(chosen).reduce((s, k) => {
+            const idx = Number(k);
+            const qty = rows[idx]?.quantity || 0;
+            const price = Number(chosen[k]) || 0;
+            return s + (qty * price);
+        }, 0);
+
+        const payload = {
+            expected_price: totalRevenue.toFixed(2),
+            status: 'quoted'
+        };
+
+        setSubmitting(true);
+        setSubmitError(null);
+        try {
+            await opportunityAPI.update(opportunity.id, payload, { timeout: 30000 });
+            setSubmitSuccess(true);
+            // close after short delay
+            setTimeout(() => { setSubmitting(false); onClose(); }, 700);
+        } catch (err) {
+            setSubmitError(err?.message || String(err));
+            setSubmitting(false);
+        }
+    }
+
     function format(n) { return n == null ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)); }
 
     return (!isOpen) ? null : (
@@ -91,12 +122,14 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     <button onClick={onClose} className="text-sm px-3 py-1 bg-gray-100 rounded">Đóng</button>
                 </div>
 
-                <div className="mb-4 text-sm space-y-1">
+                <div className="mb-4 text-sm space-y-1">    
                     {opportunity ? (
+                        <>
                         <div>
                             <div><strong>Khách hàng:</strong> {opportunity.customerName || '—'}</div>
                             <div><strong>Mô tả:</strong> {opportunity.description || '—'}</div>
                         </div>
+                        </>
                     ) : (<div>Không có dữ liệu cơ hội.</div>)}
                 </div>
 
@@ -182,6 +215,14 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     })()
                                 }
                             </div>
+                        </div>
+                        {/* button submit   */}
+                        <div className="mt-4 flex items-center justify-end gap-3">
+                            {submitError ? <div className="text-sm text-red-600">Lỗi: {submitError}</div> : null}
+                            {submitSuccess ? <div className="text-sm text-green-600">Báo giá gửi thành công</div> : null}
+                            <button onClick={handleSubmitQuote} disabled={submitting} className={`px-3 py-1 text-sm rounded ${submitting ? 'bg-gray-300' : 'bg-blue-600 text-white'}`}>
+                                {submitting ? 'Đang gửi...' : 'Báo giá'}
+                            </button>
                         </div>
                         </>
                     )}

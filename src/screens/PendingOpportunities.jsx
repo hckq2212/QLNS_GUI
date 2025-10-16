@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import opportunityAPI from '../api/opportunity.js';
+import customerAPI from '../api/customer.js';
 
 export default function PendingOpportunities() {
   const [list, setList] = useState([]);
@@ -13,7 +14,32 @@ export default function PendingOpportunities() {
       setError(null);
       try {
         const data = await opportunityAPI.getAllPending();
-        setList(Array.isArray(data) ? data : []);
+        const listData = Array.isArray(data) ? data : [];
+
+        // enrich customer names for entries that only have customer_id
+        const customerIds = Array.from(new Set(listData.map(o => o.customer_id).filter(Boolean)));
+        if (customerIds.length > 0) {
+          try {
+            const fetched = await Promise.allSettled(customerIds.map(id => customerAPI.getById(id).catch(() => null)));
+            const byId = {};
+            fetched.forEach((r, idx) => {
+              const id = customerIds[idx];
+              if (r.status === 'fulfilled' && r.value) {
+                byId[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
+              }
+            });
+            const enriched = listData.map(o => ({
+              ...o,
+              customer: o.customer || (o.customer_id ? { name: byId[o.customer_id] || o.customer_name || o.customer_temp || null } : o.customer)
+            }));
+            setList(enriched);
+          } catch (e) {
+            // if enrichment fails, still set the raw list
+            setList(listData);
+          }
+        } else {
+          setList(listData);
+        }
       } catch (err) {
         console.error('failed to load pending opportunities', err);
         setError(err?.message || 'Failed to load pending opportunities');
