@@ -6,6 +6,25 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
   const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState(null);
 
+  const targetTotal = Math.round(Number(activeContract?.total_revenue || 0));
+
+  function handleAdd() {
+    setInstallments(prev => ([...prev, { amount: 0, due_date: '' }]));
+    setDebtError(null);
+  }
+
+  function handleDelete(index) {
+    setInstallments(prev => prev.filter((_, i) => i !== index));
+    setDebtError(null);
+  }
+
+  function handleAmountChange(index, value) {
+    const val = Math.round(Number(value || 0));
+    if (val < 0) { setDebtError('Số tiền không được âm'); return; }
+    setInstallments(prev => prev.map((it, i) => i === index ? { ...it, amount: val } : it));
+    setDebtError(null);
+  }
+
   function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Number(n || 0)); }
 
   return (
@@ -19,14 +38,12 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
               <input type="date" value={it.due_date || ''} onChange={e => {
                 const arr = [...installments]; arr[idx].due_date = e.target.value; setInstallments(arr);
               }} className="border px-2 py-1" />
-              <input type="number" value={it.amount || ''} onChange={e => {
-                const arr = [...installments]; arr[idx].amount = Number(e.target.value || 0); setInstallments(arr);
-              }} className="border px-2 py-1" placeholder="Số tiền" />
-              <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => setInstallments(prev => prev.filter((_, i) => i !== idx))}>Xóa</button>
+              <input type="number" value={it.amount || ''} onChange={e => { handleAmountChange(idx, e.target.value); }} className="border px-2 py-1" placeholder="Số tiền" />
+              <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => handleDelete(idx)}>Xóa</button>
             </div>
           ))}
           <div>
-            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setInstallments(prev => ([...prev, { amount: 0, due_date: '' }]))}>Thêm đợt</button>
+            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => handleAdd()}>Thêm đợt</button>
           </div>
         </div>
 

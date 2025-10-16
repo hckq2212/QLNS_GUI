@@ -3,29 +3,11 @@ import contractAPI from '../api/contract.js';
 import customerAPI from '../api/customer.js';
 
 
-  async function handleAction(id, approve) {
-    const confirmMsg = approve ? 'Bạn có chắc muốn duyệt hợp đồng này?' : 'Bạn có chắc muốn từ chối hợp đồng này?';
-    if (!window.confirm(confirmMsg)) return;
-    setActionLoading((p) => ({ ...p, [id]: true }));
-    try {
-      // send payload indicating approval or rejection. Backend should accept { approved: true/false }
-      await contractAPI.approve(id, { approved: approve });
-      // remove from list
-      setContracts((c) => c.filter((x) => x.id !== id));
-    } catch (err) {
-      console.error('action failed', err);
-      alert(err?.message || 'Action failed');
-    } finally {
-      setActionLoading((p) => ({ ...p, [id]: false }));
-    }
-  }
 
-export default function ContractWaitingBODApproval() {
+export default function HRConfirmContract() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showDebtModal, setShowDebtModal] = useState(false);
-  const [activeContract, setActiveContract] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
 
 
@@ -35,7 +17,7 @@ export default function ContractWaitingBODApproval() {
       setLoading(true);
       setError(null);
       try {
-        const data = await contractAPI.getByStatus({ status: 'waiting_bod_approval' });
+        const data = await contractAPI.getByStatus({ status: 'waiting_hr_confirm' });
         console.log(data)
         const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
         // enrich with customer name when customer_id present
@@ -70,22 +52,6 @@ export default function ContractWaitingBODApproval() {
               <div key={c.id} className="p-3 border rounded">
                 <div className="font-medium">Hợp đồng {c.code}</div>
                 <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || c.customer_temp || '—'}</div>
-                                    <div className="space-x-2">
-                  <button
-                    disabled={actionLoading[c.id]}
-                    onClick={() => handleAction(c.id, true)}
-                    className="bg-green-600 text-white px-3 py-1 rounded"
-                  >
-                    {actionLoading[c.id] ? '...' : 'Duyệt'}
-                  </button>
-                  <button
-                    disabled={actionLoading[c.id]}
-                    onClick={() => handleAction(c.id, false)}
-                    className="bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    {actionLoading[c.id] ? '...' : 'Không duyệt'}
-                  </button>
-                </div>
             </div>
             ))
           )}
