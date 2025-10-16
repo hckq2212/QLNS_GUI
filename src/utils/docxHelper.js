@@ -86,6 +86,22 @@ export async function generateContractDocxBlob(contract = {}, options = {}) {
   // Build children for document
   const children = [];
 
+  // Mở đầu
+  children.push(
+  new Paragraph({
+    children: [new TextRun({ text: 'CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true })],
+    alignment: docx.AlignmentType.CENTER,
+  })
+);
+
+children.push(
+  new Paragraph({
+    children: [new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', italics: true })],
+    alignment: docx.AlignmentType.CENTER,
+  })
+);
+
+
   // Section I
   children.push(new Paragraph({ children: [new TextRun({ text: ' I. THÔNG TIN CHUNG', bold: true })] }));
   children.push(new Paragraph({ text: 'Mục đích: định danh hợp đồng, các bên và phạm vi hiệu lực.' }));

@@ -60,6 +60,17 @@ const contractAPI = {
     });
     return res.data;
   },
+  async uploadProposalContract(id, file, config = {}) {
+    if (!id) throw new Error('id required');
+    if (!file) throw new Error('file required');
+    const fd = new FormData();
+    fd.append('proposalContract', file);
+    const res = await api.patch(`${BASE}/${id}/upload-contract`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      ...(config || {}),
+    });
+    return res.data;
+  },
   async createFromOpportunity(opportunityId, payload = {}, config = {}) {
     if (!opportunityId) throw new Error('opportunityId required');
     const res = await api.post(`${BASE}/opportunity/${opportunityId}`, payload, config);
