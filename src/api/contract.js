@@ -7,8 +7,10 @@ const contractAPI = {
     const res = await api.get(`${BASE}`, config);
     return res.data;
   },
-  async getPending(config = {}) {
-    const res = await api.get(`${BASE}/pending`, config);
+  async getByStatus(payload, config = {}) {
+    // send payload as query params (axios.get url, config)
+    const mergedConfig = { ...(config || {}), params: payload };
+    const res = await api.get(`${BASE}/status`, mergedConfig);
     return res.data;
   },
   async getById(id, config = {}) {
