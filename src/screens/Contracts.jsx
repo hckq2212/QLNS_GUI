@@ -4,6 +4,7 @@ import ContractWithoutDebt from '../components/ContractWithoutDebt.jsx';
 import customerAPI from '../api/customer.js';
 import ContractWaitingBODApproval from '../components/ContractWaitingBodApproval.jsx';
 import HRConfirmContract from '../components/HRConfirmContract.jsx';
+import NotAssignedContract from '../components/NotAssignedContract.jsx';
 
 export default function ContractsPending() {
   const [contracts, setContracts] = useState([]);
@@ -18,6 +19,7 @@ export default function ContractsPending() {
       <ContractWithoutDebt />
       <HRConfirmContract />
       <ContractWaitingBODApproval />
+      <NotAssignedContract />
     </div>
   );
 }
