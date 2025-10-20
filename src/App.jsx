@@ -9,6 +9,7 @@ import PendingOpportunities from "./screens/PendingOpportunities";
 import ContractsHR from "./screens/ContractsHR";
 import PriceQuote from "./screens/PriceQuote";
 import CreateConFromOppo from "./screens/createConFromOppo";
+import Project from "./screens/Project";
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
         <Route path="/opportunity/pending" element={<PendingOpportunities />} />
         <Route path="/quote" element={<PriceQuote />} />
         <Route path="/opportunity/create-contract" element={<CreateConFromOppo />} />
+        <Route path="/project" element={<Project />} />
       </Routes>
     </BrowserRouter>
   );

@@ -18,6 +18,11 @@ const projectAPI = {
     const res = await api.get(`${BASE}/contract/${contractId}`, config);
     return res.data;
   },
+  async getByStatus(status, config = {}) {
+    if (!status) throw new Error('status required');
+    const res = await api.get(`${BASE}/status/${status}`, config);
+    return res.data;
+  },
 };
 
 export default projectAPI;
