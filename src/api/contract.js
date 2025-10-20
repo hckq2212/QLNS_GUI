@@ -76,6 +76,16 @@ const contractAPI = {
     const res = await api.post(`${BASE}/opportunity/${opportunityId}`, payload, config);
     return res.data;
   },
+  async update(id, payload = {}, config = {}) {
+    if (!id) throw new Error('id required');
+    const res = await api.patch(`${BASE}/${id}`, payload, config);
+    return res.data;
+  },
+  async getByStatusName(statusName, config = {}) {
+    if (!statusName) throw new Error('statusName required');
+    const res = await api.get(`${BASE}/${statusName}`, config);
+    return res.data;
+  },
 };
 
 export default contractAPI;

@@ -23,6 +23,11 @@ const projectAPI = {
     const res = await api.get(`${BASE}/status/${status}`, config);
     return res.data;
   },
+  async update(id, payload = {}, config = {}) {
+    if (!id) throw new Error('id required');
+    const res = await api.patch(`${BASE}/${id}`, payload, config);
+    return res.data;
+  },
 };
 
 export default projectAPI;
