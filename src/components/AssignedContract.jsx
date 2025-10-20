@@ -6,6 +6,8 @@ export default function AssignedContract() {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+    const [uploadLoading, setUploadLoading] = useState({});
+    const [uploadResult, setUploadResult] = useState({});
 
   useEffect(() => {
     let mounted = true;
@@ -48,6 +50,27 @@ export default function AssignedContract() {
                 <div className="font-medium">{c.code || c.title || `#${c.id || c._id}`}</div>
                 <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || c.customer_temp || '—'}</div>
                 <div className="text-sm text-gray-600">Trạng thái: {c.status || c.state || '—'}</div>
+                <div className="mt-2 flex items-center gap-2">
+                  <input type="file" accept=".pdf" onChange={(e) => setUploadResult(r => ({ ...r, [c.id || c._id]: { file: e.target.files[0] } }))} />
+                  <button className="px-2 py-1 bg-indigo-600 text-white rounded" disabled={uploadLoading[c.id] || !uploadResult[c.id || c._id]?.file}
+                    onClick={async () => {
+                      const cid = c.id || c._id;
+                      const file = uploadResult[cid]?.file;
+                      if (!file) return;
+                      try {
+                        setUploadLoading(s => ({ ...s, [cid]: true }));
+                        const res = await contractAPI.uploadSignedContract(cid, file);
+                        // res contains url, cloudinary_url etc
+                        setUploadResult(s => ({ ...s, [cid]: { ...s[cid], res } }));
+                      } catch (err) {
+                        console.error('Upload signed contract failed', err);
+                        try { alert('Upload thất bại'); } catch(e) {}
+                      } finally {
+                        setUploadLoading(s => ({ ...s, [cid]: false }));
+                      }
+                    }}
+                  >{uploadLoading[c.id] ? 'Đang tải...' : 'Upload file đã ký'}</button>
+                </div>
                 {/* Optionally render services if present on contract */}
                 {Array.isArray(c.services) && c.services.length > 0 && (
                   <div className="mt-2">

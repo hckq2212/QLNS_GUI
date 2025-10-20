@@ -86,6 +86,18 @@ const contractAPI = {
     const res = await api.get(`${BASE}/${statusName}`, config);
     return res.data;
   },
+  async uploadSignedContract(id, file, config = {}) {
+    if (!id) throw new Error('id required');
+    if (!file) throw new Error('file required');
+    const fd = new FormData();
+    // server expects field name 'signedContract' per route config
+    fd.append('signedContract', file);
+    const res = await api.patch(`${BASE}/${id}/sign`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      ...(config || {}),
+    });
+    return res.data;
+  },
 };
 
 export default contractAPI;
