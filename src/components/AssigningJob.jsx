@@ -148,6 +148,21 @@ export default function AssigningJob({ projectId }) {
                       </select>
                     )
                   )}
+                  {/* start date and deadline inputs */}
+                  <input
+                    type="date"
+                    value={assignees[jid]?.startDate || ''}
+                    onChange={(e) => setAssignees(s => ({ ...s, [jid]: { ...(s[jid]||{}), startDate: e.target.value } }))}
+                    className="border px-2 py-1 rounded"
+                    title="Start date"
+                  />
+                  <input
+                    type="date"
+                    value={assignees[jid]?.deadline || ''}
+                    onChange={(e) => setAssignees(s => ({ ...s, [jid]: { ...(s[jid]||{}), deadline: e.target.value } }))}
+                    className="border px-2 py-1 rounded"
+                    title="Deadline"
+                  />
                   <button className="px-2 py-1 bg-indigo-600 text-white rounded" disabled={assignLoading[jid]} onClick={async () => {
                     const a = assignees[jid] || {};
                     const type = (a.type === 'partner') ? 'partner' : 'user';
@@ -160,6 +175,19 @@ export default function AssigningJob({ projectId }) {
                         assignedType: type,
                         assignedId: idVal,
                       };
+                      // include dates if provided
+                      if (a.startDate) payload.start_date = a.startDate;
+                      if (a.deadline) payload.deadline = a.deadline;
+                      // simple validation: if both provided, ensure start <= deadline
+                      if (a.startDate && a.deadline) {
+                        const sd = new Date(a.startDate);
+                        const dd = new Date(a.deadline);
+                        if (sd > dd) {
+                          alert('Ngày bắt đầu phải nhỏ hơn hoặc bằng deadline');
+                          setAssignLoading(s => ({ ...s, [jid]: false }));
+                          return;
+                        }
+                      }
                       if (a.externalCost != null) payload.externalCost = a.externalCost;
                       if (a.overrideReason) payload.overrideReason = a.overrideReason;
                       if (a.saveToCatalog != null) payload.saveToCatalog = a.saveToCatalog;
