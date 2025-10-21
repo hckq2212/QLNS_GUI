@@ -41,10 +41,10 @@ export default function AssignedContract() {
 
   return (
     <div className="p-4">
-      <h3 className="font-semibold mb-3">Hợp đồng (assigned)</h3>
+      <h3 className="font-semibold mb-3">Hợp đồng đã phân công</h3>
       {loading ? <div className="text-sm text-gray-500">Đang tải...</div> : error ? <div className="text-sm text-red-600">{error}</div> : (
         <div className="space-y-3">
-          {contracts.length === 0 ? <div className="text-sm text-gray-600">Không có hợp đồng assigned</div> : (
+          {contracts.length === 0 ? <div className="text-sm text-gray-600">Không có hợp đồng đã phân công</div> : (
             contracts.map(c => (
               <div key={c.id || c._id} className="p-3 border rounded">
                 <div className="font-medium">{c.code || c.title || `#${c.id || c._id}`}</div>

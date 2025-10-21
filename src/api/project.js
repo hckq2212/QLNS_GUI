@@ -28,6 +28,16 @@ const projectAPI = {
     const res = await api.patch(`${BASE}/${id}`, payload, config);
     return res.data;
   },
+  async ack(id, config = {}) {
+    if (!id) throw new Error('id required');
+    const res = await api.post(`${BASE}/${id}/ack`, {}, config);
+    return res.data;
+  },
+  async assignJob(projectId, payload = {}, config = {}) {
+    if (!projectId) throw new Error('projectId required');
+    const res = await api.post(`${BASE}/${projectId}/jobs/assign`, payload, config);
+    return res.data;
+  },
 };
 
 export default projectAPI;
