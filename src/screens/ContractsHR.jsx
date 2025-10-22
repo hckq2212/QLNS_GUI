@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import contractAPI from '../api/contract.js';
 import customerAPI from '../api/customer.js';
-import generateContractDocxBlob from '../utils/docxHelper.js';
+import ProposeContractDocx from '../utils/ProposeContractDocx.js';
 
 export default function ContractsHR() {
   const [contracts, setContracts] = useState([]);
@@ -277,7 +277,7 @@ export default function ContractsHR() {
                               alert('Không tìm thấy rows dịch vụ — mở JSON trả về để kiểm tra (một cửa sổ mới).');
                             }
 
-                            const blob = await generateContractDocxBlob(full || {}, { serviceRows });
+                            const blob = await ProposeContractDocx(full || {}, { serviceRows });
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement('a');
                           a.href = url;

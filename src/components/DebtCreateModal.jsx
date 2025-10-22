@@ -61,11 +61,21 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
             if (sum !== target) { setDebtError('Tổng các đợt phải bằng tổng doanh thu của hợp đồng'); return; }
             setDebtSubmitting(true); setDebtError(null);
             try {
-              const payload = { installments: installments.map(it => ({ amount: it.amount, due_date: it.due_date })) };
-              await debtAPI.create(activeContract.id, payload, { timeout: 30000 });
-              alert('Tạo công nợ thành công');
-              onClose();
-              if (onSuccess) onSuccess();
+              // create each installment as a separate debt record as backend controller expects
+              const ops = installments.map(it => {
+                const body = { contract_id: activeContract.id, amount: Number(it.amount) || 0, due_date: it.due_date || null };
+                return debtAPI.create(body, { timeout: 30000 });
+              });
+              const results = await Promise.allSettled(ops);
+              const rejected = results.filter(r => r.status === 'rejected');
+              if (rejected.length > 0) {
+                console.error('Some create debt requests failed', rejected);
+                setDebtError(rejected[0].reason?.message || 'Một số yêu cầu tạo công nợ thất bại');
+              } else {
+                alert('Tạo công nợ thành công');
+                onClose();
+                if (onSuccess) onSuccess();
+              }
             } catch (err) {
               console.error('create debt failed', err);
               setDebtError(err?.message || 'Tạo công nợ thất bại');
