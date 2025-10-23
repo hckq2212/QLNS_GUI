@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import contractAPI from '../api/contract.js';
 import customerAPI from '../api/customer.js';
 import ProposeContractDocx from '../utils/ProposeContractDocx.js';
+import pickName from '../utils/pickName.js';
 
 export default function ContractsHR() {
   const [contracts, setContracts] = useState([]);
@@ -208,7 +209,7 @@ export default function ContractsHR() {
           {contracts.map((c) => (
             <div key={c.id} className="p-4 border rounded">
               <div className="font-semibold">Contract #{c.id} — {c.contract_number || c.code || 'No code yet'}</div>
-              <div className="text-sm text-gray-700">Customer: {c.customer?.name || customerCache[c.customer_id]?.name || c.customer_name || c.customer_temp || 'Unknown'}</div>
+              <div className="text-sm text-gray-700">Customer: {c.customer?.name || customerCache[c.customer_id]?.name || c.customer_name || pickName(c.customer_temp) || c.customer_temp || 'Unknown'}</div>
               {c.description && <div className="mt-1 text-sm text-gray-600">{c.description}</div>}
 
               <div className="mt-3 grid grid-cols-3 gap-3">

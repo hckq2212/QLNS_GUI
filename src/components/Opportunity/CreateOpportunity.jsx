@@ -20,10 +20,6 @@ export default function CreateOpportunity () {
     const [availableCustomers, setAvailableCustomers] = useState([]);
     const [loadingCustomers, setLoadingCustomers] = useState(false);
     const [customersError, setCustomersError] = useState(null);
-    // cache for service-job names keyed by id
-    const [serviceJobNames, setServiceJobNames] = useState({});
-    const [loadingServiceJobs, setLoadingServiceJobs] = useState({});
-    const [serviceJobErrors, setServiceJobErrors] = useState({});
     const [availableServiceJobs, setAvailableServiceJobs] = useState([]);
     const [loadingServiceJobList, setLoadingServiceJobList] = useState(false);
     const [serviceJobListError, setServiceJobListError] = useState(null);
@@ -99,106 +95,6 @@ export default function CreateOpportunity () {
                 return new Intl.NumberFormat('vi-VN').format(Number(n));
         }
 
-        function handlePrint() {
-                // build customer info
-                const customer = customerId
-                        ? (availableCustomers.find((c) => String(c.id) === String(customerId)) || { name: `Customer #${customerId}` })
-                        : { name: tempName || '(Khách hàng tạm)' , email: tempEmail || '', phone: tempPhone || '' };
-
-                // build services table rows
-                const rows = services
-                        .filter((s) => s.service_id && s.service_id.toString().trim() !== '')
-                        .map((s) => {
-                                const svc = availableServices.find((a) => String(a.id) === String(s.service_id)) || {};
-                                const sj = availableServiceJobs.find((j) => String(j.id) === String(s.service_job_id)) || {};
-                                const unit = getServiceBaseCostValue(svc);
-                                const qty = s.quantity != null && s.quantity !== '' ? Number(s.quantity) : 1;
-                                const lineTotal = unit * qty;
-                                return {
-                                        serviceName: svc.name || `Service #${s.service_id}`,
-                                        serviceJobName: sj.name || sj.title || (s.service_job_id ? `Job #${s.service_job_id}` : ''),
-                                        qty,
-                                        unit,
-                                        lineTotal,
-                                        proposed_price: s.proposed_price !== '' ? Number(s.proposed_price) : undefined,
-                                };
-                        });
-
-                const total = rows.reduce((acc, r) => acc + (r.lineTotal || 0), 0) || expectedPrice || 0;
-
-                const html = `
-                        <html>
-                        <head>
-                            <meta charset="utf-8" />
-                            <title>Opportunity</title>
-                            <style>
-                                body { font-family: Arial, Helvetica, sans-serif; padding: 24px; color:#111 }
-                                h1 { font-size: 20px; margin-bottom: 4px }
-                                .meta { margin-bottom: 12px }
-                                table { width: 100%; border-collapse: collapse; margin-top: 12px }
-                                th, td { border: 1px solid #ddd; padding: 8px; text-align: left }
-                                th { background: #f7f7f7 }
-                                .right { text-align: right }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>Opportunity</h1>
-                            <div class="meta">
-                                <div><strong>Customer:</strong> ${customer.name || ''}</div>
-                                <div><strong>Email:</strong> ${customer.email || ''}</div>
-                                <div><strong>Phone:</strong> ${customer.phone || ''}</div>
-                                <div><strong>Description:</strong> ${description || ''}</div>
-                            </div>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Dịch vụ</th>
-                                        <th>Job</th>
-                                        <th class="right">Qty</th>
-                                        <th class="right">Unit</th>
-                                        <th class="right">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows.map((r, i) => `
-                                        <tr>
-                                            <td>${i + 1}</td>
-                                            <td>${r.serviceName}</td>
-                                            <td>${r.serviceJobName || ''}</td>
-                                            <td class="right">${r.qty}</td>
-                                            <td class="right">${formatCurrency(r.unit)}</td>
-                                            <td class="right">${formatCurrency(r.lineTotal)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="5" class="right"><strong>Tổng</strong></td>
-                                        <td class="right"><strong>${formatCurrency(total)}</strong></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                            <div style="margin-top:20px">Generated: ${new Date().toLocaleString()}</div>
-                        </body>
-                        </html>
-                `;
-
-                const w = window.open('', '_blank', 'noopener');
-                if (!w) {
-                        alert('Không thể mở cửa sổ in — cho phép popup cho trang này.');
-                        return;
-                }
-                w.document.write(html);
-                w.document.close();
-                w.focus();
-                // Wait a tick to ensure resources loaded then print
-                setTimeout(() => {
-                        try { w.print(); } catch (e) { console.error('print failed', e); }
-                }, 200);
-        }
-
-    // no list fetching — this component only creates an opportunity
 
     // fetch available services for select
     useEffect(() => {
@@ -278,16 +174,19 @@ export default function CreateOpportunity () {
         setExpectedPrice(total);
     }, [services, availableServices]);
 
+    // prepare set of currently selected service ids (as strings) to filter options
+    const selectedIds = services.map((x) => (x.service_id != null ? String(x.service_id) : '')).filter((v) => v !== '');
+
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Tạo Opportunity</h2>
+            <h2 className="text-2xl font-bold mb-4">Tạo cơ hội</h2>
             {message && <div className="p-2 mb-4 bg-green-100 text-green-800 rounded">{message}</div>}
             {error && <div className="p-2 mb-4 bg-red-100 text-red-800 rounded">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium">Customer (optional)</label>
+                        <label className="block text-sm font-medium">Chọn khách hàng</label>
                         {loadingCustomers ? (
                             <div className="mt-1 text-xs text-gray-500">Đang tải khách hàng...</div>
                         ) : customersError ? (
@@ -309,7 +208,7 @@ export default function CreateOpportunity () {
 
                 <div className="grid grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium">Customer name (temp)</label>
+                        <label className="block text-sm font-medium">Tên khách hàng</label>
                         <input
                             value={tempName}
                             onChange={(e) => setTempName(e.target.value)}
@@ -319,7 +218,7 @@ export default function CreateOpportunity () {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium">Customer email (temp)</label>
+                        <label className="block text-sm font-medium">Email khách hàng</label>
                         <input
                             value={tempEmail}
                             onChange={(e) => setTempEmail(e.target.value)}
@@ -329,7 +228,7 @@ export default function CreateOpportunity () {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium">Customer phone (temp)</label>
+                        <label className="block text-sm font-medium">Số điện thoại khách hàng</label>
                         <input
                             value={tempPhone}
                             onChange={(e) => setTempPhone(e.target.value)}
@@ -341,7 +240,7 @@ export default function CreateOpportunity () {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium">Description</label>
+                    <label className="block text-sm font-medium">Mô tả</label>
                     <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full border rounded p-2" rows={4} />
                 </div>
 
@@ -362,14 +261,20 @@ export default function CreateOpportunity () {
                                     ) : (
                                         <select value={s.service_id} onChange={(e) => updateService(idx, 'service_id', e.target.value)} className="mt-1 w-full border rounded p-1">
                                             <option value="">-- Chọn dịch vụ --</option>
-                                            {availableServices.map((sv) => (
-                                                <option key={sv.id} value={sv.id}>{sv.name}</option>
-                                            ))}
+                                            {availableServices
+                                                .filter((sv) => {
+                                                    // allow the currently selected service for this row, but exclude services selected in other rows
+                                                    const svId = String(sv.id);
+                                                    return svId === String(s.service_id) || !selectedIds.includes(svId);
+                                                })
+                                                .map((sv) => (
+                                                    <option key={sv.id} value={sv.id}>{sv.name}</option>
+                                                ))}
                                         </select>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs">Qty</label>
+                                    <label className="block text-xs">Số lượng</label>
                                     <input type="number" min="1" value={s.quantity} onChange={(e) => updateService(idx, 'quantity', e.target.value)} className="mt-1 w-full border rounded p-1" />
                                 </div>
                                 <div>
@@ -381,9 +286,7 @@ export default function CreateOpportunity () {
                 </div>
 
                 <div className="flex justify-end">
-                    <button type="button" onClick={handlePrint} className="mr-2 bg-gray-200 text-gray-800 px-4 py-2 rounded">
-                        In Opportunity
-                    </button>
+
                     <button disabled={loading} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
                         {loading ? 'Đang gửi...' : 'Tạo Opportunity'}
                     </button>

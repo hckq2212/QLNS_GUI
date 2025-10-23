@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import opportunityAPI from '../api/opportunity.js';
-import customerAPI from '../api/customer.js';
+import opportunityAPI from '../../api/opportunity.js';
+import customerAPI from '../../api/customer.js';
+import pickName from '../../utils/pickName.js';
 
 export default function PendingOpportunities() {
   const [list, setList] = useState([]);
@@ -82,21 +83,21 @@ export default function PendingOpportunities() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Pending Opportunities</h2>
+      <h2 className="text-2xl font-bold mb-4">Cơ hội chờ duyệt</h2>
       {loading ? (
         <div className="text-sm text-gray-500">Loading...</div>
       ) : error ? (
         <div className="text-sm text-red-600">{error}</div>
       ) : list.length === 0 ? (
-        <div className="text-sm text-gray-600">No pending opportunities</div>
+        <div className="text-sm text-gray-600">Không có cơ hội nào đang chờ duyệt</div>
       ) : (
         <div className="space-y-3">
           {list.map((o) => (
             <div key={o.id} className="p-4 border rounded">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-semibold">Opportunity #{o.id}</div>
-                  <div className="text-sm text-gray-700">Customer: {o.customer?.name || o.customer_name || o.customer_temp || 'Unknown'}</div>
+                  <div className="font-semibold">Cơ hội #{o.id}</div>
+                  <div className="text-sm text-gray-700">Customer: {o.customer?.name || o.customer_name || pickName(o.customer_temp) || o.customer_temp || 'Unknown'}</div>
                 </div>
                 <div className="space-x-2">
                   <button

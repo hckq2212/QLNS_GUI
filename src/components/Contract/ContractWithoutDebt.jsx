@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import pickName from '../../utils/pickName.js';
 import contractAPI from '../../api/contract.js';
 import debtAPI from '../../api/debt.js';
 import customerAPI from '../../api/customer.js';
@@ -54,7 +55,7 @@ export default function ContractWithoutDebt() {
             list.map(c => (
               <div key={c.id} className="p-3 border rounded">
                 <div className="font-medium">Hợp đồng {c.code}</div>
-                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || c.customer_temp || '—'}</div>
+                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || pickName(c.customer_temp) || c.customer_temp || '—'}</div>
                         <div className="mt-2 flex gap-2">
                           <button className="px-2 py-1 bg-blue-600 text-white rounded" onClick={() => {
                             setActiveContract(c);
