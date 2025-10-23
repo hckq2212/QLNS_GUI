@@ -26,9 +26,8 @@ export default function CreateOpportunity () {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
-
-    // whether temp customer inputs should be disabled (when an existing customer is selected)
-    const tempDisabled = customerId && customerId.toString().trim() !== '';
+    // customer input mode: 'existing' to choose from select, 'temp' to fill temp inputs
+    const [customerMode, setCustomerMode] = useState('existing');
 
     function addServiceRow() {
         setServices((s) => [...s, { service_id: '', service_job_id: '', quantity: 1, proposed_price: '' }]);
@@ -49,17 +48,14 @@ export default function CreateOpportunity () {
         setLoading(true);
         try {
             const payload = {};
-            if (customerId && customerId.toString().trim() !== '') {
+            if (customerMode === 'existing' && customerId && customerId.toString().trim() !== '') {
                 payload.customer_id = Number(customerId);
-            } else {
-                // use customer_temp when no customer_id provided
+            } else if (customerMode === 'temp') {
                 const temp = { name: tempName || null, email: tempEmail || null, phone: tempPhone || null };
                 payload.customer_temp = JSON.stringify(temp);
             }
             if (description) payload.description = description;
             if (expectedPrice !== '') payload.expected_price = Number(expectedPrice);
-
-            // include services where service_id is present
             const svcPayload = services
                 .filter((s) => s.service_id && s.service_id.toString().trim() !== '')
                 .map((s) => ({
@@ -68,9 +64,11 @@ export default function CreateOpportunity () {
                     quantity: s.quantity != null ? Number(s.quantity) : 1,
                     proposed_price: s.proposed_price !== '' ? Number(s.proposed_price) : undefined,
                 }));
+
             if (svcPayload.length > 0) payload.services = svcPayload;
 
             const created = await opportunityAPI.create(payload);
+
             setMessage('Opportunity created successfully');
             // clear form
             setCustomerId('');
@@ -179,87 +177,108 @@ export default function CreateOpportunity () {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Tạo cơ hội</h2>
             {message && <div className="p-2 mb-4 bg-green-100 text-green-800 rounded">{message}</div>}
             {error && <div className="p-2 mb-4 bg-red-100 text-red-800 rounded">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium">Chọn khách hàng</label>
-                        {loadingCustomers ? (
-                            <div className="mt-1 text-xs text-gray-500">Đang tải khách hàng...</div>
-                        ) : customersError ? (
-                            <div className="mt-1 text-xs text-red-600">{customersError}</div>
-                        ) : (
-                            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="mt-1 w-full border rounded p-2">
-                                <option value="">-- Khách hàng (optional) --</option>
+            <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col">
+                <label className="block text-lg font-medium text-left">Chọn khách hàng</label>
+                {loadingCustomers ? (
+                    <div className="mt-1 text-xs text-gray-500">Đang tải khách hàng...</div>
+                ) : customersError ? (
+                    <div className="mt-1 text-xs text-red-600">{customersError}</div>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-4 mt-2 mb-2">
+                            <label className="inline-flex items-center">
+                                <input
+                                    type="radio"
+                                    name="customerMode"
+                                    value="existing"
+                                    checked={customerMode === 'existing'}
+                                    onChange={() => { setCustomerMode('existing'); setTempName(''); setTempEmail(''); setTempPhone(''); }}
+                                    className="mr-2"
+                                />
+                                Khách hàng cũ
+                            </label>
+                            <label className="inline-flex items-center">
+                                <input
+                                    type="radio"
+                                    name="customerMode"
+                                    value="temp"
+                                    checked={customerMode === 'temp'}
+                                    onChange={() => { setCustomerMode('temp'); setCustomerId(''); }}
+                                    className="mr-2"
+                                />
+                                Khách hàng mới
+                            </label>
+                        </div>
+
+                        {customerMode === 'existing' && (
+                            <select
+                                value={customerId}
+                                onChange={(e) => setCustomerId(e.target.value)}
+                                className="mt-1 w-full border rounded p-2"
+                            >
+                                <option value="">-- Chọn khách hàng --</option>
                                 {availableCustomers.map((c) => (
                                     <option key={c.id} value={c.id}>{c.name || c.full_name || c.id}</option>
                                 ))}
                             </select>
                         )}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Expected price (auto)</label>
-                        <input value={expectedPrice} disabled className="mt-1 w-full border rounded p-2 bg-gray-100" placeholder="Auto-calculated" />
-                    </div>
-                </div>
+                    </>
+                )}
 
-                <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium">Tên khách hàng</label>
-                        <input
-                            value={tempName}
-                            onChange={(e) => setTempName(e.target.value)}
-                            disabled={tempDisabled}
-                            className={`mt-1 w-full border rounded p-2 ${tempDisabled ? 'bg-gray-100' : ''}`}
-                            placeholder="Full name"
-                        />
+
+                {customerMode === 'temp' && (
+                    <div className="flex flex-col gap-6">
+                        <div>
+                            <label className="block text-lg font-medium text-left">Tên khách hàng</label>
+                            <input
+                                value={tempName}
+                                onChange={(e) => setTempName(e.target.value)}
+                                className={`mt-1 w-full border rounded p-2`}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-lg font-medium text-left">Email khách hàng</label>
+                            <input
+                                value={tempEmail}
+                                onChange={(e) => setTempEmail(e.target.value)}
+                                className={`mt-1 w-full border rounded p-2`}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-lg font-medium text-left">Số điện thoại khách hàng</label>
+                            <input
+                                value={tempPhone}
+                                onChange={(e) => setTempPhone(e.target.value)}
+                                className={`mt-1 w-full border rounded p-2`}
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium">Email khách hàng</label>
-                        <input
-                            value={tempEmail}
-                            onChange={(e) => setTempEmail(e.target.value)}
-                            disabled={tempDisabled}
-                            className={`mt-1 w-full border rounded p-2 ${tempDisabled ? 'bg-gray-100' : ''}`}
-                            placeholder="Email"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Số điện thoại khách hàng</label>
-                        <input
-                            value={tempPhone}
-                            onChange={(e) => setTempPhone(e.target.value)}
-                            disabled={tempDisabled}
-                            className={`mt-1 w-full border rounded p-2 ${tempDisabled ? 'bg-gray-100' : ''}`}
-                            placeholder="Phone"
-                        />
-                    </div>
-                </div>
+                )}
 
                 <div>
-                    <label className="block text-sm font-medium">Mô tả</label>
+                    <label className="block text-lg text-left font-medium">Mô tả</label>
                     <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full border rounded p-2" rows={4} />
                 </div>
 
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">Services</h3>
-                        <button type="button" onClick={addServiceRow} className="text-sm text-blue-600">+ Thêm dịch vụ</button>
+                        <h3 className="text-lg font-semibold">Chọn dịch vụ</h3>
+                        <button type="button" onClick={addServiceRow} className="text-lg text-blue-600">+ Thêm dịch vụ</button>
                     </div>
                     <div className="space-y-3">
                         {services.map((s, idx) => (
-                            <div key={idx} className="grid grid-cols-6 gap-2 items-end">
-                                <div className="col-span-2">
-                                    <label className="block text-xs">Dịch vụ</label>
+                            <div key={idx} className="grid grid-cols-8 gap-2 items-end ">
+                                <div className="col-span-6">
+                                    <label className="block text-left">Dịch vụ</label>
                                     {loadingServices ? (
                                         <div className="mt-1 text-xs text-gray-500">Đang tải dịch vụ...</div>
                                     ) : servicesError ? (
                                         <div className="mt-1 text-xs text-red-600">{servicesError}</div>
                                     ) : (
-                                        <select value={s.service_id} onChange={(e) => updateService(idx, 'service_id', e.target.value)} className="mt-1 w-full border rounded p-1">
+                                        <select value={s.service_id} onChange={(e) => updateService(idx, 'service_id', e.target.value)} className="mt-1 w-full border rounded p-2">
                                             <option value="">-- Chọn dịch vụ --</option>
                                             {availableServices
                                                 .filter((sv) => {
@@ -274,21 +293,26 @@ export default function CreateOpportunity () {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs">Số lượng</label>
-                                    <input type="number" min="1" value={s.quantity} onChange={(e) => updateService(idx, 'quantity', e.target.value)} className="mt-1 w-full border rounded p-1" />
+                                    <label className="block text-left">Số lượng</label>
+                                    <input type="number" min="1" value={s.quantity} onChange={(e) => updateService(idx, 'quantity', e.target.value)} className="mt-1 w-full border rounded p-2" />
                                 </div>
                                 <div>
-                                    <button type="button" onClick={() => removeServiceRow(idx)} className="text-sm text-red-600">Xóa</button>
+                                    <button type="button" onClick={() => removeServiceRow(idx)} className=" text-red-600 p-2">Xóa</button>
                                 </div>
+                                
                             </div>
                         ))}
+                    </div>
+                    <div>
+                        <label className="block text-lg font-medium text-left mt-6">Giá dự kiến</label>
+                        <input value={expectedPrice} disabled className="mt-1 w-full border rounded p-2 bg-gray-100" placeholder="Auto-calculated" />
                     </div>
                 </div>
 
                 <div className="flex justify-end">
 
                     <button disabled={loading} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-                        {loading ? 'Đang gửi...' : 'Tạo Opportunity'}
+                        {loading ? 'Đang gửi...' : 'Tạo cơ hội'}
                     </button>
                 </div>
             </form>

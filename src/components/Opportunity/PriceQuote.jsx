@@ -1,8 +1,7 @@
-// ...existing code...
 import { useState, useEffect } from 'react';
-import PriceQuoteModal from '../components/ui/PriceQuoteModal.jsx';
-import opportunityAPI from '../api/opportunity';
-import customerAPI from '../api/customer';
+import PriceQuoteModal from '../ui/PriceQuoteModal.jsx'
+import opportunityAPI from '../../api/opportunity.js';
+import customerAPI from '../../api/customer.js';
 
 export default function PriceQuote() {
     const [opportunities, setOpportunities] = useState([]);
@@ -67,9 +66,7 @@ export default function PriceQuote() {
     }
 
     return (
-        <div>
-            <h2 className='text-2xl font-bold '>Cơ hội chờ báo giá</h2>
-
+        <div className='mt-6'>
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
             {!loading && opportunities.length === 0 && <p>Không có cơ hội đã được duyệt.</p>}

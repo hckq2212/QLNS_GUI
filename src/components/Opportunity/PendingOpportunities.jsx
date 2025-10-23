@@ -83,7 +83,6 @@ export default function PendingOpportunities() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Cơ hội chờ duyệt</h2>
       {loading ? (
         <div className="text-sm text-gray-500">Loading...</div>
       ) : error ? (

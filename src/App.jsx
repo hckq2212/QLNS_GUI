@@ -6,7 +6,6 @@ import Login from './screens/Login'
 import Opportunity from "./screens/Opportunity";
 import Contracts from "./screens/Contracts";
 import ContractsHR from "./screens/ContractsHR";
-import PriceQuote from "./screens/PriceQuote";
 import CreateConFromOppo from "./screens/createConFromOppo";
 import Project from "./screens/Project";
 
@@ -20,7 +19,6 @@ function App() {
         <Route path="/opportunity" element={<Opportunity />} />
         <Route path="/contract" element={<Contracts />} />
         <Route path="/contracts/hr" element={<ContractsHR />} />
-        <Route path="/quote" element={<PriceQuote />} />
         <Route path="/opportunity/create-contract" element={<CreateConFromOppo />} />
         <Route path="/project" element={<Project />} />
       </Routes>
