@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../api/contract';
-import customerAPI from '../api/customer';
+import contractAPI from '../../api/contract';
+import customerAPI from '../../api/customer';
 
 export default function AssignedContract() {
   const [contracts, setContracts] = useState([]);

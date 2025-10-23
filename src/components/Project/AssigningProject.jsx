@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import projectAPI from '../api/project';
-import contractAPI from '../api/contract';
-import serviceAPI from '../api/service';
+import projectAPI from '../../api/project';
+import contractAPI from '../../api/contract';
+import serviceAPI from '../../api/service';
 
-export default function PendingProject() {
+export default function AssigningProject() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [acceptLoading, setAcceptLoading] = useState({});
-    const [ackLoading, setAckLoading] = useState({});
 
     useEffect(() => {
         let mounted = true;
@@ -16,7 +15,7 @@ export default function PendingProject() {
             setLoading(true);
             setError(null);
             try {
-                const res = await projectAPI.getByStatus('pending');
+                const res = await projectAPI.getByStatus('planned');
                 const arr = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
                 if (mounted) setProjects(arr);
                 // For each project, if it has a contract id, fetch contract services
@@ -68,11 +67,11 @@ export default function PendingProject() {
 
     return (
         <div className="p-4">
-            <h3 className="font-semibold mb-3">Dự án chuẩn bị khởi công</h3>
+            <h3 className="font-semibold mb-3">Dự án (planned)</h3>
             {loading ? <div className="text-sm text-gray-500">Đang tải...</div> : error ? <div className="text-sm text-red-600">{error}</div> : (
                 <div className="space-y-2">
                     {projects.length === 0 ? (
-                        <div className="text-sm text-gray-600">Không có dự án pending</div>
+                        <div className="text-sm text-gray-600">Không có dự án planned</div>
                     ) : (
                         projects.map(p => {
                             const projKey = p.id || p._id;
@@ -83,23 +82,41 @@ export default function PendingProject() {
                                     <div className="text-sm text-gray-700">Mô tả: {p.description || p.desc || '—'}</div>
                                     <div className="mt-2 flex gap-2">
                                         <button
-                                            className="px-2 py-1 bg-indigo-600 text-white rounded"
-                                            disabled={ackLoading[projKey]}
+                                            className="px-2 py-1 bg-green-600 text-white rounded"
+                                            disabled={acceptLoading[projKey]}
                                             onClick={async () => {
                                                 const pid = projKey;
+                                                if (!pid) return;
                                                 try {
-                                                    setAckLoading(s => ({ ...s, [pid]: true }));
-                                                    const res = await projectAPI.ack(pid);
-                                                    // update project entry with returned result when possible
-                                                    setProjects(prev => prev.map(pr => (pr.id === pid || pr._id === pid) ? ({ ...pr, ...res }) : pr));
+                                                    setAcceptLoading(s => ({ ...s, [pid]: true }));
+                                                    await projectAPI.update(pid, { status: 'team_acknowledged' });
+                                                    // optimistic: update project status in UI
+                                                    setProjects(prev => prev.map(pr => (pr.id === pid || pr._id === pid) ? { ...pr, status: 'team_acknowledged' } : pr));
+                                                    // then update related contract status to 'assigned' if contract id exists
+                                                    const contractId = p.contract_id || p.contractId || p.contract?.id || p.contract?._id || p.contract;
+                                                    if (contractId) {
+                                                        try {
+                                                            await contractAPI.update(contractId, { status: 'assigned' });
+                                                            // optimistic: reflect contract status in UI when possible
+                                                            setProjects(prev => prev.map(pr => {
+                                                                if (pr.id === pid || pr._id === pid) {
+                                                                    const updated = { ...pr };
+                                                                    if (updated.contract) updated.contract.status = 'assigned';
+                                                                    return updated;
+                                                                }
+                                                                return pr;
+                                                            }));
+                                                        } catch (e2) {
+                                                            console.error('Failed to update contract status to assigned', e2);
+                                                        }
+                                                    }
                                                 } catch (e) {
-                                                    console.error('Failed to ack project', e);
-                                                    try { alert('Không thể khởi công dự án'); } catch(_) {}
+                                                    console.error('Failed to accept project', e);
                                                 } finally {
-                                                    setAckLoading(s => ({ ...s, [pid]: false }));
+                                                    setAcceptLoading(s => ({ ...s, [pid]: false }));
                                                 }
                                             }}
-                                        >{ackLoading[projKey] ? 'Đang...' : 'Khởi công'}</button>
+                                        >{acceptLoading[projKey] ? 'Đang...' : 'Chấp nhận'}</button>
                                     </div>
                                     {Array.isArray(p.services) && p.services.length > 0 && (
                                         <div className="mt-2">

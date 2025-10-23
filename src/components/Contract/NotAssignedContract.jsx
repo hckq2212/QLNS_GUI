@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../api/contract.js';
-import customerAPI from '../api/customer.js';
-import teamAPI from '../api/team.js';
-import projectAPI from '../api/project.js';
+import contractAPI from '../../api/contract.js';
+import customerAPI from '../../api/customer.js';
+import teamAPI from '../../api/team.js';
+import projectAPI from '../../api/project.js';
 
 export default function NotAssignedContract() {
   const [list, setList] = useState([]);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import serviceAPI from '../api/service';
-import opportunityAPI from '../api/opportunity';
+import serviceAPI from '../../api/service';
+import opportunityAPI from '../../api/opportunity';
 
 export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, opportunity = null }) {
     const [rows, setRows] = useState([]);

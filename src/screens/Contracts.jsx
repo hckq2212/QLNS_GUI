@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import contractAPI from '../api/contract.js';
-import ContractWithoutDebt from '../components/ContractWithoutDebt.jsx';
+import ContractWithoutDebt from '../components/Contract/ContractWithoutDebt.jsx';
 import customerAPI from '../api/customer.js';
-import ContractWaitingBODApproval from '../components/ContractWaitingBodApproval.jsx';
-import HRConfirmContract from '../components/HRConfirmContract.jsx';
-import NotAssignedContract from '../components/NotAssignedContract.jsx';
-import AssignedContract from '../components/AssignedContract.jsx';
+import ContractWaitingBODApproval from '../components/Contract/ContractWaitingBodApproval.jsx';
+import HRConfirmContract from '../components/Contract/HRConfirmContract.jsx';
+import NotAssignedContract from '../components/Contract/NotAssignedContract.jsx';
+import AssignedContract from '../components/Contract/AssignedContract.jsx';
 
 export default function ContractsPending() {
   const [contracts, setContracts] = useState([]);

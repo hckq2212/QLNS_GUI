@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../api/contract.js';
-import customerAPI from '../api/customer.js';
+import contractAPI from '../../api/contract.js';
+import customerAPI from '../../api/customer.js';
 
 export default function ContractWaitingBODApproval() {
   const [list, setList] = useState([]);

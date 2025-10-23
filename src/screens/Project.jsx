@@ -1,7 +1,7 @@
-import AssigningProject from "../components/AssigningProject"
-import PendingProject from "../components/PendingProject"
-import NotAssignedProject from "../components/NotAssignedProject"
-import AssigningJob from "../components/AssigningJob"
+import AssigningProject from "../components/Project/AssigningProject.jsx"
+import PendingProject from "../components/Project/PendingProject.jsx"
+import NotAssignedProject from "../components/Project/NotAssignedProject.jsx"
+import AssigningJob from "../components/Job/AssigningJob.jsx"
 
 export default function Project () {
     return(

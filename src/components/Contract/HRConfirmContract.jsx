@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../api/contract.js';
-import customerAPI from '../api/customer.js';
-import generateContractDocxBlob from '../utils/ProposeContractDocx.js';
+import contractAPI from '../../api/contract.js';
+import customerAPI from '../../api/customer.js';
+import generateContractDocxBlob from '../../utils/ProposeContractDocx.js';
 
 export default function HRConfirmContract() {
   const [list, setList] = useState([]);

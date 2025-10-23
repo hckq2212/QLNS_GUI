@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import projectAPI from '../api/project';
-import jobAPI from '../api/job';
-import userAPI from '../api/user';
+import projectAPI from '../../api/project';
+import jobAPI from '../../api/job';
+import userAPI from '../../api/user';
 
 export default function AssigningJob({ projectId }) {
   const [project, setProject] = useState(null);

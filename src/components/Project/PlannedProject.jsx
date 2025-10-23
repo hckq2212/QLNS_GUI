@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import projectAPI from '../api/project';
+import projectAPI from '../../api/project';
 
 export default function PlannedProject() {
     const [projects, setProjects] = useState([]);
@@ -12,7 +12,7 @@ export default function PlannedProject() {
             setLoading(true);
             setError(null);
             try {
-                const res = await projectAPI.getByStatus('not_assigned');
+                const res = await projectAPI.getByStatus('planned');
                 if (mounted) setProjects(Array.isArray(res) ? res : (res.items || []));
             } catch (err) {
                 if (mounted) setError(err.message || 'Failed to load projects');
@@ -31,7 +31,7 @@ export default function PlannedProject() {
 
     return (
         <div>
-            <h2 className="text-lg font-semibold mb-2">Dự án chưa phân công</h2>
+            <h2 className="text-lg font-semibold mb-2">Planned Projects</h2>
             {projects.length === 0 ? (
                 <div>No planned projects found.</div>
             ) : (

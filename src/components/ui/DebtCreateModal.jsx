@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import debtAPI from '../api/debt.js';
+import debtAPI from '../../api/debt.js';
 
 export default function DebtCreateModal({ activeContract, onClose, onSuccess }) {
   const [installments, setInstallments] = useState([{ amount: activeContract?.total_revenue || 0, due_date: '' }]);

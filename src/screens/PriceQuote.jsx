@@ -1,6 +1,6 @@
 // ...existing code...
 import { useState, useEffect } from 'react';
-import PriceQuoteModal from '../components/PriceQuoteModal';
+import PriceQuoteModal from '../components/ui/PriceQuoteModal.jsx';
 import opportunityAPI from '../api/opportunity';
 import customerAPI from '../api/customer';
 
