@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import pickName from '../../utils/pickName.js';
 import contractAPI from '../../api/contract.js';
 import customerAPI from '../../api/customer.js';
 import teamAPI from '../../api/team.js';
@@ -77,7 +76,7 @@ export default function NotAssignedContract() {
               return (
               <div key={c.id} className="p-3 border rounded">
                 <div className="font-medium">Hợp đồng {c.code}</div>
-                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || pickName(c.customer_temp) || c.customer_temp || '—'}</div>
+                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || c.customer_temp.name || c.customer_temp || '—'}</div>
                 <div className="text-sm text-gray-600">Dự án: {c.project?.name || c.project?.title || c.project?.code || '—'} — Trạng thái: {c.project?.status || c.project?.state || '—'}</div>
                 <div className="mt-2 flex items-center gap-2">
                   <select className="border px-2 py-1 rounded" value={selectedTeam[c.id] || ''} onChange={(e) => setSelectedTeam(s => ({ ...s, [c.id]: e.target.value }))}>

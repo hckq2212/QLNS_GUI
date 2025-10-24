@@ -3,7 +3,6 @@ import opportunityAPI from '../../api/opportunity.js';
 import customerAPI from '../../api/customer.js';
 import userAPI from '../../api/user.js';
 import serviceAPI from '../../api/service.js';
-import pickName from '../../utils/pickName.js';
 
 export default function PendingOpportunities() {
   const [list, setList] = useState([]);
@@ -172,7 +171,8 @@ export default function PendingOpportunities() {
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-semibold text-left">Cơ hội #{o.id}</div>
-                  <div className="text-sm text-gray-700">Khách hàng: {o.customer?.name || o.customer_name || pickName(o.customer_temp) || o.customer_temp || 'Unknown'}</div>
+                  <div className="text-sm text-gray-700">Khách hàng: {o.customer?.name || (o.customer_temp.name) || 'Unknown'}</div>
+                  {/* <div className="text-sm text-gray-700">Công ty: {o.customer?.company || (o.customer_temp.company) || 'Unknown'}</div> */}
                 </div>
                 <div className="space-x-2">
                   <button
@@ -199,28 +199,44 @@ export default function PendingOpportunities() {
               </div>
               {expanded[o.id] && (
                 <div className="mt-3 bg-gray-50 p-3 rounded">
-                  <div className="text-sm text-gray-700 mb-2">
+                  <div className="text-sm text-gray-700 mb-2 text-left">
                     <strong>Người tạo:</strong>{' '}
                     { o.created_by_user?.name || 'Unknown' }
                   </div>
+                  {o.description && 
+                  <div className="mt-2 text-sm text-gray-600 font-bold text-left">
+                    Mô tả: 
+                    <p className='font-normal'>{o.description}</p>
+                  </div>}
                   <div>
-                    <strong className="text-sm">Dịch vụ đã chọn:</strong>
                     {Array.isArray(o.services) && o.services.length > 0 ? (
-                      <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
-                        {o.services.map((s, i) => (
-                          <li key={i}>{s.name || s.service_name || `Service #${s.service_id || s.id || i}`} - Qty: {s.quantity ?? 1}{s.proposed_price ? ` - Giá đề xuất: ${s.proposed_price}` : ''}</li>
-                        ))}
-                      </ul>
+                      <div className="mt-2">
+                        <table className="w-full text-sm text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="px-3 py-2 border">Dịch vụ</th>
+                              <th className="px-3 py-2 border">Số lượng</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {o.services.map((s, i) => (
+                              <tr key={s.id ?? s.service_id ?? i} className="border-t">
+                                <td className="px-3 py-2 align-top">
+                                  {s.name || s.service_name || `Service #${s.service_id || s.id || i}`}
+                                </td>
+                                <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : o.service_list ? (
                       <div className="mt-2 text-sm text-gray-700">{String(o.service_list)}</div>
                     ) : (
                       <div className="mt-2 text-sm text-gray-500">Không có dịch vụ chi tiết</div>
                     )}
                   </div>
-                  {o.description && <div className="mt-2 text-sm text-gray-600 font-bold">
-                    Mô tả: 
-                    <p className='font-normal'>{o.description}</p>
-                  </div>}
+
                 </div>
               )}
             </div>

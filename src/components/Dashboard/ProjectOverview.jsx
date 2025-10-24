@@ -1,9 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import projectAPI from '../../api/project.js';
 import AllIcon from '../../assets/menu.png'
 import AddIcon from '../../assets/add.png'
 import InProgressIcon from '../../assets/management.png'
 import CompleteIcon from '../../assets/checklist.png'
+
+// Chart.js + react wrapper
+import { Pie } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    ArcElement,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function ProjectOverview() {
     const [count, setCount] = useState(null);
@@ -34,6 +45,28 @@ export default function ProjectOverview() {
             mounted = false;
         };
     }, []);
+
+    // prepare chart data using counts we fetch in other effects
+    const chartData = useMemo(() => {
+        const newCount = countNew ?? 0;
+        const inProgressCount = countInProgress ?? 0;
+        const completeCount = countComplete ?? 0;
+        // other = total - sum of known (guard non-negative)
+        const other = Math.max(0, (count ?? 0) - (newCount + inProgressCount + completeCount));
+
+        return {
+            labels: ['Dự án mới', 'Dự án đang khởi công', 'Dự án đã hoàn thành'],
+            datasets: [
+                {
+                    data: [newCount, inProgressCount, completeCount],
+                    backgroundColor: ['#9cc3f3', '#f5e68d', '#9fd09b'],
+                    hoverBackgroundColor: ['#7fb0ea', '#e9d86f', '#82c786'],
+                    borderWidth: 1,
+                    hoverOffset: 10, 
+                },
+            ],
+        };
+    }, [count, countNew, countInProgress, countComplete]);
 
     useEffect(() => {
         let mounted = true;
@@ -116,37 +149,38 @@ export default function ProjectOverview() {
 
     return (
         <div>
-            <h2 className='text-left mt-10 font-bold text-xl mb-10'>Bảng điều khiển</h2>
-            <div className='flex flex-row gap-[3rem] justify-between mb-10'>
-                <div className='flex gap-[2rem] flex-row justify-between items-center p-6  border-[#2B6AD0] border rounded-lg w-[20%] '>
-                    <img className='w-[4rem] h-[4rem]' src={AllIcon}></img>
-                    <div className='flex flex-col justify-center items-center gap-[1rem] w-[70%]'>
-                        <p className="font-semibold text-2xl text-[#184172]">Tất cả</p>
-                        <p className="font-semibold text-2xl text-[#184172]">{count ?? 0}</p>
+            <div className='w-[30%]  border rounded-lg bg-white '>
+                    <h3 className='text-lg font-semibold mb-3 mt-3'>Tình trạng dự án</h3>
+                    <hr />
+                    <br />
+                    <div className='flex items-center p-3'>
+                        <div className='w-[100%]'>
+                            <Pie 
+                                data={chartData}
+                                options={{
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                    legend: {
+                                        position: 'left',
+                                        align: 'start', // canh trái label
+                                        labels: {
+                                        color: '#333',
+                                        font: { size: 13 },
+                                        usePointStyle: true,
+                                        padding: 15,
+                                        },
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                        label: (ctx) => ` Số dự án: ${ctx.formattedValue}`
+                                        }
+                                    }
+                                    },
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
-                <div className='flex gap-[2rem] flex-row justify-between items-center p-6  border-[#2B6AD0] border rounded-lg w-[20%]'>
-                    <img className='w-[4rem] h-[4rem]' src={AddIcon}></img>
-                    <div className='flex flex-col justify-center items-center gap-[1rem] w-[70%]'>
-                        <p className="font-semibold text-2xl text-[#184172]">Đã lên kế hoạch</p>
-                        <p className="font-semibold text-2xl text-[#184172]">{countNew ?? 0}</p>
-                    </div>
-                </div>
-                <div className='flex gap-[2rem] flex-row justify-between items-center p-6  border-[#2B6AD0] border rounded-lg w-[20%]'>
-                    <img className='w-[4rem] h-[4rem]' src={InProgressIcon}></img>
-                    <div className='flex flex-col justify-center items-center gap-[1rem] w-[70%]'>
-                        <p className="font-semibold text-2xl text-[#184172]">Đang thực hiện</p>
-                        <p className="font-semibold text-2xl text-[#184172]">{countInProgress ?? 0}</p>
-                    </div>
-                </div>
-                <div className='flex gap-[2rem] flex-row justify-between items-center p-6  border-[#2B6AD0] border rounded-lg w-[20%]'>
-                    <img className='w-[4rem] h-[4rem]' src={CompleteIcon}></img>
-                    <div className='flex flex-col justify-center items-center gap-[1rem] w-[70%]'>
-                        <p className="font-semibold text-2xl text-[#184172]">Đã hoàn thành</p>
-                        <p className="font-semibold text-2xl text-[#184172]">{countComplete ?? 0}</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

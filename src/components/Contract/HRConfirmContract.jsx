@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import pickName from '../../utils/pickName.js';
 import contractAPI from '../../api/contract.js';
 import customerAPI from '../../api/customer.js';
 import generateContractDocxBlob from '../../utils/ProposeContractDocx.js';
@@ -97,7 +96,7 @@ export default function HRConfirmContract() {
             list.map(c => (
               <div key={c.id} className="p-3 border rounded">
                 <div className="font-medium">Hợp đồng {c.code}</div>
-                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || pickName(c.customer_temp) || c.customer_temp || '—'}</div>
+                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name ||  (c.customer_temp.name) || '—'}</div>
                 <div className="mt-2 flex items-center gap-2">
                   <button onClick={() => downloadContractDoc(c)} disabled={actionLoading[c.id]} className="px-2 py-1 bg-indigo-600 text-white rounded">
                     {actionLoading[c.id] ? 'Đang tải...' : 'Tải Word'}

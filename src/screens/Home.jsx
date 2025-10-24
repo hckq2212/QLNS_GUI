@@ -13,6 +13,7 @@ import location from'../assets/location.png'
 import SideMenu from '../components/ui/SideMenu.jsx';
 import ProjectOverview from '../components/Dashboard/ProjectOverview.jsx';
 import ProjectList from '../components/Dashboard/ProjectList.jsx';
+import ContractList from '../components/Dashboard/ContractList.jsx';
 
 
 export default function Home() {
@@ -21,10 +22,11 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <SideMenu />
-      <div className='mt-[80px] ml-[17%] mr-[4%]'>
+      <div className='mt-[100px] ml-[17%] mr-[4%]'>
         <ProjectOverview />
         <div>
           <ProjectList />
+          <ContractList />
         </div>
       </div>
     </div>

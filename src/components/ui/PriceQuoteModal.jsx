@@ -67,11 +67,11 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         return () => { mounted = false; };
     }, [isOpen, opportunity, reloadCounter]);
 
-    function computeDefaultChosen(rowsArr) {
-        const d = {};
-        (rowsArr || rows).forEach((r, i) => d[i] = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice));
-        return d;
-    }
+    // function computeDefaultChosen(rowsArr) {
+    //     const d = {};
+    //     (rowsArr || rows).forEach((r, i) => d[i] = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice));
+    //     return d;
+    // }
 
     // When globalMode changes, apply the chosen mode to all rows
     useEffect(() => {
@@ -122,17 +122,6 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     <button onClick={onClose} className="text-sm px-3 py-1 bg-gray-100 rounded">Đóng</button>
                 </div>
 
-                <div className="mb-4 text-sm space-y-1">    
-                    {opportunity ? (
-                        <>
-                        <div>
-                            <div><strong>Khách hàng:</strong> {opportunity.customerName || '—'}</div>
-                            <div><strong>Mô tả:</strong> {opportunity.description || '—'}</div>
-                        </div>
-                        </>
-                    ) : (<div>Không có dữ liệu cơ hội.</div>)}
-                </div>
-
                 <div className="overflow-x-auto">
                     {loading ? (
                         <div className="text-sm text-gray-500">Đang tải hạng mục...</div>
@@ -164,7 +153,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     const profit = sel ? (((sel - r.baseCost) / sel) * 100) : 0;
                                     return (
                                         <tr key={r.id}>
-                                            <td className="px-3 py-2 border-b text-sm">{r.name}</td>
+                                            <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{format(r.baseCost)}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">

@@ -9,7 +9,7 @@ function Header(){
         navigate('/login');
     }
     return(
-        <div className="bg-gradient-to-t fixed w-full left-0 h-[80px] top-0 flex items-center z-[1000] border-b-2">
+        <div className="bg-gradient-to-t fixed w-full left-0 h-[80px] top-0 flex items-center z-[1000] border-b-2 bg-slate-50">
             <h1 className=" text-[40px] font-bold ml-6 text-[#184172]">QLNS</h1>        
             <button 
                 className="flex rounded-lg border-2 border-transparent absolute right-20 w-[150px] h-[50px] items-center justify-around bg-red-400 hover:bg-red-700"

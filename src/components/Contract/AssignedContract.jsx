@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import pickName from '../../utils/pickName.js';
 import contractAPI from '../../api/contract';
 import customerAPI from '../../api/customer';
 
@@ -49,7 +48,7 @@ export default function AssignedContract() {
             contracts.map(c => (
               <div key={c.id || c._id} className="p-3 border rounded">
                 <div className="font-medium">{c.code || c.title || `#${c.id || c._id}`}</div>
-                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || pickName(c.customer_temp) || c.customer_temp || '—'}</div>
+                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name ||  (c.customer_temp.name) ||  '—'}</div>
                 <div className="text-sm text-gray-600">Trạng thái: {c.status || c.state || '—'}</div>
                 <div className="mt-2 flex items-center gap-2">
                   <input type="file" accept=".pdf" onChange={(e) => setUploadResult(r => ({ ...r, [c.id || c._id]: { file: e.target.files[0] } }))} />

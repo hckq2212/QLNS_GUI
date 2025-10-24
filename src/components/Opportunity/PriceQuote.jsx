@@ -78,9 +78,7 @@ export default function PriceQuote() {
                             <strong>{op.name || op.title || `Cơ hội ${op.id}`}</strong>
                             <small>Khách hàng: {op.customerName || '—'}</small>
                         </div>
-                        <div>
-                            <small>Mô tả: {op.description || '—'}</small>
-                        </div>
+
                         <button onClick={() => openModal(op)} style={{ marginTop: 6 }}>
                             Làm báo giá
                         </button>

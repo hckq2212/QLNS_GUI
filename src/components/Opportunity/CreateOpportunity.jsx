@@ -69,7 +69,7 @@ export default function CreateOpportunity () {
 
             const created = await opportunityAPI.create(payload);
 
-            setMessage('Opportunity created successfully');
+            setMessage('Tạo cơ hội thành công. Vui lòng đợi BOD duyệt');
             // clear form
             setCustomerId('');
             setTempName('');
