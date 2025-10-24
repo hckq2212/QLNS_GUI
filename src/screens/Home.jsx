@@ -11,6 +11,8 @@ import phone from '../assets/phone.png'
 import mail from '../assets/mail.png'
 import location from'../assets/location.png'
 import SideMenu from '../components/ui/SideMenu.jsx';
+import ProjectOverview from '../components/Dashboard/ProjectOverview.jsx';
+import ProjectList from '../components/Dashboard/ProjectList.jsx';
 
 
 export default function Home() {
@@ -19,6 +21,12 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <SideMenu />
+      <div className='mt-[80px] ml-[17%] mr-[4%]'>
+        <ProjectOverview />
+        <div>
+          <ProjectList />
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import opportunityAPI from '../../api/opportunity.js';
 import customerAPI from '../../api/customer.js';
+import userAPI from '../../api/user.js';
+import serviceAPI from '../../api/service.js';
 import pickName from '../../utils/pickName.js';
 
 export default function PendingOpportunities() {
@@ -8,6 +10,7 @@ export default function PendingOpportunities() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -17,7 +20,7 @@ export default function PendingOpportunities() {
         const data = await opportunityAPI.getAllPending();
         const listData = Array.isArray(data) ? data : [];
 
-        // enrich customer names for entries that only have customer_id
+  // enrich customer names for entries that only have customer_id
         const customerIds = Array.from(new Set(listData.map(o => o.customer_id).filter(Boolean)));
         if (customerIds.length > 0) {
           try {
@@ -36,11 +39,84 @@ export default function PendingOpportunities() {
             setList(enriched);
           } catch (e) {
             // if enrichment fails, still set the raw list
-            setList(listData);
+              setList(listData);
           }
         } else {
           setList(listData);
         }
+
+          // enrich creator names for entries that have created_by as an id
+          const creatorIds = Array.from(new Set(listData.map(o => o.created_by).filter(Boolean)));
+          if (creatorIds.length > 0) {
+            try {
+              const fetchedCreators = await Promise.allSettled(
+                creatorIds.map((id) => userAPI.getById(id).catch(() => null))
+              );
+              const byCreator = {};
+              fetchedCreators.forEach((r, idx) => {
+                const id = creatorIds[idx];
+                if (r.status === 'fulfilled' && r.value) {
+                  // userAPI.getById returns the user object in res.data — attempt common name fields
+                  byCreator[id] =  r.value.full_name || null;
+                }
+              });
+              // merge creator name into existing list state if possible
+              setList((prev) => prev.map((o) => ({
+                ...o,
+                created_by_user: o.created_by && byCreator[o.created_by] ? { id: o.created_by, name: byCreator[o.created_by] } : (o.created_by_user || null)
+              })));
+            } catch (e) {
+              // ignore creator enrichment failures
+            }
+          }
+
+          // enrich services for each opportunity from opportunity_service endpoint
+          try {
+            const oppIds = listData.map((o) => o.id).filter(Boolean);
+            if (oppIds.length > 0) {
+              const fetchedServices = await Promise.allSettled(
+                oppIds.map((id) => opportunityAPI.getService(id).catch(() => null))
+              );
+              const servicesByOpp = {};
+              fetchedServices.forEach((r, idx) => {
+                const id = oppIds[idx];
+                if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+                  servicesByOpp[id] = r.value;
+                }
+              });
+              // collect distinct service_ids to resolve names
+              const allServiceIds = Array.from(
+                new Set(
+                  Object.values(servicesByOpp)
+                    .flat()
+                    .map((s) => s.service_id || s.id)
+                    .filter(Boolean)
+                )
+              );
+              const serviceNameById = {};
+              if (allServiceIds.length > 0) {
+                const fetchedNames = await Promise.allSettled(
+                  allServiceIds.map((sid) => serviceAPI.getById(sid).catch(() => null))
+                );
+                fetchedNames.forEach((r, idx) => {
+                  const sid = allServiceIds[idx];
+                  if (r.status === 'fulfilled' && r.value) {
+                    serviceNameById[sid] = r.value.name || r.value.service_name || null;
+                  }
+                });
+              }
+              // merge services into the list state
+              setList((prev) => prev.map((o) => ({
+                ...o,
+                services: (o.services && o.services.length > 0 ? o.services : (servicesByOpp[o.id] || o.services))?.map((s) => ({
+                  ...s,
+                  name: s.name || serviceNameById[s.service_id || s.id] || s.service_name || s.name || null,
+                })) || []
+              })));
+            }
+          } catch (e) {
+            // non-fatal: leave services as-is
+          }
       } catch (err) {
         console.error('failed to load pending opportunities', err);
         setError(err?.message || 'Failed to load pending opportunities');
@@ -95,10 +171,16 @@ export default function PendingOpportunities() {
             <div key={o.id} className="p-4 border rounded">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-semibold">Cơ hội #{o.id}</div>
-                  <div className="text-sm text-gray-700">Customer: {o.customer?.name || o.customer_name || pickName(o.customer_temp) || o.customer_temp || 'Unknown'}</div>
+                  <div className="font-semibold text-left">Cơ hội #{o.id}</div>
+                  <div className="text-sm text-gray-700">Khách hàng: {o.customer?.name || o.customer_name || pickName(o.customer_temp) || o.customer_temp || 'Unknown'}</div>
                 </div>
                 <div className="space-x-2">
+                  <button
+                    onClick={() => setExpanded((p) => ({ ...p, [o.id]: !p[o.id] }))}
+                    className="bg-gray-200 text-gray-800 px-3 py-1 rounded"
+                  >
+                    {expanded[o.id] ? 'Đóng' : 'Xem chi tiết'}
+                  </button>
                   <button
                     disabled={actionLoading[o.id]}
                     onClick={() => handleApprove(o.id)}
@@ -115,7 +197,32 @@ export default function PendingOpportunities() {
                   </button>
                 </div>
               </div>
-              {o.description && <div className="mt-2 text-sm text-gray-600">{o.description}</div>}
+              {expanded[o.id] && (
+                <div className="mt-3 bg-gray-50 p-3 rounded">
+                  <div className="text-sm text-gray-700 mb-2">
+                    <strong>Người tạo:</strong>{' '}
+                    { o.created_by_user?.name || 'Unknown' }
+                  </div>
+                  <div>
+                    <strong className="text-sm">Dịch vụ đã chọn:</strong>
+                    {Array.isArray(o.services) && o.services.length > 0 ? (
+                      <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
+                        {o.services.map((s, i) => (
+                          <li key={i}>{s.name || s.service_name || `Service #${s.service_id || s.id || i}`} - Qty: {s.quantity ?? 1}{s.proposed_price ? ` - Giá đề xuất: ${s.proposed_price}` : ''}</li>
+                        ))}
+                      </ul>
+                    ) : o.service_list ? (
+                      <div className="mt-2 text-sm text-gray-700">{String(o.service_list)}</div>
+                    ) : (
+                      <div className="mt-2 text-sm text-gray-500">Không có dịch vụ chi tiết</div>
+                    )}
+                  </div>
+                  {o.description && <div className="mt-2 text-sm text-gray-600 font-bold">
+                    Mô tả: 
+                    <p className='font-normal'>{o.description}</p>
+                  </div>}
+                </div>
+              )}
             </div>
           ))}
         </div>
