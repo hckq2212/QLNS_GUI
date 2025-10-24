@@ -52,7 +52,7 @@ export default function ProjectChart() {
         const other = Math.max(0, (count ?? 0) - (newCount + inProgressCount + completeCount));
 
         return {
-            labels: ['Dự án mới', 'Dự án đang khởi công', 'Dự án đã hoàn thành'],
+            labels: ['Dự án đang được lên kế hoạch', 'Dự án đang khởi công', 'Dự án đã hoàn thành'],
             datasets: [
                 {
                     data: [newCount, inProgressCount, completeCount],

@@ -93,7 +93,7 @@ export default function ProjectChart() {
                 <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Tìm theo tên, mã"
+                    placeholder="Tìm kiếm"
                     className="border px-3 py-2 rounded w-64"
                 />
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border px-3 py-2 rounded">

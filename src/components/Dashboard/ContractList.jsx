@@ -88,7 +88,7 @@ export default function ContractList() {
                 <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Tìm theo mã, khách hàng, id..."
+                    placeholder="Tìm kiếm"
                     className="border px-3 py-2 rounded w-64"
                 />
             </div>
