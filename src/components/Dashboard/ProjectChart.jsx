@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import projectAPI from '../../api/project.js';
-import AllIcon from '../../assets/menu.png'
-import AddIcon from '../../assets/add.png'
-import InProgressIcon from '../../assets/management.png'
-import CompleteIcon from '../../assets/checklist.png'
+
 
 // Chart.js + react wrapper
 import { Pie } from 'react-chartjs-2';
@@ -16,7 +13,7 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export default function ProjectOverview() {
+export default function ProjectChart() {
     const [count, setCount] = useState(null);
     const [countNew, setCountNew] = useState(null)
     const [countInProgress, setCountInProgress] = useState(null)
@@ -149,8 +146,8 @@ export default function ProjectOverview() {
 
     return (
         <div>
-            <div className='w-[30%]  border rounded-lg bg-white '>
-                    <h3 className='text-lg font-semibold mb-3 mt-3'>Tình trạng dự án</h3>
+            <div className='border rounded-lg bg-white '>
+                    <h3 className='text-lg font-semibold mb-3 mt-3'>Tổng quan dự án</h3>
                     <hr />
                     <br />
                     <div className='flex items-center p-3'>

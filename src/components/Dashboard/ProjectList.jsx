@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import projectAPI from '../../api/project';
 import teamAPI from '../../api/team';
 
-export default function ProjectList() {
+export default function ProjectChart() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import contractAPI from '../../api/contract.js';
+import customerAPI from '../../api/customer.js';
 
 export default function ContractList() {
     const [contracts, setContracts] = useState([]);
@@ -16,10 +17,35 @@ export default function ContractList() {
         (async () => {
             setLoading(true);
             setError(null);
-            try {
-                const data = await contractAPI.getAll();
-                const list = Array.isArray(data) ? data : [];
-                if (mounted) setContracts(list);
+                    try {
+                    const data = await contractAPI.getAll();
+                    const list = Array.isArray(data) ? data : [];
+
+                    // enrich customer names for contracts that only have customer_id
+                    const customerIds = Array.from(new Set(list.map((c) => c.customer_id).filter(Boolean)));
+                    let byCustomer = {};
+                    if (customerIds.length > 0) {
+                        try {
+                            const fetched = await Promise.allSettled(
+                                customerIds.map((id) => customerAPI.getById(id).catch(() => null))
+                            );
+                            fetched.forEach((r, idx) => {
+                                const id = customerIds[idx];
+                                if (r.status === 'fulfilled' && r.value) {
+                                    byCustomer[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
+                                }
+                            });
+                        } catch (e) {
+                            // ignore customer enrichment errors
+                        }
+                    }
+
+                    const enriched = list.map((c) => ({
+                        ...c,
+                        customer: c.customer || (c.customer_id ? { id: c.customer_id, name: byCustomer[c.customer_id] || c.customer_name || null } : c.customer),
+                    }));
+
+                    if (mounted) setContracts(enriched);
             } catch (err) {
                 console.error('Lỗi khi lấy hợp đồng', err);
                 if (mounted) setError(err?.message || 'Lỗi khi lấy hợp đồng');
@@ -40,7 +66,7 @@ export default function ContractList() {
             return (
                 String(c.id || '').includes(q) ||
                 (c.code || '').toLowerCase().includes(q) ||
-                (c.customer_name || c.customer?.name || '').toLowerCase().includes(q)
+                ( c.customer?.name || '').toLowerCase().includes(q)
             );
         });
     }, [contracts, search]);
@@ -65,7 +91,6 @@ export default function ContractList() {
                     placeholder="Tìm theo mã, khách hàng, id..."
                     className="border px-3 py-2 rounded w-64"
                 />
-                <div className="text-sm text-gray-600">Tổng: {contracts.length}</div>
             </div>
 
             {loading ? (
@@ -77,10 +102,8 @@ export default function ContractList() {
                     <table className="min-w-full text-left">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-4 py-2">#</th>
-                                <th className="px-4 py-2">Mã</th>
+                                <th className="px-4 py-2">Mã hợp đồng</th>
                                 <th className="px-4 py-2">Khách hàng</th>
-                                <th className="px-4 py-2">Trạng thái</th>
                                 <th className="px-4 py-2">Tổng tiền</th>
                                 <th className="px-4 py-2">Ngày tạo</th>
                                 <th className="px-4 py-2">Hành động</th>
@@ -96,14 +119,19 @@ export default function ContractList() {
                                             ) : (
                                             pageItems.map((c) => (
                                     <tr key={c.id} className="border-t">
-                                        <td className="px-4 py-3 align-top">{c.id}</td>
-                                        <td className="px-4 py-3 align-top">{c.code || '-'}</td>
+                                        <td className="px-4 py-3 align-top font-semibold">{c.code || '-'}</td>
                                         <td className="px-4 py-3 align-top">{c.customer?.name || c.customer_name || '-'}</td>
-                                        <td className="px-4 py-3 align-top">{c.status || c.status_name || '-'}</td>
                                         <td className="px-4 py-3 align-top">{c.total_amount != null ? c.total_amount : '-'}</td>
                                         <td className="px-4 py-3 align-top">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
                                         <td className="px-4 py-3 align-top">
-                                            <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm">Xem</button>
+                                            <a
+                                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                                                href={c ? c.signed_file_url : c.proposal_file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >
+                                                Xem
+                                                </a>
                                         </td>
                                     </tr>
                                 ))
