@@ -3,6 +3,7 @@ import contractAPI from '../../api/contract.js';
 import debtAPI from '../../api/debt.js';
 import customerAPI from '../../api/customer.js';
 import DebtCreateModal from '../ui/DebtCreateModal.jsx';
+import formatPrice from '../../utils/FormatPrice.js';
 
 export default function ContractWithoutDebt() {
   const [list, setList] = useState([]);
@@ -11,7 +12,6 @@ export default function ContractWithoutDebt() {
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [activeContract, setActiveContract] = useState(null);
   const [installments, setInstallments] = useState([]);
-  const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState(null);
   const [reloadCounter, setReloadCounter] = useState(0);
 
@@ -49,22 +49,44 @@ export default function ContractWithoutDebt() {
     <div className="p-4">
       <h3 className="font-semibold mb-3">Hợp đồng chưa tạo công nợ</h3>
             {loading ? <div className="text-sm text-gray-500">Đang tải...</div> : error ? <div className="text-sm text-red-600">{error}</div> : (
-        <div className="space-y-3">
-          {list.length === 0 ? <div className="text-sm text-gray-600">Không có hợp đồng</div> : (
-            list.map(c => (
-              <div key={c.id} className="p-3 border rounded">
-                <div className="font-medium">Hợp đồng {c.code}</div>
-                <div className="text-sm text-gray-700">Khách hàng: {c.customer?.name || c.customerName || c.customer_temp.name || c.customer_temp || '—'}</div>
-                        <div className="mt-2 flex gap-2">
-                          <button className="px-2 py-1 bg-blue-600 text-white rounded" onClick={() => {
+        <div>
+          {list.length === 0 ? (
+            <div className="text-sm text-gray-600">Không có hợp đồng</div>
+          ) : (
+            <div className="overflow-x-auto bg-white rounded border">
+              <table className="min-w-full text-left">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2">Mã hợp đồng</th>
+                    <th className="px-4 py-2">Khách hàng</th>
+                    <th className="px-4 py-2">Tổng doanh thu</th>
+                    <th className="px-4 py-2">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((c) => (
+                    <tr key={c.id} className="border-t">
+                      <td className="px-4 py-3 align-top">{c.code || '-'}</td>
+                      <td className="px-4 py-3 align-top">{c.customer?.name || c.customer_name || '-'}</td>
+                      <td className="px-4 py-3 align-top">{formatPrice(c.total_revenue != null ? c.total_revenue : '-')} đ</td>
+                      <td className="px-4 py-3 align-top">
+                        <button
+                          className="px-2 py-1 bg-blue-600 text-white rounded"
+                          onClick={() => {
                             setActiveContract(c);
                             setInstallments([{ amount: c.total_revenue || 0, due_date: '' }]);
                             setDebtError(null);
                             setShowDebtModal(true);
-                          }}>Tạo công nợ</button>
-                        </div>
-                      </div>
-            ))
+                          }}
+                        >
+                          Tạo công nợ
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

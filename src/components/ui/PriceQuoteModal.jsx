@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import serviceAPI from '../../api/service';
 import opportunityAPI from '../../api/opportunity';
+import formatPrice from '../../utils/FormatPrice';
 
 export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, opportunity = null }) {
     const [rows, setRows] = useState([]);
@@ -112,7 +113,6 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         }
     }
 
-    function format(n) { return n == null ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)); }
 
     return (!isOpen) ? null : (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
@@ -155,12 +155,12 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                         <tr key={r.id}>
                                             <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{format(r.baseCost)}</td>
+                                            <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(r.baseCost)}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">
-                                                <div>{format(r.minPrice)}</div>
+                                                <div>{formatPrice(r.minPrice)}</div>
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">
-                                                <div>{format(r.suggestedPrice)}</div>
+                                                <div>{formatPrice(r.suggestedPrice)}</div>
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{profit ? profit.toFixed(1) + '%' : '—'}</td>
                                         </tr>
@@ -196,8 +196,8 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                         const overallMargin = totalRevenue ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0;
                                         return (
                                             <div>
-                                                <div><strong>Tổng doanh thu:</strong> {format(totalRevenue)}</div>
-                                                <div><strong>Tổng vốn:</strong> {format(totalCost)}</div>
+                                                <div><strong>Tổng doanh thu:</strong> {formatPrice(totalRevenue)}</div>
+                                                <div><strong>Tổng vốn:</strong> {formatPrice(totalCost)}</div>
                                                 <div><strong>Tỉ suất lợi nhuận:</strong> {totalRevenue ? overallMargin.toFixed(1) + '%' : '\u2014'}</div>
                                             </div>
                                         );

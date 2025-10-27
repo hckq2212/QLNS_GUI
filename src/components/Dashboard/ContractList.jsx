@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import contractAPI from '../../api/contract.js';
 import customerAPI from '../../api/customer.js';
+import formatPrice from '../../utils/FormatPrice.js';
 
 export default function ContractList() {
     const [contracts, setContracts] = useState([]);
@@ -121,7 +122,7 @@ export default function ContractList() {
                                     <tr key={c.id} className="border-t">
                                         <td className="px-4 py-3 align-top font-semibold">{c.code || '-'}</td>
                                         <td className="px-4 py-3 align-top">{c.customer?.name || c.customer_name || '-'}</td>
-                                        <td className="px-4 py-3 align-top">{c.total_amount != null ? c.total_amount : '-'}</td>
+                                        <td className="px-4 py-3 align-top">{formatPrice((c.total_revenue)) || '-'} đ</td>
                                         <td className="px-4 py-3 align-top">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
                                         <td className="px-4 py-3 align-top">
                                             <a

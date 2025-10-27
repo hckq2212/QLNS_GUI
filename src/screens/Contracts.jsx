@@ -16,13 +16,13 @@ export default function ContractsPending() {
     <div>
       <Header />
       <SideMenu />
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="flex gap-3 mb-4 mt-[80px]">
-          <button onClick={() => setView('withoutDebt')} className={`px-3 py-2 rounded ${view === 'withoutDebt' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Without Debt</button>
-          <button onClick={() => setView('hrConfirm')} className={`px-3 py-2 rounded ${view === 'hrConfirm' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>HR Confirm</button>
-          <button onClick={() => setView('bodApproval')} className={`px-3 py-2 rounded ${view === 'bodApproval' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>BOD Approval</button>
-          <button onClick={() => setView('notAssigned')} className={`px-3 py-2 rounded ${view === 'notAssigned' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Not Assigned</button>
-          <button onClick={() => setView('assigned')} className={`px-3 py-2 rounded ${view === 'assigned' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Assigned</button>
+      <div className="p-6 ml-[20%]  w-[80%]">
+        <div className="flex gap-3 mb-4 mt-[80px] justify-between">
+          <button onClick={() => setView('withoutDebt')} className={`px-3 py-2 rounded ${view === 'withoutDebt' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Hợp đồng chưa có công nợ</button>
+          <button onClick={() => setView('hrConfirm')} className={`px-3 py-2 rounded ${view === 'hrConfirm' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Hợp đồng đợi HR xác nhận</button>
+          <button onClick={() => setView('bodApproval')} className={`px-3 py-2 rounded ${view === 'bodApproval' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Hợp đồng đợi BOD duyệt</button>
+          <button onClick={() => setView('notAssigned')} className={`px-3 py-2 rounded ${view === 'notAssigned' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Hợp đồng chưa phân công</button>
+          <button onClick={() => setView('assigned')} className={`px-3 py-2 rounded ${view === 'assigned' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>Hợp đồng đã phân công</button>
         </div>
 
         {view === 'withoutDebt' && <ContractWithoutDebt />}
