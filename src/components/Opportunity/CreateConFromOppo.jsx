@@ -1,8 +1,8 @@
 // ...existing code...
 import { useState, useEffect } from 'react';
-import opportunityAPI from '../api/opportunity';
-import customerAPI from '../api/customer';
-import contractAPI from '../api/contract';
+import opportunityAPI from '../../api/opportunity';
+import customerAPI from '../../api/customer';
+import contractAPI from '../../api/contract';
 
 export default function CreateConFromOppo() {
     const [opportunities, setOpportunities] = useState([]);
@@ -67,28 +67,46 @@ export default function CreateConFromOppo() {
 
     return (
         <div>
-            <h2 className='text-2xl font-bold mb-12 mt-12 '>Tạo hợp đồng từ các cơ hội đã báo giá</h2>
 
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
             {!loading && opportunities.length === 0 && <p>Không có cơ hội đã báo giá.</p>}
 
-            <ul className='flex items-center flex-col'>
-                {opportunities.map(op => (
-                    <li key={op.id} className="mb-12 border-black-500 border w-[40%] flex justify-between p-6">
-                        <div className='flex flex-col items-start gap-2'>
-                            <strong>{op.name || op.title || `Cơ hội ${op.id}`}</strong>
-                            <small>Khách hàng: {op.customerName || '—'}</small>
-                        </div>
-                        <div>
-                            <small>Mô tả: {op.description || '—'}</small>
-                        </div>
-                        <button onClick={() => openModal(op)} style={{ marginTop: 6 }}>
-                            Tạo hợp đồng
-                        </button>
-                    </li>
-                ))}
-            </ul>
+            <div className=" bg-white rounded border">
+                <table className="min-w-full text-left">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-2">ID</th>
+                            <th className="px-4 py-2">Cơ hội</th>
+                            <th className="px-4 py-2">Khách hàng</th>
+                            <th className="px-4 py-2">Giá dự kiến</th>
+                            <th className="px-4 py-2">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {opportunities.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">Không có cơ hội đã báo giá.</td>
+                            </tr>
+                        ) : (
+                            opportunities.map((op) => (
+                                <tr key={op.id} className="border-t">
+                                    <td className="px-4 py-3 align-top">{op.id}</td>
+                                    <td className="px-4 py-3 align-top w-[45%]">
+                                        <div className="font-semibold">{op.name || op.title || `Cơ hội ${op.id}`}</div>
+                                        <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{op.description ? String(op.description) : ''}</div>
+                                    </td>
+                                    <td className="px-4 py-3 align-top">{op.customerName || '—'}</td>
+                                    <td className="px-4 py-3 align-top">{op.expected_price ? Number(op.expected_price).toLocaleString() : '-'}</td>
+                                    <td className="px-4 py-3 align-top">
+                                        <button onClick={() => openModal(op)} className="px-3 py-1 bg-blue-600 text-white rounded">Tạo hợp đồng</button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
             {/* Modal-less simple create flow: confirmation prompt and API call */}
             {selectedOpportunity && (

@@ -31,7 +31,7 @@ const contractAPI = {
     return res.data;
   },
   async approve(id, payload = {}, config = {}) {
-    const res = await api.patch(`${BASE}/${id}/approve`, payload, config);
+    const res = await api.post(`${BASE}/${id}/approve`, payload, config);
     return res.data;
   },
   async sign(id, payload = {}, config = {}) {

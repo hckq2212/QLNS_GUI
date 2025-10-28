@@ -23,7 +23,7 @@ export default function PriceQuote() {
                         // Otherwise fall back to any provided customerName / customer_temp.name.
                         const withCustomerName = await Promise.all(approved.map(async (o) => {
                             // helper to pull name from various shapes
-                            const pickName = (obj) => obj && (obj.name || obj.fullName || obj.full_name || null);
+                            const pickName = (obj) => obj && (obj.name || null);
 
                             if (o.customer_id) {
                                 try {
@@ -71,20 +71,39 @@ export default function PriceQuote() {
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
             {!loading && opportunities.length === 0 && <p>Không có cơ hội đã được duyệt.</p>}
 
-            <ul className='flex items-center flex-col'>
-                {opportunities.map(op => (
-                    <li key={op.id} className="mb-12 border-black-500 border w-[40%] flex justify-between p-6">
-                        <div className='flex flex-col items-start gap-2'>
-                            <strong>{op.name || op.title || `Cơ hội ${op.id}`}</strong>
-                            <small>Khách hàng: {op.customerName || '—'}</small>
-                        </div>
-
-                        <button onClick={() => openModal(op)} style={{ marginTop: 6 }}>
-                            Làm báo giá
-                        </button>
-                    </li>
-                ))}
-            </ul>
+            <div className="overflow-x-auto bg-white rounded border">
+                <table className="min-w-full text-left">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-2">ID</th>
+                            <th className="px-4 py-2">Cơ hội</th>
+                            <th className="px-4 py-2">Khách hàng</th>
+                            <th className="px-4 py-2">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {opportunities.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">Không có cơ hội đã được duyệt.</td>
+                            </tr>
+                        ) : (
+                            opportunities.map((op) => (
+                                <tr key={op.id} className="border-t">
+                                    <td className="px-4 py-3 align-top">{op.id}</td>
+                                    <td className="px-4 py-3 align-top w-[45%]">
+                                        <div className="font-semibold">{op.name || op.title || `Cơ hội ${op.id}`}</div>
+                                        {op.description ? <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{String(op.description)}</div> : null}
+                                    </td>
+                                    <td className="px-4 py-3 align-top">{op.customerName || '—'}</td>
+                                    <td className="px-4 py-3 align-top">
+                                        <button onClick={() => openModal(op)} className="px-3 py-1 bg-blue-600 text-white rounded">Làm báo giá</button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
             <PriceQuoteModal
                 isOpen={isModalOpen}

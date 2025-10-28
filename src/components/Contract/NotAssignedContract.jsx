@@ -118,7 +118,7 @@ export default function NotAssignedContract() {
                             throw new Error('Không xác định được dự án liên quan tới hợp đồng');
                           }
                         }
-                        const projectId = project?.id || project?.projectId || project?._id;
+                        const projectId = project?.id ;
                         if (!projectId) throw new Error('Không tìm thấy projectId');
                         await projectAPI.assignTeam(projectId, teamId);
                         // remove assigned contract from list (optimistic)

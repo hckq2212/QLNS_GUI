@@ -5,6 +5,7 @@ import PendingOpportunities from '../components/Opportunity/PendingOpportunities
 import Header from '../components/ui/Header.jsx'
 import SideMenu from '../components/ui/SideMenu.jsx';
 import PriceQuote from '../components/Opportunity/PriceQuote.jsx'
+import CreateConFromOppo from '../components/Opportunity/CreateConFromOppo.jsx';
 
 
 export default function Opportunity() {
@@ -14,7 +15,7 @@ export default function Opportunity() {
         <div>
             <Header />
             <SideMenu />
-            <div className='mt-[80px]'>
+            <div className='mt-[80px] ml-[15%] p-6'>
                 <div className="max-w-4xl mx-auto px-4 py-3 flex gap-3">
                     <button
                         type="button"
@@ -37,12 +38,20 @@ export default function Opportunity() {
                     >
                         Cơ hội chờ báo giá
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setView('createContract')}
+                        className={`px-4 py-2 rounded ${view === 'createContract' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
+                    >
+                        Tạo hợp đồng cho cơ hội
+                    </button>
                 </div>
 
                 <div className='overflow-hidden'>
                     {view === 'create' && <CreateOpportunity />}
                     {view === 'pending' && <PendingOpportunities />}
                     {view === 'quote' && <PriceQuote />}
+                    {view === 'createContract' && <CreateConFromOppo />}
                 </div>
             </div>
         </div>

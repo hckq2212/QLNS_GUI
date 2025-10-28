@@ -6,7 +6,7 @@ import Login from './screens/Login'
 import Opportunity from "./screens/Opportunity";
 import Contracts from "./screens/Contracts";
 import ContractsHR from "./screens/ContractsHR";
-import CreateConFromOppo from "./screens/createConFromOppo";
+import CreateConFromOppo from "./components/Opportunity/CreateConFromOppo";
 import Project from "./screens/Project";
 
 function App() {
