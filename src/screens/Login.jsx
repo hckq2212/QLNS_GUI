@@ -62,7 +62,7 @@ export default function Login() {
 
   return(
     <form action="" onSubmit={handleSubmit}>
-      <div className='w-screen h-screen flex items-center justify-center border bg-[#fffcf2]'>
+      <div className='p-10 flex items-center justify-center border '>
         <div className="border w-[40rem] absolute top-20 flex flex-col bg-gray-50 border-stone-500 rounded-lg h-fit pb-10 ">
           {message && <div className="p-2 text-green-700">{message}</div>}
           {errorMsg && <div className="p-2 text-red-700">{errorMsg}</div>}

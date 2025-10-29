@@ -34,7 +34,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
                 // enrich entries with service base_cost
                 const enriched = await Promise.all(entries.map(async (e, idx) => {
-                    const svcId = e.service_id || e.serviceId || e.service || null;
+                    const svcId = e.service_id  || null;
                     let svc = null;
                     try { if (svcId) svc = await serviceAPI.getById(svcId, requestConfig); } catch (err) { svc = null; }
                     const base = svc?.base_cost ?? svc?.baseCost ?? svc?.price ?? svc?.cost ?? e.base_cost ?? 0;
@@ -44,7 +44,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     return {
                         id: e.id ?? idx,
                         serviceId: svcId,
-                        name: svc?.name || e.service_name || e.name || `Service ${svcId || idx+1}`,
+                        name: svc?.name ||  `Service ${svcId || idx+1}`,
                         quantity: Number(e.quantity || e.qty || 1),
                         baseCost: baseNum,
                         minPrice,
@@ -68,11 +68,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         return () => { mounted = false; };
     }, [isOpen, opportunity, reloadCounter]);
 
-    // function computeDefaultChosen(rowsArr) {
-    //     const d = {};
-    //     (rowsArr || rows).forEach((r, i) => d[i] = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice));
-    //     return d;
-    // }
+
 
     // When globalMode changes, apply the chosen mode to all rows
     useEffect(() => {
@@ -103,7 +99,15 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         setSubmitting(true);
         setSubmitError(null);
         try {
-            await opportunityAPI.update(opportunity.id, payload, { timeout: 30000 });
+            // build per-service proposed prices payload
+            const servicesPayload = rows.map((r, idx) => ({
+                opportunityService_id: r.id,
+                proposed_price: Number(chosen[idx]) || 0,
+            }));
+
+            const body = { ...payload, services: servicesPayload };
+
+            await opportunityAPI.quote(opportunity.id, body, { timeout: 30000 });
             setSubmitSuccess(true);
             // close after short delay
             setTimeout(() => { setSubmitting(false); onClose(); }, 700);

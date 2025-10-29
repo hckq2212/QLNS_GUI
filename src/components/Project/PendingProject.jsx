@@ -16,7 +16,7 @@ export default function PendingProject() {
             setLoading(true);
             setError(null);
             try {
-                const res = await projectAPI.getByStatus('pending');
+                const res = await projectAPI.getByStatus('not_assigned');
                 const arr = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
                 if (mounted) setProjects(arr);
                 // For each project, if it has a contract id, fetch contract services
@@ -37,13 +37,7 @@ export default function PendingProject() {
                                     if (res.status === 'fulfilled' && res.value) svcMap[id] = res.value;
                                 });
                             }
-                            // attach service details to each contract_service row
-                            const enriched = svcRows.map(r => {
-                                const sid = r.service_id || r.serviceId || (r.service && (r.service.id || r.service._id));
-                                const svc = sid ? svcMap[sid] : (r.service || null);
-                                return { ...r, service: svc, service_name: svc?.name || svc?.title || r.service_name || r.name, quantity:  r.qty || 0 };
-                            });
-                            return { projectId: p.id || p._id, services: enriched };
+                            return { projectId: p.id };
                         } catch (e) {
                             console.warn('Failed to fetch services for contract', contractId, e?.message || e);
                             return { projectId: p.id || p._id, services: [] };
@@ -70,53 +64,52 @@ export default function PendingProject() {
         <div className="p-4">
             <h3 className="font-semibold mb-3">Dự án chuẩn bị khởi công</h3>
             {loading ? <div className="text-sm text-gray-500">Đang tải...</div> : error ? <div className="text-sm text-red-600">{error}</div> : (
-                <div className="space-y-2">
+                <div>
                     {projects.length === 0 ? (
                         <div className="text-sm text-gray-600">Không có dự án pending</div>
                     ) : (
-                        projects.map(p => {
-                            const projKey = p.id || p._id;
-                            return (
-                                <div key={projKey} className="p-3 border rounded">
-                                    <div className="font-medium">{p.name || p.title || p.code || `#${projKey}`}</div>
-                                    <div className="text-sm text-gray-600">Trạng thái: {p.status || p.state || '—'}</div>
-                                    <div className="text-sm text-gray-700">Mô tả: {p.description || p.desc || '—'}</div>
-                                    <div className="mt-2 flex gap-2">
-                                        <button
-                                            className="px-2 py-1 bg-indigo-600 text-white rounded"
-                                            disabled={ackLoading[projKey]}
-                                            onClick={async () => {
-                                                const pid = projKey;
-                                                try {
-                                                    setAckLoading(s => ({ ...s, [pid]: true }));
-                                                    const res = await projectAPI.ack(pid);
-                                                    // update project entry with returned result when possible
-                                                    setProjects(prev => prev.map(pr => (pr.id === pid || pr._id === pid) ? ({ ...pr, ...res }) : pr));
-                                                } catch (e) {
-                                                    console.error('Failed to ack project', e);
-                                                    try { alert('Không thể khởi công dự án'); } catch(_) {}
-                                                } finally {
-                                                    setAckLoading(s => ({ ...s, [pid]: false }));
-                                                }
-                                            }}
-                                        >{ackLoading[projKey] ? 'Đang...' : 'Khởi công'}</button>
-                                    </div>
-                                    {Array.isArray(p.services) && p.services.length > 0 && (
-                                        <div className="mt-2">
-                                            <div className="text-sm font-medium">Công việc:</div>
-                                            <ul className="mt-1 text-sm list-disc list-inside space-y-1">
-                                                {p.services.map(s => (
-                                                    <li key={s.id || s._id || s.service_id}>
-                                                        {(s.service && (s.service.name || s.service.title)) || s.service_name || s.name || s.title || `#${s.service_id || s.id || s._id}`}
-                                                        {` — Số lượng: ${s.qty ?? s.quantity ?? 0}`}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })
+                        <div className="overflow-x-auto bg-white rounded border">
+                            <table className="min-w-full text-left">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2">ID</th>
+                                        <th className="px-4 py-2">Dự án</th>
+                                        <th className="px-4 py-2">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {projects.map((p) => {
+                                        const projKey = p.id || p._id;
+                                        return (
+                                            <tr key={projKey} className="border-t">
+                                                <td className="px-4 py-3 align-top">{projKey}</td>
+                                                <td className="px-4 py-3 align-top font-medium">{p.name}</td>
+                                                <td className="px-4 py-3 align-top">
+                                                    <button
+                                                        className="px-2 py-1 bg-indigo-600 text-white rounded"
+                                                        disabled={ackLoading[projKey]}
+                                                        onClick={async () => {
+                                                            const pid = projKey;
+                                                            try {
+                                                                setAckLoading(s => ({ ...s, [pid]: true }));
+                                                                const res = await projectAPI.ack(pid);
+                                                                // update project entry with returned result when possible
+                                                                setProjects(prev => prev.map(pr => (pr.id === pid ) ? ({ ...pr, ...res }) : pr));
+                                                            } catch (e) {
+                                                                console.error('Failed to ack project', e);
+                                                                try { alert('Không thể khởi công dự án'); } catch(_) {}
+                                                            } finally {
+                                                                setAckLoading(s => ({ ...s, [pid]: false }));
+                                                            }
+                                                        }}
+                                                    >{ackLoading[projKey] ? 'Đang...' : 'Khởi công'}</button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
             )}

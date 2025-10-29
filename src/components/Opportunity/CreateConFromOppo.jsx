@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import opportunityAPI from '../../api/opportunity';
 import customerAPI from '../../api/customer';
 import contractAPI from '../../api/contract';
+import formatPrice from '../../utils/FormatPrice';
 
 export default function CreateConFromOppo() {
     const [opportunities, setOpportunities] = useState([]);
@@ -23,7 +24,7 @@ export default function CreateConFromOppo() {
                         // Otherwise fall back to any provided customerName / customer_temp.name.
                         const withCustomerName = await Promise.all(approved.map(async (o) => {
                             // helper to pull name from various shapes
-                            const pickName = (obj) => obj && (obj.name || obj.fullName || obj.full_name || null);
+                            const pickName = (obj) => obj && (obj.name  || obj.full_name || null);
 
                             if (o.customer_id) {
                                 try {
@@ -32,7 +33,7 @@ export default function CreateConFromOppo() {
                                     return { ...o, customerName: custName };
                                 } catch (e) {
                                     // If customer fetch fails, fall back to temp/name fields
-                                    const fallback = o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
+                                    const fallback = o.customerName  || pickName(o.customer_temp) || null;
                                     return { ...o, customerName: fallback };
                                 }
                             }
@@ -70,7 +71,6 @@ export default function CreateConFromOppo() {
 
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
-            {!loading && opportunities.length === 0 && <p>Không có cơ hội đã báo giá.</p>}
 
             <div className=" bg-white rounded border">
                 <table className="min-w-full text-left">
@@ -97,7 +97,7 @@ export default function CreateConFromOppo() {
                                         <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{op.description ? String(op.description) : ''}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">{op.customerName || '—'}</td>
-                                    <td className="px-4 py-3 align-top">{op.expected_price ? Number(op.expected_price).toLocaleString() : '-'}</td>
+                                    <td className="px-4 py-3 align-top">{formatPrice(op.expected_price) || '-'} đ</td>
                                     <td className="px-4 py-3 align-top">
                                         <button onClick={() => openModal(op)} className="px-3 py-1 bg-blue-600 text-white rounded">Tạo hợp đồng</button>
                                     </td>

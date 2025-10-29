@@ -119,7 +119,7 @@ export default function HRConfirmContract() {
                       <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
                           <button onClick={() => downloadContractDoc(c)} disabled={actionLoading[c.id]} className="px-2 py-1 bg-indigo-600 text-white rounded">
-                            {actionLoading[c.id] ? 'Đang...' : 'Tải Word'}
+                            Tải file Word
                           </button>
                           <label className="ml-1">
                             <input type="file" onChange={(e) => handleFileChange(c.id, e)} className="hidden" />

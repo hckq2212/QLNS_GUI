@@ -16,7 +16,7 @@ export default function Opportunity() {
             <Header />
             <SideMenu />
             <div className='mt-[80px] ml-[15%] p-6'>
-                <div className="max-w-4xl mx-auto px-4 py-3 flex gap-3">
+                <div className="max-w-4xl mx-auto px-4 py-3 flex gap-3 justify-between">
                     <button
                         type="button"
                         onClick={() => setView('create')}

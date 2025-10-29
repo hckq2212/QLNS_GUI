@@ -69,7 +69,6 @@ export default function PriceQuote() {
         <div className='mt-6'>
             {loading && <p>Đang tải...</p>}
             {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
-            {!loading && opportunities.length === 0 && <p>Không có cơ hội đã được duyệt.</p>}
 
             <div className="overflow-x-auto bg-white rounded border">
                 <table className="min-w-full text-left">

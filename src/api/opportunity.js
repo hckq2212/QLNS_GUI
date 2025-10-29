@@ -61,9 +61,18 @@ const opportunityAPI = {
     const res = await api.get(`${BASE}/creator/${userId}`, config);
     return res.data;
   },
-    async getService(opportunityId, config = {}) {
+  async getService(opportunityId, config = {}) {
     if (!opportunityId) throw new Error('opportunityId required');
     const res = await api.get(`${BASE}/${opportunityId}/services`, config);
+    return res.data;
+  }
+  ,
+  // Submit a quote for an opportunity
+  // payload can be { expected_price, status } and may include a `services` array
+  // where each item is { opportunityService_id, proposed_price } or similar shape.
+  async quote(opportunityId, payload = {}, config = {}) {
+    if (!opportunityId) throw new Error('opportunityId required');
+    const res = await api.patch(`${BASE}/${opportunityId}/quote`, payload, config);
     return res.data;
   }
 };
