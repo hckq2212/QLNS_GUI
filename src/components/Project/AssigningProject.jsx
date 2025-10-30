@@ -73,7 +73,6 @@ export default function AssigningProject() {
                             <table className="min-w-full text-left">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2">ID</th>
                                         <th className="px-4 py-2">Dự án</th>
                                         <th className="px-4 py-2">Hợp đồng</th>
                                         <th className="px-4 py-2">Hành động</th>
@@ -86,7 +85,6 @@ export default function AssigningProject() {
 
                                         return (
                                             <tr key={projKey} className="border-t">
-                                                <td className="px-4 py-3 align-top">{projKey}</td>
                                                 <td className="px-4 py-3 align-top font-medium">{p.name || `#${projKey}`}</td>
                                                 <td className="px-4 py-3 align-top">{contractId}</td>
                                                 <td className="px-4 py-3 align-top">

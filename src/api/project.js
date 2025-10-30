@@ -37,11 +37,6 @@ const projectAPI = {
     const res = await api.post(`${BASE}/${id}/ack`, {}, config);
     return res.data;
   },
-  async assignJob(projectId, payload = {}, config = {}) {
-    if (!projectId) throw new Error('projectId required');
-    const res = await api.post(`${BASE}/${projectId}/jobs/assign`, payload, config);
-    return res.data;
-  },
 };
 
 export default projectAPI;

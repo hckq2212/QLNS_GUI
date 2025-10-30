@@ -4,6 +4,7 @@ import opportunityAPI from '../../api/opportunity';
 import customerAPI from '../../api/customer';
 import contractAPI from '../../api/contract';
 import formatPrice from '../../utils/FormatPrice';
+import CreateConFromOppoModal from '../ui/CreateConFromOppoModal';
 
 export default function CreateConFromOppo() {
     const [opportunities, setOpportunities] = useState([]);
@@ -29,7 +30,7 @@ export default function CreateConFromOppo() {
                             if (o.customer_id) {
                                 try {
                                     const cust = await customerAPI.getById(o.customer_id);
-                                    const custName = pickName(cust) || o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
+                                    const custName = pickName(cust) || pickName(o.customer) || pickName(o.customer_temp) || null;
                                     return { ...o, customerName: custName };
                                 } catch (e) {
                                     // If customer fetch fails, fall back to temp/name fields
@@ -93,7 +94,7 @@ export default function CreateConFromOppo() {
                                 <tr key={op.id} className="border-t">
                                     <td className="px-4 py-3 align-top">{op.id}</td>
                                     <td className="px-4 py-3 align-top w-[45%]">
-                                        <div className="font-semibold">{op.name || op.title || `Cơ hội ${op.id}`}</div>
+                                        <div className="font-semibold">{op.name || `Cơ hội ${op.id}`}</div>
                                         <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{op.description ? String(op.description) : ''}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">{op.customerName || '—'}</td>
@@ -108,31 +109,14 @@ export default function CreateConFromOppo() {
                 </table>
             </div>
 
-            {/* Modal-less simple create flow: confirmation prompt and API call */}
-            {selectedOpportunity && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded shadow-lg w-96">
-                        <h3 className="font-semibold mb-2">Tạo hợp đồng từ cơ hội {selectedOpportunity.id}</h3>
-                        <p className="text-sm mb-4">Khách hàng: {selectedOpportunity.customerName || '—'}</p>
-                        <div className="flex justify-end gap-2">
-                            <button className="px-3 py-1 rounded bg-blue-600 text-white" onClick={async () => {
-                                try {
-                                    // Prepare payload
-                                    const payload = {
-                                        customerId: selectedOpportunity.customer_id || null,
-                                        totalCost: 0,
-                                        totalRevenue: selectedOpportunity.expected_price ? Number(selectedOpportunity.expected_price) : 0,
-                                        customer_temp: selectedOpportunity.customer_temp || null,
-                                    };
-                                    const res = await contractAPI.createFromOpportunity(selectedOpportunity.id, payload, { timeout: 30000 });
-                                } catch (err) {
-                                    console.error('create contract failed', err);
-                                    alert('Tạo hợp đồng thất bại: ' + (err?.message || String(err)));
-                                }
-                            }}>Tạo</button>
-                        </div>
-                    </div>
-                </div>
+            {isModalOpen && selectedOpportunity && (
+                <CreateConFromOppoModal
+                    selectedOpportunity={selectedOpportunity}
+                    onClose={closeModal}
+                    onCreated={(res) => {
+                        closeModal();
+                    }}
+                />
             )}
         </div>
     );

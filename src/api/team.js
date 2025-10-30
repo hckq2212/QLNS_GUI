@@ -12,6 +12,11 @@ const teamAPI = {
     const res = await api.get(`${BASE}/${id}`, config);
     return res.data;
   },
+  async getMembers(id, config = {}) {
+    if (!id) throw new Error('id required');
+    const res = await api.get(`${BASE}/${id}/member`, config);
+    return res.data;
+  },
 };
 
 export default teamAPI;
