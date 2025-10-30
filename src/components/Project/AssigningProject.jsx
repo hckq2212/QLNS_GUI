@@ -80,7 +80,7 @@ export default function AssigningProject() {
                                 </thead>
                                 <tbody>
                                     {projects.map((p) => {
-                                        const projKey = p.id || p._id;
+                                        const projKey = p.id ;
                                         const contractId = p.contract_id || '-';
 
                                         return (

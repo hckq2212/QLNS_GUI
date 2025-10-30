@@ -35,7 +35,14 @@ export default function AssigningJobForProject({ projectId }) {
         try {
           const jobsRes = await jobAPI.getByProject(effectiveProjectId);
           const jobsArr = Array.isArray(jobsRes) ? jobsRes : (jobsRes && Array.isArray(jobsRes.items) ? jobsRes.items : (jobsRes.jobs || jobsRes.data || []));
-          if (mounted) setProject(prev => prev ? ({ ...prev, jobs: jobsArr }) : ({ id: effectiveProjectId, jobs: jobsArr }));
+          // normalize assigned fields to be tolerant to different server shapes / typos
+          const normalizedJobs = (jobsArr || []).map(j => ({
+            ...j,
+            assigned_id: j.assigned_id  ?? null,
+            assigned_type: j.assigned_type  ?? null,
+            status: j.status  ?? (j.assigned_id ? 'assigned' : j.status) ?? null,
+          }));
+          if (mounted) setProject(prev => prev ? ({ ...prev, jobs: normalizedJobs }) : ({ id: effectiveProjectId, jobs: normalizedJobs }));
         } catch (je) {
           // ignore — fallback will use project.jobs
           console.debug('jobAPI.getByProject failed, falling back to project.jobs', je?.message || je);
