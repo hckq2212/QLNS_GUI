@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import contractAPI from '../../api/contract';
 
 export default function CreateConFromOppoModal({ selectedOpportunity = null, onClose = () => {}, onCreated = () => {} }) {
@@ -14,9 +15,9 @@ export default function CreateConFromOppoModal({ selectedOpportunity = null, onC
             const res = await contractAPI.createFromOpportunity(selectedOpportunity.id, payload, { timeout: 30000 });
             try { onCreated(res); } catch (e) {}
             try { onClose(); } catch (e) {}
+            toast.success('Tạo hợp đồng thành công')
         } catch (err) {
-            console.error('create contract failed', err);
-            try { alert('Tạo hợp đồng thất bại: ' + (err?.message || String(err))); } catch(_) {}
+            toast.error('Tạo hợp đồng thất bại')
         }
     };
 

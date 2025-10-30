@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import debtAPI from '../../api/debt.js';
 import formatPrice from '../../utils/FormatPrice.js';
+import { toast } from 'react-toastify';
 
 export default function DebtCreateModal({ activeContract, onClose, onSuccess }) {
   const [installments, setInstallments] = useState([{ amount: Math.round(Number(activeContract?.total_revenue || 0)), due_date: '', percent: '' }]);
@@ -138,10 +139,9 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
                 const results = await Promise.allSettled(ops);
                 const rejected = results.filter(r => r.status === 'rejected');
                 if (rejected.length > 0) {
-                  console.error('Some create debt requests failed', rejected);
-                  setDebtError(rejected[0].reason?.message || 'Một số yêu cầu tạo công nợ thất bại');
+                  toast.error('Tạo công nợ thất bại')
                 } else {
-                  alert('Tạo công nợ thành công');
+                  toast.success('Tạo công nợ thành công');
                   onClose();
                   if (onSuccess) onSuccess();
                 }

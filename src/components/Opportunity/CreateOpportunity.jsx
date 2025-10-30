@@ -3,6 +3,7 @@ import opportunityAPI from '../../api/opportunity.js';
 import serviceAPI from '../../api/service.js';
 import serviceJob from '../../api/serviceJob.js';
 import customerAPI from '../../api/customer.js';
+import { toast } from 'react-toastify';
 
 export default function CreateOpportunity () {
     const [customerId, setCustomerId] = useState('');
@@ -69,7 +70,6 @@ export default function CreateOpportunity () {
 
             const created = await opportunityAPI.create(payload);
 
-            setMessage('Tạo cơ hội thành công. Vui lòng đợi BOD duyệt');
             // clear form
             setCustomerId('');
             setTempName('');
@@ -80,19 +80,12 @@ export default function CreateOpportunity () {
             setServices([{ service_id: '', service_job_id: '', quantity: 1, proposed_price: '' }]);
             console.log('created', created);
         } catch (err) {
-            console.error('create opportunity failed', err?.response || err.message || err);
-            setError(err?.response?.data?.error || err.message || 'Failed to create opportunity');
+            toast.error('Tạo cơ hội thất bại')
         } finally {
             setLoading(false);
+            toast.success('Tạo cơ hội thành công')
         }
     }
-
-        // Print a summary of the current opportunity form (for sales to hand to customer)
-        function formatCurrency(n) {
-                if (n == null || n === '') return '';
-                return new Intl.NumberFormat('vi-VN').format(Number(n));
-        }
-
 
     // fetch available services for select
     useEffect(() => {

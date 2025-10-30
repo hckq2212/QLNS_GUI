@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import serviceAPI from '../../api/service';
 import opportunityAPI from '../../api/opportunity';
 import formatPrice from '../../utils/FormatPrice';
+import { toast } from 'react-toastify';
 
 export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, opportunity = null }) {
     const [rows, setRows] = useState([]);
@@ -109,11 +110,10 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
             await opportunityAPI.quote(opportunity.id, body, { timeout: 30000 });
             setSubmitSuccess(true);
-            // close after short delay
+            toast.success('Báo giá thành công')
             setTimeout(() => { setSubmitting(false); onClose(); }, 700);
         } catch (err) {
-            setSubmitError(err?.message || String(err));
-            setSubmitting(false);
+            toast.error('Báo giá thất bại')
         }
     }
 
