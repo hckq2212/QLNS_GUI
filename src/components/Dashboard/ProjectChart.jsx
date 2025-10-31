@@ -127,7 +127,7 @@ export default function ProjectChart() {
             setLoading(true);
             setError(null);
             try {
-                const status = 'completed'
+                const status = 'done'
                 const data = await projectAPI.getByStatus(status);
                 const projects = Array.isArray(data) ? data : [];
                 if (mounted) setCountComplete(projects.length);

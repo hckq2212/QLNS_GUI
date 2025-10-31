@@ -100,7 +100,7 @@ export default function ProjectChart() {
                     <option value="all">Tất cả trạng thái</option>
                     <option value="planned">Planned</option>
                     <option value="in_progress">In progress</option>
-                    <option value="completed">Completed</option>
+                    <option value="done">done</option>
                     <option value="team_acknowledged">Team acknowledged</option>
                 </select>
             </div>
