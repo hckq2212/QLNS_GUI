@@ -3,7 +3,7 @@ import contractAPI from '../../api/contract.js';
 import debtAPI from '../../api/debt.js';
 import customerAPI from '../../api/customer.js';
 import DebtCreateModal from '../ui/DebtCreateModal.jsx';
-import formatPrice from '../../utils/FormatPrice.js';
+import { formatPrice } from '../../utils/FormatValue.js';
 
 export default function ContractWithoutDebt() {
   const [list, setList] = useState([]);

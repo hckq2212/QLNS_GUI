@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import serviceAPI from '../../api/service';
 import opportunityAPI from '../../api/opportunity';
-import formatPrice from '../../utils/FormatPrice';
+import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 
 export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, opportunity = null }) {

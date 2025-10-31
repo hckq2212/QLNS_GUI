@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import debtAPI from '../../api/debt.js';
-import formatPrice from '../../utils/FormatPrice.js';
+import { formatPrice } from '../../utils/FormatValue.js';
 import { toast } from 'react-toastify';
 
 export default function DebtCreateModal({ activeContract, onClose, onSuccess }) {

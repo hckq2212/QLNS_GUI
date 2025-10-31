@@ -1,5 +1,5 @@
 import React from 'react';  
-import projectAPI from '../../api/project';
+import { formatDate } from '../../utils/FormatValue';
 import jobAPI from '../../api/job';
 import { toast } from 'react-toastify';
 
@@ -15,14 +15,7 @@ export default function AssignJob({
 }) {
   const [editing, setEditing] = React.useState({});
 
-  // helper to normalize/format date-like values for <input type="date">
-  const formatDate = (v) => {
-    if (!v && v !== 0) return '';
-    const s = String(v);
-    // handle ISO datetimes and space-separated datetimes
-    if (s.includes('T') || s.includes(' ')) return s.split(/[T ]/)[0];
-    return s;
-  };
+
   return (
     <div className="p-4">
       <h4 className="font-semibold mb-2">Phân công cho {project?.name ||  `#${project?.id}`}</h4>
@@ -48,13 +41,13 @@ export default function AssignJob({
                 const serviceName = group.label;
                 const jobIdsTooltip = group.items.map(it => it.id).join(', ');
                 // derive assigned id/type from existing assignees state or from job data returned by server
-                const assignedItem = group.items.find(it => ((it.assigned_id ?? it.assignedId ?? it.assignee_id) != null) || (it.assigned_type || it.asssigned_type || it.assignedType));
-                const inferredAssignedId = a.id ?? (assignedItem && (assignedItem.assigned_id ?? assignedItem.assignedId ?? assignedItem.assignee_id));
-                const inferredAssignedType = a.type ?? (assignedItem && (assignedItem.assigned_type ?? assignedItem.asssigned_type ?? assignedItem.assignedType));
+                const assignedItem = group.items.find(it => ((it.assigned_id) != null) || (it.assigned_type));
+                const inferredAssignedId = a.id ?? (assignedItem && (assignedItem.assigned_id ));
+                const inferredAssignedType = a.type ?? (assignedItem && (assignedItem.assigned_type ));
                 // infer persisted start/deadline from server-side fields (use only start_date and deadline)
                 const inferredStartDate = a.startDate ?? (assignedItem && formatDate(assignedItem.start_date));
                 const inferredDeadline = a.deadline ?? (assignedItem && formatDate(assignedItem.deadline));
-                const groupAssigned = group.items.every(it => (it.status === 'assigned') || ((it.assigned_id ?? it.assignedId ?? it.assignee_id) != null));
+                const groupAssigned = group.items.every(it => (it.status === 'assigned') || ((it.assigned_id ) != null));
                 return (
                   <tr key={gid} className="border-t">
                     <td className="px-4 py-3 align-top font-medium" title={jobIdsTooltip}>{serviceName}</td>
@@ -92,14 +85,16 @@ export default function AssignJob({
                         const type = (localA.type === 'partner') ? 'partner' : (localA.type ?? inferredAssignedType) || 'user';
                         const idVal = localA.id ?? inferredAssignedId;
                         if (!idVal) return alert('Chọn assignee id');
+                        // If we're editing an already-assigned group, we'll call the generic update
+                        // endpoint for each job instead of the /:id/assign route.
+                        const isUpdateMode = groupAssigned && editing[gid];
                         try {
                           setAssignLoading(s => ({ ...s, [gid]: true }));
                           const tasks = group.items.map(async (item) => {
-                            // Build payload for job PATCH /:id/assign
-                            const payload = {
-                              // include both keys to tolerate server-side typo (asssigned_type) and correct one
-                              assigned_id: idVal,
-                            };
+                            // Build payload
+                            const payload = {};
+                            // ensure assigned_id is present when relevant
+                            if (idVal) payload.assigned_id = idVal;
                             if (localA.startDate) payload.start_date = localA.startDate;
                             if (localA.deadline) payload.deadline = localA.deadline;
                             if (localA.startDate && localA.deadline) {
@@ -109,18 +104,27 @@ export default function AssignJob({
                             }
                             if (localA.externalCost != null) payload.externalCost = localA.externalCost;
                             try {
-                              const result = await jobAPI.assign(item.id, payload);
-                              toast.success("Phân công thành công");
+                              let result;
+                              if (isUpdateMode) {
+                                // Update existing job
+                                result = await jobAPI.update(item.id, payload);
+                                toast.success("Cập nhật thành công");
+                              } else {
+                                // New assignment via assign route
+                                // include assigned_id to be explicit
+                                result = await jobAPI.assign(item.id, payload);
+                                toast.success("Phân công thành công");
+                              }
                               return result;
                             } catch (je) {
-                              toast.error("Phân công thất bại");
+                              toast.error(isUpdateMode ? "Cập nhật thất bại" : "Phân công thất bại");
                               throw je;
                             }
                           });
                           await Promise.all(tasks);
                         } catch (e) {
-                          console.error('Assign group failed', e);
-                          try { alert(e?.message || 'Phân công thất bại'); } catch(_) {}
+                          console.error('Assign/update group failed', e);
+                          try { alert(e?.message || (isUpdateMode ? 'Cập nhật thất bại' : 'Phân công thất bại')); } catch(_) {}
                         } finally {
                           setAssignLoading(s => ({ ...s, [gid]: false }));
                           // exit edit mode after attempting save

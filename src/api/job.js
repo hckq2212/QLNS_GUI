@@ -24,6 +24,10 @@ const jobAPI = {
     if (!id) throw new Error('id required');
     const res = await api.patch(`${BASE}/${id}/assign`, payload, config);
     return res.data;
+  },
+  async getMyJob(config={}) {
+    const res = await api.get(`${BASE}/me`, config);
+    return res.data;
   }
 };
 

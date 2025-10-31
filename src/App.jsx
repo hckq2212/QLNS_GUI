@@ -8,6 +8,8 @@ import Contracts from "./screens/Contracts";
 import ContractsHR from "./screens/ContractsHR";
 import CreateConFromOppo from "./components/Opportunity/CreateConFromOppo";
 import Project from "./screens/Project";
+import Jobs from "./screens/Jobs";
+
 
 function App() {
 
@@ -21,6 +23,7 @@ function App() {
         <Route path="/contracts/hr" element={<ContractsHR />} />
         <Route path="/opportunity/create-contract" element={<CreateConFromOppo />} />
         <Route path="/project" element={<Project />} />
+        <Route path="/job" element={<Jobs />} />
       </Routes>
     </BrowserRouter>
   );

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import opportunityAPI from '../../api/opportunity';
 import customerAPI from '../../api/customer';
 import contractAPI from '../../api/contract';
-import formatPrice from '../../utils/FormatPrice';
+import { formatPrice } from '../../utils/FormatValue';
 import CreateConFromOppoModal from '../ui/CreateConFromOppoModal';
 
 export default function CreateConFromOppo() {

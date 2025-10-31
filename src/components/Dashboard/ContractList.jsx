@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import contractAPI from '../../api/contract.js';
 import customerAPI from '../../api/customer.js';
-import formatPrice from '../../utils/FormatPrice.js';
+import { formatPrice } from '../../utils/FormatValue.js';
 
 export default function ContractList() {
     const [contracts, setContracts] = useState([]);
