@@ -1,114 +1,79 @@
-import { useState, useEffect } from 'react';
-import PriceQuoteModal from '../ui/PriceQuoteModal.jsx'
-import opportunityAPI from '../../api/opportunity.js';
-import customerAPI from '../../api/customer.js';
+import React, { useMemo, useState } from 'react';
+import PriceQuoteModal from '../ui/PriceQuoteModal.jsx';
+import { useGetAllOpportunityQuery } from '../../services/opportunity';
+import { useGetCustomerByIdQuery } from '../../services/customer';
+import { formatPrice } from '../../utils/FormatValue';
 
 export default function PriceQuote() {
-    const [opportunities, setOpportunities] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedOpportunity, setSelectedOpportunity] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOpportunity, setSelectedOpportunity] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        let mounted = true;
-        async function load() {
-            try {
-                setLoading(true);
-                const data = await opportunityAPI.getAll();
-                if (mounted) {
-                    const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-                    const approved = arr.filter(o => o && o.status === 'approved');
-                        // For opportunities that have a customer_id, fetch the customer and use its name.
-                        // Otherwise fall back to any provided customerName / customer_temp.name.
-                        const withCustomerName = await Promise.all(approved.map(async (o) => {
-                            // helper to pull name from various shapes
-                            const pickName = (obj) => obj && (obj.name || null);
+  const { data: oppData = [], isLoading, isError, error } = useGetAllOpportunityQuery();
 
-                            if (o.customer_id) {
-                                try {
-                                    const cust = await customerAPI.getById(o.customer_id);
-                                    const custName = pickName(cust) || o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
-                                    return { ...o, customerName: custName };
-                                } catch (e) {
-                                    // If customer fetch fails, fall back to temp/name fields
-                                    const fallback = o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
-                                    return { ...o, customerName: fallback };
-                                }
-                            }
+  const opportunities = useMemo(() => {
+    const arr = Array.isArray(oppData) ? oppData : (oppData && Array.isArray(oppData.items) ? oppData.items : []);
+    return arr.filter((o) => o && o.status === 'approved');
+  }, [oppData]);
 
-                            // no customer_id — use existing data
-                            const name = o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
-                            return { ...o, customerName: name };
-                        }));
+  function openModal(opportunity) {
+    setSelectedOpportunity(opportunity);
+    setIsModalOpen(true);
+  }
+  function closeModal() {
+    setIsModalOpen(false);
+    setSelectedOpportunity(null);
+  }
 
-                        setOpportunities(withCustomerName);
-                }
-            } catch (err) {
-                // opportunityAPI throws Error objects; normalize message
-                if (mounted) setError(err?.message || String(err));
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        }
-        load();
-        return () => { mounted = false; };
-    }, []);
+  return (
+    <div className="mt-6">
+      {isLoading && <p>Đang tải...</p>}
+      {isError && <p style={{ color: 'red' }}>Lỗi: {String(error)}</p>}
 
-    function openModal(opportunity) {
-        setSelectedOpportunity(opportunity);
-        setIsModalOpen(true);
-    }
+      <div className="overflow-x-auto bg-white rounded border">
+        <table className="min-w-full text-left">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2">Cơ hội</th>
+              <th className="px-4 py-2">Khách hàng</th>
+              <th className="px-4 py-2">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {opportunities.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-500">
+                  Không có cơ hội đã được duyệt.
+                </td>
+              </tr>
+            ) : (
+              opportunities.map((op) => <OpportunityRow key={op.id} op={op} onOpen={() => openModal(op)} />)
+            )}
+          </tbody>
+        </table>
+      </div>
 
-    function closeModal() {
-        setIsModalOpen(false);
-        setSelectedOpportunity(null);
-    }
+      <PriceQuoteModal isOpen={isModalOpen} onClose={closeModal} opportunity={selectedOpportunity} />
+    </div>
+  );
+}
 
-    return (
-        <div className='mt-6'>
-            {loading && <p>Đang tải...</p>}
-            {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
+function OpportunityRow({ op, onOpen }) {
+  const custId = op?.customer_id;
+  const { data: cust, isLoading: custLoading } = useGetCustomerByIdQuery(custId, { skip: !custId });
 
-            <div className="overflow-x-auto bg-white rounded border">
-                <table className="min-w-full text-left">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-4 py-2">ID</th>
-                            <th className="px-4 py-2">Cơ hội</th>
-                            <th className="px-4 py-2">Khách hàng</th>
-                            <th className="px-4 py-2">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {opportunities.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">Không có cơ hội đã được duyệt.</td>
-                            </tr>
-                        ) : (
-                            opportunities.map((op) => (
-                                <tr key={op.id} className="border-t">
-                                    <td className="px-4 py-3 align-top">{op.id}</td>
-                                    <td className="px-4 py-3 align-top w-[45%]">
-                                        <div className="font-semibold">{op.name || op.title || `Cơ hội ${op.id}`}</div>
-                                        {op.description ? <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{String(op.description)}</div> : null}
-                                    </td>
-                                    <td className="px-4 py-3 align-top">{op.customerName || '—'}</td>
-                                    <td className="px-4 py-3 align-top">
-                                        <button onClick={() => openModal(op)} className="px-3 py-1 bg-blue-600 text-white rounded">Làm báo giá</button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+  const pickName = (obj) => obj && (obj.name || obj.full_name || null);
+  const customerName = custId ? (custLoading ? 'Đang tải...' : pickName(cust) || op.customerName || '—') : (op.customerName || '—');
 
-            <PriceQuoteModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                opportunity={selectedOpportunity}
-            />
-        </div>
-    );
+  return (
+    <tr className="border-t">
+      <td className="px-4 py-3 align-top w-[45%]">
+        <div className="font-semibold">{op.name || op.title || `Cơ hội ${op.id}`}</div>
+        {op.description ? <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{String(op.description)}</div> : null}
+      </td>
+      <td className="px-4 py-3 align-top">{customerName}</td>
+      <td className="px-4 py-3 align-top">
+        <button onClick={onOpen} className="px-3 py-1 bg-blue-600 text-white rounded">Làm báo giá</button>
+      </td>
+    </tr>
+  );
 }

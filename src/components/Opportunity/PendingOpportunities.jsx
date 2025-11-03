@@ -3,6 +3,8 @@ import opportunityAPI from '../../api/opportunity.js';
 import customerAPI from '../../api/customer.js';
 import userAPI from '../../api/user.js';
 import serviceAPI from '../../api/service.js';
+import { useApproveMutation } from '../../services/opportunity.js';
+import { useSelector } from 'react-redux';
 
 export default function PendingOpportunities() {
   const [list, setList] = useState([]);
@@ -10,6 +12,8 @@ export default function PendingOpportunities() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
   const [expanded, setExpanded] = useState({});
+  const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
+  const token = useSelector((state) => state.auth.accessToken);
 
   useEffect(() => {
     (async () => {
@@ -130,7 +134,7 @@ export default function PendingOpportunities() {
     setActionLoading((p) => ({ ...p, [id]: true }));
     try {
       // Optionally, approver can include payment plan in body; we'll send empty body
-      await opportunityAPI.approve(id, {});
+      await approveOpportunity(id).unwrap();
       setList((l) => l.filter((x) => x.id !== id));
       alert('Đã duyệt');
     } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import debtAPI from '../../api/debt.js';
+import { useCreateDebtForContractMutation } from '../../services/debt.js';
 import { formatPrice } from '../../utils/FormatValue.js';
 import { toast } from 'react-toastify';
 
@@ -7,7 +7,7 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
   const [installments, setInstallments] = useState([{ amount: Math.round(Number(activeContract?.total_revenue || 0)), due_date: '', percent: '' }]);
   const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState(null);
-  // per-installment percent is stored on each installment as `percent` (string)
+  const [createDebtForContract, { isLoading: creatingDebt, error: createDebtError }] = useCreateDebtForContractMutation();
 
   const targetTotal = Math.round(Number(activeContract?.total_revenue || 0));
 
@@ -37,7 +37,6 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
   }
 
   function handlePercentChange(index, value) {
-    // allow empty or numeric between 0 and 100
     if (value === '') {
       setInstallments(prev => prev.map((it, i) => i === index ? { ...it, percent: '' } : it));
       return;
@@ -117,7 +116,6 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
           {!allPositive ? <div className="text-sm text-yellow-600">Mỗi đợt phải có số tiền lớn hơn 0</div> : null}
           {!allDatesInFuture ? <div className="text-sm text-yellow-600">Ngày đáo hạn phải lớn hơn hôm nay</div> : null}
         </div>
-        {/* per-installment percent inputs handled inline */}
 
         <div className="mt-4 flex justify-end gap-2">
           <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => onClose()}>Hủy</button>
@@ -130,16 +128,16 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
               if (!allHaveDates || !allPositive || !allDatesInFuture) { setDebtError('Vui lòng sửa các lỗi trước khi tạo'); return; }
               setDebtSubmitting(true); setDebtError(null);
               try {
-                // create each installment as a separate debt record as backend controller expects
-                const ops = installments.map(it => {
+                // create each installment as a separate debt record using RTK Query mutation
+                const ops = installments.map((it) => {
                   const amt = getRowAmount(it);
-                  const body = { contract_id: activeContract.id, amount: Number(amt) || 0, due_date: it.due_date || null };
-                  return debtAPI.create(body, { timeout: 30000 });
+                  const body = { amount: Number(amt) || 0, due_date: it.due_date || null };
+                  return createDebtForContract({ contractId: activeContract.id, body }).unwrap();
                 });
                 const results = await Promise.allSettled(ops);
-                const rejected = results.filter(r => r.status === 'rejected');
+                const rejected = results.filter((r) => r.status === 'rejected');
                 if (rejected.length > 0) {
-                  toast.error('Tạo công nợ thất bại')
+                  toast.error('Tạo công nợ thất bại');
                 } else {
                   toast.success('Tạo công nợ thành công');
                   onClose();
@@ -148,7 +146,9 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
               } catch (err) {
                 console.error('create debt failed', err);
                 setDebtError(err?.message || 'Tạo công nợ thất bại');
-              } finally { setDebtSubmitting(false); }
+              } finally {
+                setDebtSubmitting(false);
+              }
             }}
             disabled={!isValid}
           >

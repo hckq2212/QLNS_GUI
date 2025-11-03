@@ -37,7 +37,6 @@ export default function CreateOpportunity() {
     ? servicesData.items
     : [];
 
-  console.log('services from api:', availableServices);
 
   // LẤY CUSTOMER CŨ BẰNG API CŨ
   useEffect(() => {

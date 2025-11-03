@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import serviceAPI from '../../api/service';
-import opportunityAPI from '../../api/opportunity';
+import { useGetServicesQuery } from '../../services/service';
+import {
+    useGetOpportunityServicesQuery,
+    useQuoteOpportunityMutation,
+} from '../../services/opportunity';
 import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 
@@ -21,23 +24,34 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         return () => window.removeEventListener('keydown', onKey);
     }, [isOpen, onClose]);
 
+    // Use RTK Query to fetch opportunity services
+    const {
+        data: oppServicesData,
+        isLoading: queryLoading,
+        isError: queryError,
+        error: queryErrorObj,
+        refetch,
+    } = useGetOpportunityServicesQuery(opportunity?.id, { skip: !isOpen || !opportunity?.id });
+    const [quoteOpportunity, { isLoading: quoteLoading, error: quoteError }] = useQuoteOpportunityMutation();
+
+    // fetch cached services list via RTK Query and lookup by id instead of calling serviceAPI.getById
+    const { data: allServices } = useGetServicesQuery(undefined, { skip: !isOpen || !opportunity?.id });
+
     useEffect(() => {
         let mounted = true;
-        async function load() {
+        async function process() {
             if (!isOpen || !opportunity || !opportunity.id) return setRows([]);
             setLoading(true);
             setError(null);
             try {
-                // increase timeout for potentially slow endpoints (30s)
                 const requestConfig = { timeout: 30000 };
-                const data = await opportunityAPI.getService(opportunity.id, requestConfig);
+                const data = oppServicesData;
                 const entries = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
 
-                // enrich entries with service base_cost
                 const enriched = await Promise.all(entries.map(async (e, idx) => {
-                    const svcId = e.service_id  || null;
-                    let svc = null;
-                    try { if (svcId) svc = await serviceAPI.getById(svcId, requestConfig); } catch (err) { svc = null; }
+                    const svcId = e.service_id || null;
+                    // look up service from cached allServices (RTK Query) to avoid direct API helper calls
+                    const svc = svcId ? (allServices && Array.isArray(allServices) ? allServices.find(s => String(s.id) === String(svcId)) : null) : null;
                     const base = svc?.base_cost ?? svc?.baseCost ?? svc?.price ?? svc?.cost ?? e.base_cost ?? 0;
                     const baseNum = Number(base) || 0;
                     const minPrice = +(baseNum * 1.2);
@@ -45,7 +59,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                     return {
                         id: e.id ?? idx,
                         serviceId: svcId,
-                        name: svc?.name ||  `Service ${svcId || idx+1}`,
+                        name: svc?.name || `Service ${svcId || idx+1}`,
                         quantity: Number(e.quantity || e.qty || 1),
                         baseCost: baseNum,
                         minPrice,
@@ -65,9 +79,15 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                 setRows([]);
             } finally { if (mounted) setLoading(false); }
         }
-        load();
+        process();
         return () => { mounted = false; };
-    }, [isOpen, opportunity, reloadCounter]);
+    }, [isOpen, opportunity, oppServicesData, reloadCounter]);
+
+    // if user requested reload, ask RTK Query to refetch
+    useEffect(() => {
+        if (!isOpen || !opportunity || !opportunity.id) return;
+        if (reloadCounter > 0 && refetch) refetch();
+    }, [reloadCounter, isOpen, opportunity, refetch]);
 
 
 
@@ -108,12 +128,16 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
             const body = { ...payload, services: servicesPayload };
 
-            await opportunityAPI.quote(opportunity.id, body, { timeout: 30000 });
+            // use RTK Query mutation
+            await quoteOpportunity({ id: opportunity.id, body }).unwrap();
             setSubmitSuccess(true);
-            toast.success('Báo giá thành công')
+            toast.success('Báo giá thành công');
             setTimeout(() => { setSubmitting(false); onClose(); }, 700);
         } catch (err) {
-            toast.error('Báo giá thất bại')
+            const message = err?.data?.message || err?.message || String(err);
+            setSubmitError(message);
+            toast.error('Báo giá thất bại');
+            setSubmitting(false);
         }
     }
 

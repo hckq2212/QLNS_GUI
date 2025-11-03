@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../../api/contract.js';
-import customerAPI from '../../api/customer.js';
 import generateContractDocxBlob from '../../utils/ProposeContractDocx.js';
+import { useGetContractsByStatusQuery, useUploadProposalMutation } from '../../services/contract';
+import { useGetAllCustomerQuery } from '../../services/customer';
+import { toast } from 'react-toastify';
 
 export default function HRConfirmContract() {
   const [list, setList] = useState([]);
@@ -11,40 +12,46 @@ export default function HRConfirmContract() {
   const [fileInputs, setFileInputs] = useState({});
   const [uploadedUrls, setUploadedUrls] = useState({});
 
-  const fetchContracts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await contractAPI.getByStatus({ status: 'waiting_hr_confirm' });
-      const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-      const customerIds = Array.from(new Set(arr.map(c => c.customer_id).filter(Boolean)));
-      const byId = {};
-      if (customerIds.length > 0) {
-        const fetched = await Promise.allSettled(customerIds.map(id => customerAPI.getById(id).catch(() => null)));
-        fetched.forEach((r, idx) => {
-          const id = customerIds[idx];
-          if (r.status === 'fulfilled' && r.value) {
-            byId[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
-          }
-        });
-      }
-      const enriched = arr.map(c => ({
-        ...c,
-        customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer)
-      }));
-      setList(enriched);
-    } catch (err) {
-      console.error('Lỗi get các hợp đồng đợi hr xác nhận', err);
-      setError(err?.message || 'Failed to load');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // use RTK Query to fetch contracts and customers
+  const {
+    data: contractsData,
+    isLoading: contractsLoading,
+    isError: contractsIsError,
+    error: contractsError,
+    refetch: refetchContracts,
+  } = useGetContractsByStatusQuery('waiting_hr_confirm');
+
+  const { data: customersData, isLoading: customersLoading } = useGetAllCustomerQuery();
+
+  // upload proposal mutation
+  const [uploadProposal, { isLoading: uploadLoading }] = useUploadProposalMutation();
 
   useEffect(() => {
-    fetchContracts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // derive list from RTK Query results
+    setLoading(contractsLoading || customersLoading);
+  }, [contractsLoading, customersLoading]);
+
+  useEffect(() => {
+    if (contractsIsError) {
+      console.error('Lỗi get các hợp đồng đợi hr xác nhận', contractsError);
+      setError(contractsError?.message || 'Failed to load');
+      setList([]);
+      return;
+    }
+    const arr = Array.isArray(contractsData) ? contractsData : [];
+    const byId = {};
+    if (Array.isArray(customersData)) {
+      customersData.forEach((c) => {
+        byId[c.id] = c.name || c.customer_name || (c.customer && c.customer.name) || null;
+      });
+    }
+    const enriched = arr.map((c) => ({
+      ...c,
+      customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer),
+    }));
+    setList(enriched);
+    setError(null);
+  }, [contractsData, contractsIsError, contractsError, customersData]);
 
   const downloadContractDoc = async (contract) => {
     try {
@@ -76,12 +83,30 @@ export default function HRConfirmContract() {
     if (!file) return alert('Vui lòng chọn file trước khi tải lên');
     try {
       setActionLoading(s => ({ ...s, [contract.id]: true }));
-      const res = await contractAPI.uploadProposalContract(contract.id, file);
+      // debug/log formdata keys to troubleshoot Multer 'Unexpected field'
+      try {
+        const _fd = new FormData();
+        _fd.append('proposalContract', file, file.name || 'proposal');
+        // log keys and a small file summary (do NOT log file contents)
+        // eslint-disable-next-line no-console
+        console.log('Uploading proposal - formData keys:', [..._fd.keys()], {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
+      } catch (logErr) {
+        // ignore logging errors
+        // eslint-disable-next-line no-console
+        console.warn('Failed to build debug FormData', logErr);
+      }
+
+      // use RTK mutation to upload proposal
+      const res = await uploadProposal({ id: contract.id, file }).unwrap();
       if (res && res.url) {
         setUploadedUrls(s => ({ ...s, [contract.id]: res.url }));
       }
-      fetchContracts();
-      alert(res?.message || 'Tải lên thành công');
+      if (typeof refetchContracts === 'function') refetchContracts();
+      toast.success('Upload file hợp đồng thành công')
     } catch (err) {
       console.error(err);
       alert('Tải lên thất bại: ' + (err?.message || String(err)));

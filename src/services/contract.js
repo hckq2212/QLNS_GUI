@@ -6,8 +6,8 @@ export const contractApi = api.injectEndpoints({
     // lấy theo status: waiting_hr_confirm, waiting_bod_approval, not_assigned, without_debt
     getContractsByStatus: build.query({
       query: (status) => ({
-        url: `/contract`,
-        params: { status },
+        url: `/contract/${status}`,
+        providesTags: (result, err, status) => [{ type: 'Contract', id: `LIST-${status}` }],
       }),
       // cache danh sách theo status
       providesTags: (result, error, status) =>
@@ -48,7 +48,7 @@ export const contractApi = api.injectEndpoints({
         formData.append('file', file);
         return {
           url: `/contract/${id}/sign`,
-          method: 'POST',
+          method: 'PATCH',
           body: formData,
         };
       },
@@ -61,11 +61,13 @@ export const contractApi = api.injectEndpoints({
     // upload proposal từ HR
     uploadProposal: build.mutation({
       query: ({ id, file }) => {
-        const formData = new FormData();
-        formData.append('file', file);
+        // backend expects the multipart field name 'proposalContract'
+      const formData = new FormData();
+      // include filename explicitly to ensure multer/file parsers receive correct original filename
+      formData.append('proposalContract', file, file.name || 'proposal');
         return {
           url: `/contract/${id}/upload-contract`,
-          method: 'POST',
+          method: 'PATCH',
           body: formData,
         };
       },
@@ -74,7 +76,17 @@ export const contractApi = api.injectEndpoints({
         { type: 'ContractList', id: 'waiting_hr_confirm' },
       ],
     }),
+    createContractFromOpportunity: build.mutation({
+      query: ({ opportunityId, ...body }) => ({
+        url: `contract/opportunity/${opportunityId}`, // tương ứng backend route
+        method: 'POST',
+        body,
+      }),
+      // cho phép invalidate cache nếu có liên quan đến Contract
+      invalidatesTags: ['Contract', 'Opportunity'],
+    }),
   }),
+  
   overrideExisting: false,
 });
 
@@ -83,4 +95,5 @@ export const {
   useApproveContractMutation,
   useUploadSignedContractMutation,
   useUploadProposalMutation,
+  useCreateContractFromOpportunityMutation
 } = contractApi;

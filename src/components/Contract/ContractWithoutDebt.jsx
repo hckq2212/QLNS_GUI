@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../../api/contract.js';
-import debtAPI from '../../api/debt.js';
-import customerAPI from '../../api/customer.js';
 import DebtCreateModal from '../ui/DebtCreateModal.jsx';
 import { formatPrice } from '../../utils/FormatValue.js';
+import { useGetContractsByStatusQuery } from '../../services/contract';
+import { useGetAllCustomerQuery } from '../../services/customer';
 
 export default function ContractWithoutDebt() {
   const [list, setList] = useState([]);
@@ -14,36 +13,48 @@ export default function ContractWithoutDebt() {
   const [installments, setInstallments] = useState([]);
   const [debtError, setDebtError] = useState(null);
   const [reloadCounter, setReloadCounter] = useState(0);
+  // Use RTK Query to fetch contracts by status and customers list
+  const {
+    data: contractsData,
+    isLoading: contractsLoading,
+    isError: contractsIsError,
+    error: contractsError,
+    refetch: refetchContracts,
+  } = useGetContractsByStatusQuery('without_debt');
+
+  const { data: customersData, isLoading: customersLoading } = useGetAllCustomerQuery();
+
+  // derive UI state from query data
+  useEffect(() => {
+    setLoading(contractsLoading || customersLoading);
+  }, [contractsLoading, customersLoading]);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await contractAPI.getByStatus({ status: 'without_debt' });
-        const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-        // enrich with customer name when customer_id present
-        const customerIds = Array.from(new Set(arr.map(c => c.customer_id).filter(Boolean)));
-        const byId = {};
-        if (customerIds.length > 0) {
-          const fetched = await Promise.allSettled(customerIds.map(id => customerAPI.getById(id).catch(() => null)));
-          fetched.forEach((r, idx) => {
-            const id = customerIds[idx];
-            if (r.status === 'fulfilled' && r.value) {
-              byId[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
-            }
-          });
-        }
-        const enriched = arr.map(c => ({ ...c, customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer) }));
-        if (mounted) setList(enriched);
-      } catch (err) {
-        console.error('failed to load contracts without debt', err);
-        if (mounted) setError(err?.message || 'Failed to load');
-      } finally { if (mounted) setLoading(false); }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    if (contractsIsError) {
+      setError(contractsError?.message || 'Failed to load contracts');
+      setList([]);
+      return;
+    }
+    const arr = Array.isArray(contractsData) ? contractsData : [];
+    // build customer lookup from customersData
+    const byId = {};
+    if (Array.isArray(customersData)) {
+      customersData.forEach((c) => {
+        byId[c.id] = c.name || c.customer_name || (c.customer && c.customer.name) || null;
+      });
+    }
+    const enriched = arr.map((c) => ({
+      ...c,
+      customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer),
+    }));
+    setList(enriched);
+    setError(null);
+  }, [contractsData, contractsIsError, contractsError, customersData]);
+
+  // refetch when reloadCounter increments
+  useEffect(() => {
+    if (reloadCounter > 0 && typeof refetchContracts === 'function') refetchContracts();
+  }, [reloadCounter, refetchContracts]);
 
   return (
     <div className="p-4">

@@ -1,30 +1,58 @@
-// services/customer.js
-import CreateOpportunity from '../components/Opportunity/CreateOpportunity';
 import { api } from './api';
 
 export const opportunityAPI = api.injectEndpoints({
   endpoints: (build) => ({
     getAllOpportunity: build.query({
-        query: () => `/opportunity`,
-        providesTags: (result, error) => [{ type: 'Opportunity' }],
+      query: () => `/opportunity`,
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [...result.map((r) => ({ type: 'Opportunity', id: r.id })), { type: 'Opportunity', id: 'LIST' }]
+          : [{ type: 'Opportunity', id: 'LIST' }],
     }),
     getOpportunityById: build.query({
-        query: (id) => `/opportunity/${id}`,
-        providesTags: (result, error, id) => [{ type: 'Opportunity', id }],
+      query: (id) => `/opportunity/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Opportunity', id }],
     }),
     createOpportunity: build.mutation({
-        query: (body) => ({
-            url: '/opportunity',
-            method: 'POST',
-            body,
-        }),
-            invalidatesTags: [{ type: 'Opportunity', id: 'LIST' }],
-        }),
+      query: (body) => ({
+        url: '/opportunity',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Opportunity', id: 'LIST' }],
     }),
+    getOpportunityServices: build.query({
+      query: (id) => `/opportunity/${id}/services`,
+      providesTags: (result, error, id) => [{ type: 'OpportunityServices', id }],
+    }),
+    approve: build.mutation({
+      // expects { id, body? }
+      query: ({ id, body } = {}) => ({
+        url: `/opportunity/${id}/approve`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
+    }),
+    quoteOpportunity: build.mutation({
+      // expects { id, body }
+      query: ({ id, body } = {}) => ({
+        url: `/opportunity/${id}/quote`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
+    }),
+  }),
+  overrideExisting: false,
 });
 
-export const { 
-    useCreateOpportunityMutation,
-    useGetAllOpportunityQuery,
-    useLazyGetOpportunityByIdQuery
- } = opportunityAPI;
+export const {
+  useCreateOpportunityMutation,
+  useGetAllOpportunityQuery,
+  useLazyGetOpportunityByIdQuery,
+  useApproveMutation,
+  useGetOpportunityServicesQuery,
+  useQuoteOpportunityMutation,
+} = opportunityAPI;
+export default opportunityAPI;

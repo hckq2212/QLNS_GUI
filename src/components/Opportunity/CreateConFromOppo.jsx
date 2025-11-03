@@ -77,7 +77,6 @@ export default function CreateConFromOppo() {
                 <table className="min-w-full text-left">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-4 py-2">ID</th>
                             <th className="px-4 py-2">Cơ hội</th>
                             <th className="px-4 py-2">Khách hàng</th>
                             <th className="px-4 py-2">Giá dự kiến</th>
@@ -92,7 +91,6 @@ export default function CreateConFromOppo() {
                         ) : (
                             opportunities.map((op) => (
                                 <tr key={op.id} className="border-t">
-                                    <td className="px-4 py-3 align-top">{op.id}</td>
                                     <td className="px-4 py-3 align-top w-[45%]">
                                         <div className="font-semibold">{op.name || `Cơ hội ${op.id}`}</div>
                                         <div className="text-sm text-gray-600 line-clamp-1 overflow-ellipsis">{op.description ? String(op.description) : ''}</div>
