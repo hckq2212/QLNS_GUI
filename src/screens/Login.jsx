@@ -6,6 +6,8 @@ import email from '../assets/email.png'
 import authAPI from '../api/auth.js'
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useDispatch } from 'react-redux'; 
+import { setCredentials } from '../features/auth/authSlice.js';
 
 export default function Login() {
   const [activeTab, setActiveTab] = useState('login'); 
@@ -13,24 +15,40 @@ export default function Login() {
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate()
-
+  const dispatch = useDispatch();
   // Reset form fields and messages whenever user switches between Login/Sign up tabs
   useEffect(() => {
     setForm({ username: '', password: '', fullName: '', email: '', phoneNumber: '' });
     setMessage('');
   }, [activeTab]);
 
-  async function handleSubmit(e) {
+    async function handleSubmit(e) {
     e.preventDefault();
-      if (activeTab == 'login'){
-        try {
-          const payload = { username: form.username, password: form.password };
-          const data = await authAPI.login(payload);
-          setErrorMsg('');
-          navigate('/');
-          toast.success('Đăng nhập thành công')
+
+    if (activeTab === 'login') {
+      try {
+        const payload = { username: form.username, password: form.password };
+        const res = await authAPI.login(payload); // axios-like response
+        console.log('login response', res);
+
+        // normalize response body (support both axios response and direct data)
+        const body = res?.data ?? res;
+        const accessToken = body?.accessToken  // adjust key if backend uses access_token
+        const user = body?.user ?? null;
+
+        if (!accessToken) {
+          throw new Error('Không tìm thấy access token trong response');
+        }
+
+        // dispatch to redux
+        dispatch(setCredentials({ accessToken, user }));
+
+        setErrorMsg('');
+        navigate('/');
+        toast.success('Đăng nhập thành công');
       } catch (err) {
-          toast.error('Đăng nhập thất bại')
+        console.error('Login failed', err);
+        toast.error('Đăng nhập thất bại');
       }
   } else if (activeTab !== 'login') {
         try {
