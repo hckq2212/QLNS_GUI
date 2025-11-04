@@ -13,6 +13,10 @@ export const opportunityAPI = api.injectEndpoints({
       query: (id) => `/opportunity/${id}`,
       providesTags: (result, error, id) => [{ type: 'Opportunity', id }],
     }),
+    getOpportunityByStatus: build.query({
+      query: (status) => `/opportunity/${status}`,
+      providesTags: (result, error, status) => [{ type: 'Opportunity', status }],
+    }),
     createOpportunity: build.mutation({
       query: (body) => ({
         url: '/opportunity',
@@ -26,11 +30,9 @@ export const opportunityAPI = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'OpportunityServices', id }],
     }),
     approve: build.mutation({
-      // expects { id, body? }
-      query: ({ id, body } = {}) => ({
+      query: (id) => ({
         url: `/opportunity/${id}/approve`,
         method: 'POST',
-        body,
       }),
       invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
     }),
@@ -54,5 +56,6 @@ export const {
   useApproveMutation,
   useGetOpportunityServicesQuery,
   useQuoteOpportunityMutation,
+  useGetOpportunityByStatusQuery
 } = opportunityAPI;
 export default opportunityAPI;

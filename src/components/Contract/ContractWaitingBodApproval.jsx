@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import contractAPI from '../../api/contract.js';
-import customerAPI from '../../api/customer.js';
+import { useGetContractsByStatusQuery, useApproveContractMutation } from '../../services/contract';
+import { useGetAllCustomerQuery } from '../../services/customer';
 
 export default function ContractWaitingBODApproval() {
   const [list, setList] = useState([]);
@@ -22,55 +22,63 @@ export default function ContractWaitingBODApproval() {
   };
 
   // action handler must live inside component to access state setters
+  const [approveContract] = useApproveContractMutation();
+
   const handleAction = async (id, approve) => {
     const confirmMsg = approve ? 'Bạn có chắc muốn duyệt hợp đồng này?' : 'Bạn có chắc muốn từ chối hợp đồng này?';
     if (!window.confirm(confirmMsg)) return;
     setActionLoading((p) => ({ ...p, [id]: true }));
     try {
-      await contractAPI.approve(id, { approved: approve });
+      await approveContract({ id, body: { approved: approve } }).unwrap();
+      // refetches via RTK Query invalidation; remove locally for instant UI feedback
       setList((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
       console.error('action failed', err);
-      alert(err?.message || 'Action failed');
+      alert(err?.data?.message || err?.message || 'Action failed');
     } finally {
       setActionLoading((p) => ({ ...p, [id]: false }));
     }
   };
 
 
+  // Use RTK Query to fetch contracts and customers
+  const {
+    data: contractsData,
+    isLoading: contractsLoading,
+    isError: contractsIsError,
+    error: contractsError,
+  } = useGetContractsByStatusQuery('waiting_bod_approval');
+
+  const { data: customersData, isLoading: customersLoading } = useGetAllCustomerQuery();
+
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await contractAPI.getByStatus({ status: 'waiting_bod_approval' });
-        const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-        // enrich with customer name when customer_id present
-        const customerIds = Array.from(new Set(arr.map(c => c.customer_id).filter(Boolean)));
-        const byId = {};
-        if (customerIds.length > 0) {
-          const fetched = await Promise.allSettled(customerIds.map(id => customerAPI.getById(id).catch(() => null)));
-          fetched.forEach((r, idx) => {
-            const id = customerIds[idx];
-            if (r.status === 'fulfilled' && r.value) {
-              byId[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
-            }
-          });
-        }
-        const enriched = arr.map(c => ({ ...c, customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer) }));
-        if (mounted) setList(enriched);
-      } catch (err) {
-        console.error('Lỗi get các hợp đồng đợi bod duyệt', err);
-        if (mounted) setError(err?.message || 'Failed to load');
-      } finally { if (mounted) setLoading(false); }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    setLoading(contractsLoading || customersLoading);
+  }, [contractsLoading, customersLoading]);
+
+  useEffect(() => {
+    if (contractsIsError) {
+      console.error('Lỗi get các hợp đồng đợi bod duyệt', contractsError);
+      setError(contractsError?.message || 'Failed to load');
+      setList([]);
+      return;
+    }
+    const arr = Array.isArray(contractsData) ? contractsData : [];
+    const byId = {};
+    if (Array.isArray(customersData)) {
+      customersData.forEach((c) => {
+        byId[c.id] = c.name || c.customer_name || (c.customer && c.customer.name) || null;
+      });
+    }
+    const enriched = arr.map((c) => ({
+      ...c,
+      customer: c.customer || (c.customer_id ? { name: byId[c.customer_id] || c.customerName || c.customer_temp || null } : c.customer),
+    }));
+    setList(enriched);
+    setError(null);
+  }, [contractsData, contractsIsError, contractsError, customersData]);
 
   return (
     <div className="p-4">
-      <h3 className="font-semibold mb-3">Hợp đồng đợi BOD duyệt</h3>
       {loading ? (
         <div className="text-sm text-gray-500">Đang tải...</div>
       ) : error ? (
@@ -84,7 +92,6 @@ export default function ContractWaitingBODApproval() {
               <table className="min-w-full text-left">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2">#</th>
                     <th className="px-4 py-2">Mã hợp đồng</th>
                     <th className="px-4 py-2">Khách hàng</th>
                     <th className="px-4 py-2">Hành động</th>
@@ -93,7 +100,6 @@ export default function ContractWaitingBODApproval() {
                 <tbody>
                   {list.map((c) => (
                     <tr key={c.id} className="border-t">
-                      <td className="px-4 py-3 align-top">{c.id}</td>
                       <td className="px-4 py-3 align-top">{c.code || '-'}</td>
                       <td className="px-4 py-3 align-top">{c.customer?.name || c.customer_temp?.name || '—'}</td>
                       <td className="px-4 py-3 align-top">

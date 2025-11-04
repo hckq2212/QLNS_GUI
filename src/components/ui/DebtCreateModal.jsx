@@ -10,6 +10,7 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
   const [createDebtForContract, { isLoading: creatingDebt, error: createDebtError }] = useCreateDebtForContractMutation();
 
   const targetTotal = Math.round(Number(activeContract?.total_revenue || 0));
+  console.log(activeContract)
 
   useEffect(() => {
     setInstallments([{ amount: Math.round(Number(activeContract?.total_revenue || 0)), due_date: '', percent: '' }]);
@@ -100,7 +101,15 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
                 className="border px-2 py-1 w-[4rem]"
                 placeholder="%"
               />
-              <input type="text" name="title" id="" placeholder='Nội dung'  className='border px-2 py-1 w-24'/>
+              <input
+                type="text"
+                name="title"
+                id=""
+                placeholder='Nội dung'
+                className='border px-2 py-1 w-24'
+                value={it.title || ''}
+                onChange={e => { const arr = [...installments]; arr[idx].title = e.target.value; setInstallments(arr); }}
+              />
               <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => handleDelete(idx)}>Xóa</button>
             </div> 
           ))}
@@ -119,10 +128,10 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
 
         <div className="mt-4 flex justify-end gap-2">
           <button className="px-3 py-1 bg-gray-100 rounded" onClick={() => onClose()}>Hủy</button>
-          <button
+              <button
             className="px-3 py-1 bg-blue-600 text-white rounded"
             onClick={async () => {
-              const sum = installments.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+              const sum = currentSum;
               const target = targetTotal;
               if (sum !== target) { setDebtError('Tổng các đợt phải bằng tổng doanh thu của hợp đồng'); return; }
               if (!allHaveDates || !allPositive || !allDatesInFuture) { setDebtError('Vui lòng sửa các lỗi trước khi tạo'); return; }
@@ -131,7 +140,7 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
                 // create each installment as a separate debt record using RTK Query mutation
                 const ops = installments.map((it) => {
                   const amt = getRowAmount(it);
-                  const body = { amount: Number(amt) || 0, due_date: it.due_date || null };
+                  const body = { amount: Number(amt) || 0, due_date: it.due_date || null, title: it.title || null };
                   return createDebtForContract({ contractId: activeContract.id, body }).unwrap();
                 });
                 const results = await Promise.allSettled(ops);

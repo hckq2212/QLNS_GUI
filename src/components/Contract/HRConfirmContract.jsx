@@ -98,7 +98,7 @@ export default function HRConfirmContract() {
         // ignore logging errors
         // eslint-disable-next-line no-console
         console.warn('Failed to build debug FormData', logErr);
-      }
+      } 
 
       // use RTK mutation to upload proposal
       const res = await uploadProposal({ id: contract.id, file }).unwrap();

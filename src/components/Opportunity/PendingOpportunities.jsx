@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import opportunityAPI from '../../api/opportunity.js';
-import customerAPI from '../../api/customer.js';
-import userAPI from '../../api/user.js';
-import serviceAPI from '../../api/service.js';
-import { useApproveMutation } from '../../services/opportunity.js';
+import { useApproveMutation, useGetOpportunityByStatusQuery } from '../../services/opportunity.js';
+import { useGetAllCustomerQuery } from '../../services/customer';
+import { useGetAllUserQuery } from '../../services/user';
+import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 
 export default function PendingOpportunities() {
   const [list, setList] = useState([]);
@@ -14,112 +15,65 @@ export default function PendingOpportunities() {
   const [expanded, setExpanded] = useState({});
   const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
   const token = useSelector((state) => state.auth.accessToken);
+  // use RTK Query hook to get pending opportunities
+  const {
+    data: oppQueryData,
+    isLoading: oppQueryLoading,
+    isError: oppQueryIsError,
+    error: oppQueryError,
+  } = useGetOpportunityByStatusQuery('waiting_bod_approval');
+
+  // batch lookups via RTK Query caches
+  const { data: customersData } = useGetAllCustomerQuery();
+  const { data: usersData } = useGetAllUserQuery();
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      setLoading(oppQueryLoading);
       setError(null);
       try {
-        const data = await opportunityAPI.getAllPending();
-        const listData = Array.isArray(data) ? data : [];
+        const data = oppQueryData;
 
-  // enrich customer names for entries that only have customer_id
-        const customerIds = Array.from(new Set(listData.map(o => o.customer_id).filter(Boolean)));
-        if (customerIds.length > 0) {
-          try {
-            const fetched = await Promise.allSettled(customerIds.map(id => customerAPI.getById(id).catch(() => null)));
-            const byId = {};
-            fetched.forEach((r, idx) => {
-              const id = customerIds[idx];
-              if (r.status === 'fulfilled' && r.value) {
-                byId[id] = r.value.name || r.value.customer_name || (r.value.customer && r.value.customer.name) || null;
-              }
-            });
-            const enriched = listData.map(o => ({
-              ...o,
-              customer: o.customer || (o.customer_id ? { name: byId[o.customer_id] || o.customer_name || o.customer_temp || null } : o.customer)
-            }));
-            setList(enriched);
-          } catch (e) {
-            // if enrichment fails, still set the raw list
-              setList(listData);
-          }
-        } else {
-          setList(listData);
+        const listData = Array.isArray(data) ? data : [];
+        // build lookups from RTK Query caches
+        const customerById = {};
+        if (Array.isArray(customersData)) {
+          customersData.forEach((c) => { customerById[c.id] = c.name || c.customer_name || (c.customer && c.customer.name) || null; });
         }
 
-          // enrich creator names for entries that have created_by as an id
-          const creatorIds = Array.from(new Set(listData.map(o => o.created_by).filter(Boolean)));
-          if (creatorIds.length > 0) {
-            try {
-              const fetchedCreators = await Promise.allSettled(
-                creatorIds.map((id) => userAPI.getById(id).catch(() => null))
-              );
-              const byCreator = {};
-              fetchedCreators.forEach((r, idx) => {
-                const id = creatorIds[idx];
-                if (r.status === 'fulfilled' && r.value) {
-                  // userAPI.getById returns the user object in res.data — attempt common name fields
-                  byCreator[id] =  r.value.full_name || null;
-                }
-              });
-              // merge creator name into existing list state if possible
-              setList((prev) => prev.map((o) => ({
-                ...o,
-                created_by_user: o.created_by && byCreator[o.created_by] ? { id: o.created_by, name: byCreator[o.created_by] } : (o.created_by_user || null)
-              })));
-            } catch (e) {
-              // ignore creator enrichment failures
-            }
+        const userById = {};
+        if (Array.isArray(usersData)) {
+          usersData.forEach((u) => { userById[u.id] = u.full_name|| null; });
+        }
+
+        const enriched = listData.map((o) => {
+          // determine customer: only use existing object or RTK cache result; do not fall back to ad-hoc fields
+          const customer = o.customer ? o.customer : (o.customer_id && customerById[o.customer_id] ? { name: customerById[o.customer_id] } : undefined);
+
+          // determine creator: only set if RTK cache provides a name; otherwise keep existing created_by_user as-is
+          const createdByUser = (o.created_by && userById[o.created_by]) ? { id: o.created_by, name: userById[o.created_by] } : (o.created_by_user || undefined);
+
+          // determine services: only map when we have an array; when mapping, only use s.name or the RTK-cached name
+          let services = undefined;
+          const sourceServices = Array.isArray(o.services) && o.services.length > 0
+            ? o.services
+            : (Array.isArray(o.service_list) ? o.service_list : null);
+          if (Array.isArray(sourceServices)) {
+            services = sourceServices.map((s) => ({
+              ...s,
+              name: s.name || serviceNameById[s.service_id || s.id] || undefined,
+            }));
           }
 
-          // enrich services for each opportunity from opportunity_service endpoint
-          try {
-            const oppIds = listData.map((o) => o.id).filter(Boolean);
-            if (oppIds.length > 0) {
-              const fetchedServices = await Promise.allSettled(
-                oppIds.map((id) => opportunityAPI.getService(id).catch(() => null))
-              );
-              const servicesByOpp = {};
-              fetchedServices.forEach((r, idx) => {
-                const id = oppIds[idx];
-                if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-                  servicesByOpp[id] = r.value;
-                }
-              });
-              // collect distinct service_ids to resolve names
-              const allServiceIds = Array.from(
-                new Set(
-                  Object.values(servicesByOpp)
-                    .flat()
-                    .map((s) => s.service_id || s.id)
-                    .filter(Boolean)
-                )
-              );
-              const serviceNameById = {};
-              if (allServiceIds.length > 0) {
-                const fetchedNames = await Promise.allSettled(
-                  allServiceIds.map((sid) => serviceAPI.getById(sid).catch(() => null))
-                );
-                fetchedNames.forEach((r, idx) => {
-                  const sid = allServiceIds[idx];
-                  if (r.status === 'fulfilled' && r.value) {
-                    serviceNameById[sid] = r.value.name || r.value.service_name || null;
-                  }
-                });
-              }
-              // merge services into the list state
-              setList((prev) => prev.map((o) => ({
-                ...o,
-                services: (o.services && o.services.length > 0 ? o.services : (servicesByOpp[o.id] || o.services))?.map((s) => ({
-                  ...s,
-                  name: s.name || serviceNameById[s.service_id || s.id] || s.service_name || s.name || null,
-                })) || []
-              })));
-            }
-          } catch (e) {
-            // non-fatal: leave services as-is
-          }
+          return {
+            ...o,
+            customer,
+            created_by_user: createdByUser,
+            services,
+          };
+        });
+
+        setList(enriched);
       } catch (err) {
         console.error('failed to load pending opportunities', err);
         setError(err?.message || 'Failed to load pending opportunities');
@@ -127,7 +81,7 @@ export default function PendingOpportunities() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [oppQueryData, oppQueryLoading, oppQueryIsError, oppQueryError, customersData, usersData]);
 
   async function handleApprove(id) {
     if (!window.confirm('Bạn có chắc muốn duyệt cơ hội này?')) return;
@@ -136,7 +90,7 @@ export default function PendingOpportunities() {
       // Optionally, approver can include payment plan in body; we'll send empty body
       await approveOpportunity(id).unwrap();
       setList((l) => l.filter((x) => x.id !== id));
-      alert('Đã duyệt');
+      toast.success('Đã duyệt cơ hội')
     } catch (err) {
       console.error('approve failed', err);
       alert(err?.message || 'Approve failed');
@@ -151,7 +105,7 @@ export default function PendingOpportunities() {
     try {
       await opportunityAPI.reject(id, {});
       setList((l) => l.filter((x) => x.id !== id));
-      alert('Đã từ chối');
+      toast.message('Đã từ chối cơ hội')
     } catch (err) {
       console.error('reject failed', err);
       alert(err?.message || 'Reject failed');
@@ -175,7 +129,7 @@ export default function PendingOpportunities() {
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-semibold text-left">Cơ hội #{o.id}</div>
-                  <div className="text-sm text-gray-700">Khách hàng: {o.customer?.name || (o.customer_temp.name) || 'Unknown'}</div>
+                  <div className="text-sm text-gray-700">Khách hàng: {o.customer?.name || 'Unknown'}</div>
                   {/* <div className="text-sm text-gray-700">Công ty: {o.customer?.company || (o.customer_temp.company) || 'Unknown'}</div> */}
                 </div>
                 <div className="space-x-2">
@@ -213,32 +167,7 @@ export default function PendingOpportunities() {
                     <p className='font-normal'>{o.description}</p>
                   </div>}
                   <div>
-                    {Array.isArray(o.services) && o.services.length > 0 ? (
-                      <div className="mt-2">
-                        <table className="w-full text-sm text-left border-collapse">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="px-3 py-2 border">Dịch vụ</th>
-                              <th className="px-3 py-2 border">Số lượng</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {o.services.map((s, i) => (
-                              <tr key={s.id ?? s.service_id ?? i} className="border-t">
-                                <td className="px-3 py-2 align-top">
-                                  {s.name || s.service_name || `Service #${s.service_id || s.id || i}`}
-                                </td>
-                                <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : o.service_list ? (
-                      <div className="mt-2 text-sm text-gray-700">{String(o.service_list)}</div>
-                    ) : (
-                      <div className="mt-2 text-sm text-gray-500">Không có dịch vụ chi tiết</div>
-                    )}
+                    <OpportunityServices oppId={o.id} fallbackServices={Array.isArray(o.services) ? o.services : null} serviceListString={o.service_list} />
                   </div>
 
                 </div>
@@ -249,4 +178,45 @@ export default function PendingOpportunities() {
       )}
     </div>
   );
+}
+
+function OpportunityServices({ oppId, fallbackServices, serviceListString }) {
+  // fetch services for a specific opportunity via RTK Query
+  const { data, isLoading, isError } = useGetOpportunityServicesQuery(oppId);
+
+  const services = Array.isArray(data)
+    ? data
+    : (Array.isArray(fallbackServices) ? fallbackServices : null);
+
+  if (isLoading) return <div className="text-sm text-gray-500">Loading services...</div>;
+  if (isError) return <div className="text-sm text-red-600">Không thể tải dịch vụ</div>;
+
+  if (Array.isArray(services) && services.length > 0) {
+    return (
+      <div className="mt-2">
+        <table className="w-full text-sm text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-3 py-2 border">Dịch vụ</th>
+              <th className="px-3 py-2 border">Số lượng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {services.map((s, i) => (
+              <tr key={s.id ?? s.service_id ?? i} className="border-t">
+                <td className="px-3 py-2 align-top">{s.name || `Service #${s.service_id || s.id || i}`}</td>
+                <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (serviceListString) {
+    return <div className="mt-2 text-sm text-gray-700">{String(serviceListString)}</div>;
+  }
+
+  return <div className="mt-2 text-sm text-gray-500">Không có dịch vụ chi tiết</div>;
 }

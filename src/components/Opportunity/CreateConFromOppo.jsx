@@ -1,8 +1,7 @@
 // ...existing code...
 import { useState, useEffect } from 'react';
-import opportunityAPI from '../../api/opportunity';
-import customerAPI from '../../api/customer';
-import contractAPI from '../../api/contract';
+import { useGetOpportunityByStatusQuery } from '../../services/opportunity.js';
+import { useGetAllCustomerQuery } from '../../services/customer';
 import { formatPrice } from '../../utils/FormatValue';
 import CreateConFromOppoModal from '../ui/CreateConFromOppoModal';
 
@@ -12,50 +11,39 @@ export default function CreateConFromOppo() {
     const [error, setError] = useState(null);
     const [selectedOpportunity, setSelectedOpportunity] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { data: oppRaw, isLoading: oppLoading, isError: oppIsError, error: oppError } = useGetOpportunityByStatusQuery('quoted');
+    const { data: customersData } = useGetAllCustomerQuery();
+
     useEffect(() => {
-        let mounted = true;
-        async function load() {
-            try {
-                setLoading(true);
-                const data = await opportunityAPI.getAll();
-                if (mounted) {
-                    const arr = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
-                    const approved = arr.filter(o => o && o.status === 'quoted');
-                        // For opportunities that have a customer_id, fetch the customer and use its name.
-                        // Otherwise fall back to any provided customerName / customer_temp.name.
-                        const withCustomerName = await Promise.all(approved.map(async (o) => {
-                            // helper to pull name from various shapes
-                            const pickName = (obj) => obj && (obj.name  || obj.full_name || null);
+        // derive opportunities from RTK query results and local caches
+        setLoading(oppLoading);
+        setError(null);
+        try {
+            const arr = Array.isArray(oppRaw) ? oppRaw : (oppRaw && Array.isArray(oppRaw.items) ? oppRaw.items : []);
+            const approved = arr.filter((o) => o && o.status === 'quoted');
 
-                            if (o.customer_id) {
-                                try {
-                                    const cust = await customerAPI.getById(o.customer_id);
-                                    const custName = pickName(cust) || pickName(o.customer) || pickName(o.customer_temp) || null;
-                                    return { ...o, customerName: custName };
-                                } catch (e) {
-                                    // If customer fetch fails, fall back to temp/name fields
-                                    const fallback = o.customerName  || pickName(o.customer_temp) || null;
-                                    return { ...o, customerName: fallback };
-                                }
-                            }
-
-                            // no customer_id — use existing data
-                            const name = o.customerName || pickName(o.customer) || pickName(o.customer_temp) || null;
-                            return { ...o, customerName: name };
-                        }));
-
-                        setOpportunities(withCustomerName);
-                }
-            } catch (err) {
-                // opportunityAPI throws Error objects; normalize message
-                if (mounted) setError(err?.message || String(err));
-            } finally {
-                if (mounted) setLoading(false);
+            const customerById = {};
+            if (Array.isArray(customersData)) {
+                customersData.forEach((c) => { customerById[c.id] = c.name || c.customer_name || (c.customer && c.customer.name) || null; });
             }
+
+            const withCustomerName = approved.map((o) => {
+                const pickName = (obj) => obj && (obj.name || obj.full_name || null);
+                let customerName = null;
+                if (o.customer) customerName = pickName(o.customer);
+                else if (o.customer_id && customerById[o.customer_id]) customerName = customerById[o.customer_id];
+                else customerName = o.customerName || null;
+                return { ...o, customerName };
+            });
+
+            setOpportunities(withCustomerName);
+        } catch (err) {
+            console.error('failed to load opportunities', err);
+            setError(oppIsError ? (oppError?.message || String(oppError)) : (err?.message || String(err)));
+        } finally {
+            setLoading(false);
         }
-        load();
-        return () => { mounted = false; };
-    }, []);
+    }, [oppRaw, oppLoading, oppIsError, oppError, customersData]);
 
     function openModal(opportunity) {
         setSelectedOpportunity(opportunity);
