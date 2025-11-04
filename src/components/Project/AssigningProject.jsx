@@ -1,132 +1,113 @@
-import React, { useEffect, useState } from 'react';
-import projectAPI from '../../api/project';
-import contractAPI from '../../api/contract';
-import serviceAPI from '../../api/service';
+import React from 'react';
+import { useGetProjectByStatusQuery, useUpdateProjectMutation } from '../../services/project';
+import { useGetContractServicesQuery, useUpdateContractMutation } from '../../services/contract';
+import { useGetServicesQuery } from '../../services/service';
+import { toast } from 'react-toastify'
+
+function ProjectRow({ project, servicesById, onOptimisticUpdate }) {
+    const contractId = project.contract_id || project.contract?.id || project.contract || null;
+    const { data: svcRows = [], isLoading: svcLoading } = useGetContractServicesQuery(contractId, { skip: !contractId });
+    const [updateProject] = useUpdateProjectMutation();
+    const [updateContract] = useUpdateContractMutation();
+    const [loading, setLoading] = React.useState(false);
+
+        // compute counts per service id from svcRows
+        const serviceCounts = (svcRows || []).reduce((acc, r) => {
+            const id = r.service_id ;
+            const qty = Number( r.qty ?? 1) || 0;
+            if (!id) return acc;
+            acc[id] = (acc[id] || 0) + qty;
+            return acc;
+        }, {});
+
+        const serviceIds = Object.keys(serviceCounts);
+        const services = serviceIds.map((id) => ({ service: servicesById[id], id, count: serviceCounts[id] || 0 }));
+
+    return (
+        <tr className="border-t">
+            <td className="px-4 py-3 align-top font-medium">{project.name || `#${project.id}`}</td>
+            <td className="px-4 py-3 align-top">
+                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-3 gap-2 ">
+                        {svcLoading ? null : (services.length > 0 ? services.map(s => (
+                            <div key={s.id} className="flex items-center gap-1 bg-white border rounded px-3 py-1 text-sm justify-between">
+                                <div className="font-medium">{(s.service.name) || `#${s.id}`}</div>
+                                <div className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">×{s.count}</div>
+                            </div>
+                        )) : (
+                            <div className="text-sm text-gray-500">Không có dịch vụ</div>
+                        ))}
+                    </div>
+                </div>
+                </div>
+            </td>
+            <td>
+            <button
+            className="px-2 py-1 bg-green-600 text-white rounded"
+            disabled={loading}
+            onClick={async () => {
+                if (!project.id) return;
+                try {
+                    setLoading(true);
+                    await updateProject({ id: project.id, body: { status: 'team_acknowledged' } }).unwrap();
+                    if (contractId) {
+                        try {
+                            await updateContract({ id: contractId, body: { status: 'assigned' } }).unwrap();
+                        } catch (e) {
+                            console.error('Failed to update contract', e);
+                        }
+                    }
+                    if (typeof onOptimisticUpdate === 'function') onOptimisticUpdate(project.id);
+                    toast.success('Đã chấp nhận dự án')
+                } catch (e) {
+                    console.error('Failed to accept project', e);
+                } finally {
+                    setLoading(false);
+                }
+            }}
+        >{loading ? 'Đang...' : 'Chấp nhận'}</button>
+            </td>
+        </tr>
+    );
+}
 
 export default function AssigningProject() {
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [acceptLoading, setAcceptLoading] = useState({});
+    const { data, isLoading, isError, error } = useGetProjectByStatusQuery('assigned');
+    const { data: servicesList = [] } = useGetServicesQuery();
 
-    useEffect(() => {
-        let mounted = true;
-        (async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const res = await projectAPI.getByStatus('planned');
-                const arr = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
-                if (mounted) setProjects(arr);
-                // For each project, if it has a contract id, fetch contract services
-                try {
-                    const svcPromises = arr.map(async (p) => {
-                        const contractId = p.contract_id || p.contractId || p.contract?.id || p.contract?._id || p.contract;
-                        if (!contractId) return { projectId: p.id , services: [] };
-                        try {
-                            const rows = await contractAPI.getServiceUsage(contractId);
-                            const svcRows = Array.isArray(rows) ? rows : (rows && Array.isArray(rows.items) ? rows.items : (rows.services || []));
-                            // collect unique service_ids from contract_service rows
-                            const svcIds = Array.from(new Set(svcRows.map(r => r.service_id || r.serviceId || (r.service && (r.service.id || r.service._id)) ).filter(Boolean)));
-                            const svcMap = {};
-                            if (svcIds.length > 0) {
-                                const fetched = await Promise.allSettled(svcIds.map(id => serviceAPI.getById(id).catch(() => null)));
-                                fetched.forEach((res, idx) => {
-                                    const id = svcIds[idx];
-                                    if (res.status === 'fulfilled' && res.value) svcMap[id] = res.value;
-                                });
-                            }
-                            return { projectId: p.id , services: enriched };
-                        } catch (e) {
-                            console.warn('Failed to fetch services for contract', contractId, e?.message || e);
-                            return { projectId: p.id , services: [] };
-                        }
-                    });
-                    const results = await Promise.allSettled(svcPromises);
-                    const svcByProject = {};
-                    results.forEach(r => { if (r.status === 'fulfilled' && r.value) svcByProject[r.value.projectId] = r.value.services || []; });
-                    if (mounted) setProjects(prev => prev.map(pr => ({ ...pr, services: svcByProject[pr.id || pr._id] || pr.services || [] })));
-                } catch (e) {
-                    console.warn('Failed to fetch contract services for projects', e);
-                }
-            } catch (err) {
-                console.error('Failed to fetch planned projects', err);
-                if (mounted) setError(err?.message || 'Failed to load projects');
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        })();
-        return () => { mounted = false; };
-    }, []);
+    const servicesById = React.useMemo(() => {
+        if (!Array.isArray(servicesList)) return {};
+        return servicesList.reduce((acc, s) => {
+            if (s && s.id) acc[s.id] = s;
+            return acc;
+        }, {});
+    }, [servicesList]);
 
+    const list = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
 
-
+    const [optimisticSet, setOptimisticSet] = React.useState({});
 
     return (
         <div className="p-4">
-            {loading ? <div className="text-sm text-gray-500">Đang tải...</div> : error ? <div className="text-sm text-red-600">{error}</div> : (
+            {isLoading ? <div className="text-sm text-gray-500">Đang tải...</div> : isError ? <div className="text-sm text-red-600">{String(error?.data || error?.error || error)}</div> : (
                 <div>
-                    {projects.length === 0 ? (
-                        <div className="text-sm text-gray-600">Không có dự án planned</div>
+                    {list.length === 0 ? (
+                        <div className="text-sm text-gray-600">Không có dự án assigned</div>
                     ) : (
                         <div className="overflow-x-auto bg-white rounded border">
                             <table className="min-w-full text-left">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-2">Dự án</th>
-                                        <th className="px-4 py-2">Hợp đồng</th>
+                                        <th className="px-4 py-2">Dịch vụ</th>
                                         <th className="px-4 py-2">Hành động</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {projects.map((p) => {
-                                        const projKey = p.id ;
-                                        const contractId = p.contract_id || '-';
-
-                                        return (
-                                            <tr key={projKey} className="border-t">
-                                                <td className="px-4 py-3 align-top font-medium">{p.name || `#${projKey}`}</td>
-                                                <td className="px-4 py-3 align-top">{contractId}</td>
-                                                <td className="px-4 py-3 align-top">
-                                                    <button
-                                                        className="px-2 py-1 bg-green-600 text-white rounded"
-                                                        disabled={acceptLoading[projKey]}
-                                                        onClick={async () => {
-                                                            const pid = projKey;
-                                                            if (!pid) return;
-                                                            try {
-                                                                setAcceptLoading(s => ({ ...s, [pid]: true }));
-                                                                await projectAPI.update(pid, { status: 'team_acknowledged' });
-                                                                // optimistic: update project status in UI
-                                                                setProjects(prev => prev.map(pr => (pr.id === pid || pr._id === pid) ? { ...pr, status: 'team_acknowledged' } : pr));
-                                                                // then update related contract status to 'assigned' if contract id exists
-                                                                if (contractId && contractId !== '-') {
-                                                                    try {
-                                                                        await contractAPI.update(contractId, { status: 'assigned' });
-                                                                        // optimistic: reflect contract status in UI when possible
-                                                                        setProjects(prev => prev.map(pr => {
-                                                                            if (pr.id === pid || pr._id === pid) {
-                                                                                const updated = { ...pr };
-                                                                                if (updated.contract) updated.contract.status = 'assigned';
-                                                                                return updated;
-                                                                            }
-                                                                            return pr;
-                                                                        }));
-                                                                    } catch (e2) {
-                                                                        console.error('Failed to update contract status to assigned', e2);
-                                                                    }
-                                                                }
-                                                            } catch (e) {
-                                                                console.error('Failed to accept project', e);
-                                                            } finally {
-                                                                setAcceptLoading(s => ({ ...s, [pid]: false }));
-                                                            }
-                                                        }}
-                                                    >{acceptLoading[projKey] ? 'Đang...' : 'Chấp nhận'}</button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {list.map((p) => (
+                                        <ProjectRow key={p.id} project={p} servicesById={servicesById} onOptimisticUpdate={(id) => setOptimisticSet(s => ({ ...s, [id]: true }))} />
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

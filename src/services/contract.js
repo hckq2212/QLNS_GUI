@@ -3,6 +3,7 @@ import { api } from './api';
 
 export const contractApi = api.injectEndpoints({
   endpoints: (build) => ({
+
     // lấy theo status: waiting_hr_confirm, waiting_bod_approval, not_assigned, without_debt
     getContractsByStatus: build.query({
       query: (status) => ({
@@ -25,6 +26,57 @@ export const contractApi = api.injectEndpoints({
         if (res && Array.isArray(res.items)) return res.items;
         return [];
       },
+    }),
+
+    // get single contract by id
+    getContractById: build.query({
+      query: (contractId) => ({ url: `/contract/${contractId}` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        if (res.contract) return res.contract;
+        if (res.data) return res.data;
+        return res;
+      },
+      providesTags: (result, error, id) => [{ type: 'Contract', id }],
+    }),
+
+    // batch fetch contracts by ids via GET /contract?ids=1,2,3
+    getContractsByIds: build.query({
+      query: (ids) => ({ url: `/contract?ids=${Array.isArray(ids) ? ids.join(',') : ids}` }),
+      transformResponse: (res) => {
+        if (!res) return [];
+        if (Array.isArray(res)) return res;
+        if (res.items && Array.isArray(res.items)) return res.items;
+        if (res.data && Array.isArray(res.data)) return res.data;
+        return [];
+      },
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [...result.map((r) => ({ type: 'Contract', id: r.id })), { type: 'Contract', id: 'LIST' }]
+          : [{ type: 'Contract', id: 'LIST' }],
+    }),
+
+    // get service usage rows for a contract (maps to legacy /contract/:id/services)
+    getContractServices: build.query({
+      query: (id) => ({ url: `/contract/${id}/services` }),
+      transformResponse: (res) => {
+        if (!res) return [];
+        if (Array.isArray(res)) return res;
+        if (res.items && Array.isArray(res.items)) return res.items;
+        if (res.data && Array.isArray(res.data)) return res.data;
+        return [];
+      },
+      providesTags: (result, error, id) => [{ type: 'ContractServices', id }],
+    }),
+
+    // update contract (PATCH /contract/:id)
+    updateContract: build.mutation({
+      query: ({ id, body } = {}) => ({
+        url: `/contract/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Contract', id }, { type: 'ContractList', id: 'assigned' }],
     }),
 
 
@@ -95,5 +147,8 @@ export const {
   useApproveContractMutation,
   useUploadSignedContractMutation,
   useUploadProposalMutation,
-  useCreateContractFromOpportunityMutation
+  useCreateContractFromOpportunityMutation,
+  useGetContractsByIdsQuery,
+  useGetContractServicesQuery,
+  useUpdateContractMutation,
 } = contractApi;

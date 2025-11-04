@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux'; 
 import { setCredentials } from '../features/auth/authSlice.js';
+import eyeIcon from '../assets/eye.png'
+
 
 export default function Login() {
   const [activeTab, setActiveTab] = useState('login'); 
@@ -132,7 +134,7 @@ export default function Login() {
                       }
                     }}
                   >
-                    👁
+                    <img src={eyeIcon} alt="" />
                   </button>
                 </div>
               </div>
