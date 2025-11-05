@@ -1,73 +1,43 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import projectAPI from '../../api/project';
-import teamAPI from '../../api/team';
+import React, { useMemo, useState } from 'react';
+import { useGetAllProjectsQuery } from '../../services/project';
+import { useGetAllTeamsQuery } from '../../services/team';
+import { PROJECT_STATUS_LABELS } from '../../utils/enums';
 
 export default function ProjectChart() {
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-
-    // UI state
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    useEffect(() => {
-        let mounted = true;
-        (async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await projectAPI.getAll();
-                const list = Array.isArray(data) ? data : [];
 
-                // resolve team names for projects that have team_id
-                const teamIds = Array.from(new Set(list.map((p) => p.team_id).filter(Boolean)));
-                let teamById = {};
-                if (teamIds.length > 0) {
-                    try {
-                        const fetched = await Promise.allSettled(
-                            teamIds.map((id) => teamAPI.getById(id).catch(() => null))
-                        );
-                        fetched.forEach((r, idx) => {
-                            const id = teamIds[idx];
-                            teamById[id] = r.value.name || null;
-                        });
-                } catch (e) {
-                    // ignore team enrichment failures
-                }
-            }
+    const { data: projectsData, isLoading, isError, error } = useGetAllProjectsQuery();
+    const { data: teamsData = [] } = useGetAllTeamsQuery();
 
-            const enriched = list.map((p) => ({
-                ...p,
-                team: p.team || (p.team_id ? { id: p.team_id, name: teamById[p.team_id] || null } : null),
-            }));
+    const list = Array.isArray(projectsData) ? projectsData : Array.isArray(projectsData?.items) ? projectsData.items : [];
 
-            if (mounted) setProjects(enriched);
-            } catch (err) {
-                console.error('Lỗi khi lấy thông tin dự án', err);
-                if (mounted) setError(err?.message || 'Lỗi khi lấy thông tin dự án');
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        })();
+    const teamById = useMemo(() => {
+        if (!Array.isArray(teamsData)) return {};
+        return teamsData.reduce((acc, t) => {
+            if (t && t.id) acc[t.id] = t;
+            return acc;
+        }, {});
+    }, [teamsData]);
 
-        return () => {
-            mounted = false;
-        };
-    }, []);
+    const enriched = useMemo(() => {
+        return list.map((p) => ({
+            ...p,
+            team: p.team || (p.team_id ? { id: p.team_id, name: teamById[p.team_id]?.name || null } : null),
+        }));
+    }, [list, teamById]);
 
-    // derived filtered list
     const filtered = useMemo(() => {
         const q = (search || '').trim().toLowerCase();
-        return projects.filter((p) => {
+        return enriched.filter((p) => {
             if (statusFilter !== 'all') {
                 const st = p.status || p.project_status || 'unknown';
                 if (st !== statusFilter) return false;
             }
             if (!q) return true;
-            // search in common fields
             return (
                 String(p.id || '').includes(q) ||
                 (p.name || '').toLowerCase().includes(q) ||
@@ -75,14 +45,13 @@ export default function ProjectChart() {
                 (p.customer_name || p.customer?.name || '').toLowerCase().includes(q)
             );
         });
-    }, [projects, search, statusFilter]);
+    }, [enriched, search, statusFilter]);
 
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-    useEffect(() => {
-        // reset to first page when filters change
+    React.useEffect(() => {
         setPage(1);
     }, [search, statusFilter]);
 
@@ -105,10 +74,10 @@ export default function ProjectChart() {
                 </select>
             </div>
 
-            {loading ? (
+            {isLoading ? (
                 <div className="text-sm text-gray-500">Đang tải...</div>
-            ) : error ? (
-                <div className="text-sm text-red-600">{error}</div>
+            ) : isError ? (
+                <div className="text-sm text-red-600">{String(error?.data || error?.message || error)}</div>
             ) : (
                 <div className="overflow-x-auto bg-white rounded border">
                     <table className="min-w-full text-left">
@@ -137,7 +106,7 @@ export default function ProjectChart() {
                                         </td>
                                         <td className="px-4 py-3 align-top">{p.team?.name || p.team_name || p.team_id || '-'}</td>
                                         <td className="px-4 py-3 align-top">
-                                            <span className="inline-block px-2 py-1 text-md rounded">{p.status || p.project_status || 'unknown'}</span>
+                                            <span className="inline-block px-2 py-1 text-md rounded">{PROJECT_STATUS_LABELS[p.status] || p.status || 'unknown'}</span>
                                         </td>
                                         <td className="px-4 py-3 align-top">
                                             {p.start_date ? new Date(p.start_date).toLocaleDateString() : '-'}

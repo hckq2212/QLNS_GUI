@@ -28,6 +28,22 @@ export const contractApi = api.injectEndpoints({
       },
     }),
 
+    // get all contracts
+    getAllContracts: build.query({
+      query: () => ({ url: `/contract` }),
+      transformResponse: (res) => {
+        if (!res) return [];
+        if (Array.isArray(res)) return res;
+        if (res.items && Array.isArray(res.items)) return res.items;
+        if (res.data && Array.isArray(res.data)) return res.data;
+        return [];
+      },
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [...result.map((r) => ({ type: 'Contract', id: r.id })), { type: 'Contract', id: 'LIST' }]
+          : [{ type: 'Contract', id: 'LIST' }],
+    }),
+
     // get single contract by id
     getContractById: build.query({
       query: (contractId) => ({ url: `/contract/${contractId}` }),
@@ -38,6 +54,25 @@ export const contractApi = api.injectEndpoints({
         return res;
       },
       providesTags: (result, error, id) => [{ type: 'Contract', id }],
+    }),
+
+    // get proposal contract signed URL (cloudinary signed url)
+    getProposalContractUrl: build.query({
+      query: (id) => ({ url: `/contract/${id}/proposal-contract` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        // endpoint returns { url }
+        return res.url || null;
+      },
+    }),
+
+    // get signed contract download URL (private download URL)
+    getSignedContractUrl: build.query({
+      query: (id) => ({ url: `/contract/${id}/signed-contract` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        return res.url || null;
+      },
     }),
 
     // batch fetch contracts by ids via GET /contract?ids=1,2,3
@@ -97,7 +132,7 @@ export const contractApi = api.injectEndpoints({
     uploadSignedContract: build.mutation({
       query: ({ id, file }) => {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('signedContract', file);
         return {
           url: `/contract/${id}/sign`,
           method: 'PATCH',
@@ -148,6 +183,9 @@ export const {
   useUploadSignedContractMutation,
   useUploadProposalMutation,
   useCreateContractFromOpportunityMutation,
+  useGetProposalContractUrlQuery,
+  useGetSignedContractUrlQuery,
+  useGetAllContractsQuery,
   useGetContractsByIdsQuery,
   useGetContractServicesQuery,
   useUpdateContractMutation,

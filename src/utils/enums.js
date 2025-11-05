@@ -8,5 +8,21 @@ const JOB_STATUS_LABELS = {
   archived: 'Lưu trữ'
 }
 
+const CONTRACT_STATUS_LABELS ={
+  signed: 'Đã ký',
+  waiting_bod_approval:'Đang đợi BOD duyệt',
+  waiting_hr_confirm:'Đang đợi HR xác nhận',
+  without_debt:'Chưa có công nợ',
+  assigned:'Đang đợi ký'
+  
 
-export { JOB_STATUS_LABELS }
+}
+
+const PROJECT_STATUS_LABELS = {
+  in_progress:'Đang thực hiện',
+  team_acknowledged:'Team được phân công đã nhận thông tin',
+  not_assigned:'Chưa phân công công việc',
+  assigned:'Đã phân công công việc'
+}
+
+export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS }
