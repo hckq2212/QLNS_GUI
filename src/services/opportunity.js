@@ -18,11 +18,18 @@ export const opportunityAPI = api.injectEndpoints({
       providesTags: (result, error, status) => [{ type: 'Opportunity', status }],
     }),
     createOpportunity: build.mutation({
-      query: (body) => ({
-        url: '/opportunity',
-        method: 'POST',
-        body,
-      }),
+      // Accepts either a plain JS object (JSON) or a FormData instance
+      // When uploading files the caller should pass a FormData with files
+      query: (body) => {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        return {
+          url: '/opportunity',
+          method: 'POST',
+          // fetch will correctly send FormData without forcing a JSON content-type
+          body,
+          // do not set content-type here; browser will set proper multipart boundary when using FormData
+        };
+      },
       invalidatesTags: [{ type: 'Opportunity', id: 'LIST' }],
     }),
     getOpportunityServices: build.query({

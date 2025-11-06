@@ -34,7 +34,7 @@ const PRIORITY_OPTIONS = [
 const REGION_OPTIONS = [
   { value: 'all', label: 'Toàn quốc' },
   { value: 'north', label: 'Miền Bắc' },
-  { value: 'central', label: 'Miền Trung' },
+  { value: 'middle', label: 'Miền Trung' },
   { value: 'south', label: 'Miền Nam' },
 ];
 

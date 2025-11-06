@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import customerAPI from '../../api/customer.js';
 import { useGetServiceJobsQuery } from '../../services/serviceJob.js';
@@ -23,6 +23,11 @@ export default function CreateOpportunity() {
   const [priority, setPriority] = useState(PRIORITY_OPTIONS[1]?.value || 'medium');
   const [region, setRegion] = useState(REGION_OPTIONS[0]?.value || 'all');
   const [services, setServices] = useState([{ service_id: '', quantity: 1, proposed_price: '' }]);
+  const [createProject, setCreateProject] = useState('Không');
+  const [approver, setApprover] = useState('');
+  const [availableCustomers, setAvailableCustomers] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
 
   // LẤY SERVICE BẰNG RTK QUERY (có token mới gọi)
   const {
@@ -103,8 +108,30 @@ export default function CreateOpportunity() {
           proposed_price: s.proposed_price ? Number(s.proposed_price) : undefined,
         }));
 
-        console.log(payload)
-  const res = await createOpportunity(payload).unwrap();
+        console.log('payload (pre-files):', payload);
+
+      // If attachments are selected, build FormData and append fields/files
+      let toSend = payload;
+      if (attachments && attachments.length > 0) {
+        const fd = new FormData();
+        // append scalar fields
+        if (payload.name) fd.append('name', payload.name);
+        if (payload.description) fd.append('description', payload.description);
+        if (payload.expected_price !== undefined) fd.append('expected_price', String(payload.expected_price));
+        if (payload.expected_revenue !== undefined) fd.append('expected_revenue', String(payload.expected_revenue));
+        if (payload.budget !== undefined) fd.append('budget', String(payload.budget));
+        if (payload.success_rate !== undefined) fd.append('success_rate', String(payload.success_rate));
+        if (payload.expected_end_date) fd.append('expected_end_date', payload.expected_end_date);
+        if (payload.priority) fd.append('priority', payload.priority);
+        if (payload.region) fd.append('region', payload.region);
+        // services as JSON string
+        fd.append('services', JSON.stringify(payload.services || []));
+        // append files under field name 'attachments' (server uses upload.array('attachments', 5))
+        attachments.forEach((f) => fd.append('attachments', f));
+        toSend = fd;
+      }
+
+  const res = await createOpportunity(toSend).unwrap();
   toast.success('Tạo cơ hội thành công');
   // move to step 2 for customer info
   setCreatedOpportunityId(res?.id || null);
@@ -123,6 +150,9 @@ export default function CreateOpportunity() {
   setApprover('');
   setServices([{ service_id: '', quantity: 1, proposed_price: '' }]);
   setAvailableCustomers([]);
+  // clear file input and attachments
+  setAttachments([]);
+  if (fileInputRef && fileInputRef.current) fileInputRef.current.value = null;
     } catch (err) {
       console.error('Tạo cơ hội thất bại:', err);
       toast.error('Tạo cơ hội thất bại');
@@ -132,11 +162,32 @@ export default function CreateOpportunity() {
   // DANH SÁCH ID ĐÃ CHỌN (để chặn chọn trùng)
   const selectedIds = services.map((x) => String(x.service_id || '')).filter(Boolean);
 
+  function handleFilesChange(e) {
+    const files = Array.from(e.target.files || []);
+    // validation: max 5 files and total <= 25MB
+    if (files.length > 5) {
+      toast.error('Chỉ được upload tối đa 5 file');
+      e.target.value = null;
+      setAttachments([]);
+      return;
+    }
+    const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+    const MAX = 25 * 1024 * 1024; // 25MB
+    if (totalSize > MAX) {
+      toast.error('Tổng dung lượng file không được vượt quá 25MB');
+      e.target.value = null;
+      setAttachments([]);
+      return;
+    }
+    setAttachments(files);
+  }
+
   return (
     <div className="p-6 w-full mx-auto">
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col max-w-7xl mx-auto">
         <h2 className="text-2xl font-semibold mb-2">Thông tin cơ hội</h2>
+        <hr />
         <div className="mb-2">
           <input
             type="text"
@@ -280,9 +331,27 @@ export default function CreateOpportunity() {
           />
         </div>
 
-          <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-            {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
-          </button>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm (tối đa 5 file, tổng 25MB)</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFilesChange}
+              className="mb-2"
+            />
+            {attachments && attachments.length > 0 && (
+              <div className="text-sm text-gray-600 mb-2">
+                {attachments.map((f) => (
+                  <div key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                ))}
+              </div>
+            )}
+
+          </div>
+            <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+              {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
+            </button>
       </form>
     </div>
   );
