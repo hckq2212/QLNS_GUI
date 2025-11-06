@@ -13,5 +13,4 @@ const serviceJobApi = api.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useGetServiceJobsQuery, useGetServiceJobByIdQuery } = serviceApi;
-export default serviceJobApi;
+export const { useGetServiceJobsQuery, useGetServiceJobByIdQuery } = serviceJobApi;

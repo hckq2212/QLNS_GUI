@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import customerAPI from '../../api/customer.js';
-import serviceJob from '../../api/serviceJob.js';
+import { useGetServiceJobsQuery } from '../../services/serviceJob.js';
 import { toast } from 'react-toastify';
 import { useGetServicesQuery } from '../../services/service.js';
+import { PRIORITY_OPTIONS, REGION_OPTIONS } from '../../utils/enums';
 import { useCreateOpportunityMutation } from '../../services/opportunity.js';
 
 export default function CreateOpportunity() {
@@ -11,16 +12,17 @@ export default function CreateOpportunity() {
   const [createOpportunity, { isLoading: creating }] = useCreateOpportunityMutation();
 
   // FORM STATE
-  const [customerMode, setCustomerMode] = useState('existing');
-  const [customerId, setCustomerId] = useState('');
-  const [tempName, setTempName] = useState('');
-  const [tempEmail, setTempEmail] = useState('');
-  const [tempPhone, setTempPhone] = useState('');
+  const [createdOpportunityId, setCreatedOpportunityId] = useState(null);
+  const [opportunityName, setOpportunityName] = useState('');
   const [description, setDescription] = useState('');
   const [expectedPrice, setExpectedPrice] = useState('');
+  const [expectedRevenue, setExpectedRevenue] = useState('');
+  const [budget, setBudget] = useState('');
+  const [successProbability, setSuccessProbability] = useState('');
+  const [expectedEndDate, setExpectedEndDate] = useState('');
+  const [priority, setPriority] = useState(PRIORITY_OPTIONS[1]?.value || 'medium');
+  const [region, setRegion] = useState(REGION_OPTIONS[0]?.value || 'all');
   const [services, setServices] = useState([{ service_id: '', quantity: 1, proposed_price: '' }]);
-  const [availableCustomers, setAvailableCustomers] = useState([]);
-  const [availableServiceJobs, setAvailableServiceJobs] = useState([]);
 
   // LẤY SERVICE BẰNG RTK QUERY (có token mới gọi)
   const {
@@ -38,29 +40,21 @@ export default function CreateOpportunity() {
     : [];
 
 
-  // LẤY CUSTOMER CŨ BẰNG API CŨ
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await customerAPI.getAll();
-        setAvailableCustomers(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('failed to load customers', err);
-      }
-    })();
-  }, []);
 
-  // LẤY SERVICE JOB
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await serviceJob.getAll();
-        setAvailableServiceJobs(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('failed to load service jobs', err);
-      }
-    })();
-  }, []);
+
+  // LẤY SERVICE JOB bằng RTK Query
+  const {
+    data: serviceJobsData,
+    isLoading: loadingServiceJobs,
+    isError: serviceJobsError,
+    error: serviceJobsErrorObj,
+  } = useGetServiceJobsQuery(undefined, { skip: !token });
+
+  const availableServiceJobs = Array.isArray(serviceJobsData)
+    ? serviceJobsData
+    : Array.isArray(serviceJobsData?.items)
+    ? serviceJobsData.items
+    : [];
 
   // THÊM / XOÁ / SỬA DÒNG DỊCH VỤ
   function addServiceRow() {
@@ -91,18 +85,16 @@ export default function CreateOpportunity() {
     try {
       const payload = {};
 
-      if (customerMode === 'existing' && customerId) {
-        payload.customer_id = Number(customerId);
-      } else if (customerMode === 'temp') {
-        payload.customer_temp = JSON.stringify({
-          name: tempName,
-          email: tempEmail,
-          phone: tempPhone,
-        });
-      }
-
-      payload.description = description;
-      payload.expected_price = Number(expectedPrice);
+      // customer info is collected in step 2 after opportunity is created
+  if (opportunityName) payload.name = opportunityName;
+  payload.description = description;
+  payload.expected_price = Number(expectedPrice);
+  payload.expected_revenue = Number(expectedRevenue);
+  if (budget) payload.budget = Number(budget);
+  if (successProbability) payload.success_rate = Number(successProbability);
+  if (expectedEndDate) payload.expected_end_date = expectedEndDate;
+  if (priority) payload.priority = priority;
+  if (region) payload.region = region;
       payload.services = services
         .filter((s) => s.service_id)
         .map((s) => ({
@@ -111,18 +103,26 @@ export default function CreateOpportunity() {
           proposed_price: s.proposed_price ? Number(s.proposed_price) : undefined,
         }));
 
-      await createOpportunity(payload).unwrap();
-
-      toast.success('Tạo cơ hội thành công');
-
-      // reset
-      setCustomerId('');
-      setTempName('');
-      setTempEmail('');
-      setTempPhone('');
-      setDescription('');
-      setExpectedPrice('');
-      setServices([{ service_id: '', quantity: 1, proposed_price: '' }]);
+        console.log(payload)
+  const res = await createOpportunity(payload).unwrap();
+  toast.success('Tạo cơ hội thành công');
+  // move to step 2 for customer info
+  setCreatedOpportunityId(res?.id || null);
+  // keep form state (we'll fill customer in step 2)
+  // reset form inputs after successful creation
+  setOpportunityName('');
+  setDescription('');
+  setExpectedPrice('');
+  setExpectedRevenue('');
+  setBudget('');
+  setSuccessProbability('');
+  setExpectedEndDate('');
+  setPriority(PRIORITY_OPTIONS[1]?.value || 'medium');
+  setCreateProject('Không');
+  setRegion(REGION_OPTIONS[0]?.value || 'all');
+  setApprover('');
+  setServices([{ service_id: '', quantity: 1, proposed_price: '' }]);
+  setAvailableCustomers([]);
     } catch (err) {
       console.error('Tạo cơ hội thất bại:', err);
       toast.error('Tạo cơ hội thất bại');
@@ -133,74 +133,19 @@ export default function CreateOpportunity() {
   const selectedIds = services.map((x) => String(x.service_id || '')).filter(Boolean);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col">
-        <label className="block text-lg font-medium text-left">Chọn khách hàng</label>
+    <div className="p-6 w-full mx-auto">
 
-        {/* chọn KH cũ / mới */}
-        <div className="flex gap-4 mb-2">
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="radio"
-              checked={customerMode === 'existing'}
-              onChange={() => {
-                setCustomerMode('existing');
-                setTempName('');
-                setTempEmail('');
-                setTempPhone('');
-              }}
-            />
-            Khách hàng cũ
-          </label>
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="radio"
-              checked={customerMode === 'temp'}
-              onChange={() => {
-                setCustomerMode('temp');
-                setCustomerId('');
-              }}
-            />
-            Khách hàng mới
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col max-w-7xl mx-auto">
+        <h2 className="text-2xl font-semibold mb-2">Thông tin cơ hội</h2>
+        <div className="mb-2">
+          <input
+            type="text"
+            value={opportunityName}
+            onChange={(e) => setOpportunityName(e.target.value)}
+            className="mt-1 w-full border rounded p-2"
+            placeholder="Nhập tên cơ hội"
+          />
         </div>
-
-        {customerMode === 'existing' ? (
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="border rounded p-2"
-          >
-            <option value="">-- Chọn khách hàng --</option>
-            {availableCustomers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name || c.full_name || c.id}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="space-y-2 flex flex-col">
-            <input
-              className="border rounded p-2"
-              placeholder="Tên KH"
-              value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-            />
-            <input
-              className="border rounded p-2"
-              placeholder="Email KH"
-              value={tempEmail}
-              onChange={(e) => setTempEmail(e.target.value)}
-            />
-            <input
-              className="border rounded p-2"
-              placeholder="SĐT KH"
-              value={tempPhone}
-              onChange={(e) => setTempPhone(e.target.value)}
-            />
-          </div>
-        )}
-
         {/* mô tả */}
         <textarea
           value={description}
@@ -209,6 +154,75 @@ export default function CreateOpportunity() {
           rows={4}
           placeholder="Mô tả"
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 ">
+              <label className="w-100 text-sm text-gray-700">Doanh thu kỳ vọng</label>
+                <input
+                type="number"
+                value={expectedRevenue}
+                onChange={(e) => setExpectedRevenue(e.target.value)}
+                className="border rounded p-2 flex-1"
+                placeholder="VNĐ"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Dự kiến kết thúc</label>
+              <input
+                type="date"
+                value={expectedEndDate}
+                onChange={(e) => setExpectedEndDate(e.target.value)}
+                className="border rounded p-2"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Vùng miền triển khai</label>
+              <select value={region} onChange={(e) => setRegion(e.target.value)} className="border rounded p-2">
+                {REGION_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Ngân sách dự kiến</label>
+              <input
+                type="number"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="border rounded p-2 flex-1"
+                placeholder="VNĐ"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Độ ưu tiên</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="border rounded p-2">
+                {PRIORITY_OPTIONS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Khả năng thành công</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={successProbability}
+                onChange={(e) => setSuccessProbability(e.target.value)}
+                className="border rounded p-2 w-40"
+                placeholder="%"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* chọn dịch vụ */}
         <div>
@@ -266,9 +280,9 @@ export default function CreateOpportunity() {
           />
         </div>
 
-        <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-          {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
-        </button>
+          <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+            {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
+          </button>
       </form>
     </div>
   );

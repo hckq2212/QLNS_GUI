@@ -24,7 +24,6 @@ function App() {
           <Route path="/opportunity" element={<Opportunity />} />
           <Route path="/contract" element={<Contracts />} />
           <Route path="/contracts/hr" element={<ContractsHR />} />
-          <Route path="/opportunity/create-contract" element={<CreateConFromOppo />} />
           <Route path="/project" element={<Project />} />
           <Route path="/job" element={<Jobs />} />
         </Routes>

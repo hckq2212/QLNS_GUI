@@ -25,4 +25,17 @@ const PROJECT_STATUS_LABELS = {
   assigned:'Đã phân công công việc'
 }
 
-export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS }
+const PRIORITY_OPTIONS = [
+  { value: 'high', label: 'Cao' },
+  { value: 'medium', label: 'Trung bình' },
+  { value: 'low', label: 'Thấp' },
+];
+
+const REGION_OPTIONS = [
+  { value: 'all', label: 'Toàn quốc' },
+  { value: 'north', label: 'Miền Bắc' },
+  { value: 'central', label: 'Miền Trung' },
+  { value: 'south', label: 'Miền Nam' },
+];
+
+export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS }
