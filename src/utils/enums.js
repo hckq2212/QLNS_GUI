@@ -18,7 +18,14 @@ const CONTRACT_STATUS_LABELS ={
 
 }
 
-const PROJECT_STATUS_LABELS = {
+const OPPPORTUNITY_STATUS_LABELS = {
+  waiting_bod_approval:'Đang chờ BOD duyệt',
+  approved:'Đã được duyệt',
+  not_assigned:'Chưa phân công công việc',
+  assigned:'Đã phân công công việc'
+}
+
+const  PROJECT_STATUS_LABELS = {
   in_progress:'Đang thực hiện',
   team_acknowledged:'Team được phân công đã nhận thông tin',
   not_assigned:'Chưa phân công công việc',
@@ -38,4 +45,4 @@ const REGION_OPTIONS = [
   { value: 'south', label: 'Miền Nam' },
 ];
 
-export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS }
+export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS }

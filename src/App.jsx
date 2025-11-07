@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import './App.css'
 import Home from './screens/Home'
 import Login from './screens/Login'
@@ -14,28 +14,45 @@ import { Provider } from 'react-redux';
 import CreateOpportunity from "./components/Opportunity/CreateOpportunity";
 import SideMenu from "./components/ui/SideMenu";
 import Header from "./components/ui/Header";
+import MyOpportunity from "./components/Opportunity/MyOpportunity";
+import OpportunityDetail from "./components/Opportunity/OpportunityDetail";
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+
+  // Kiểm tra nếu đang ở trang login
+  const isLoginPage = location.pathname === "/login";
 
   return (
-    <BrowserRouter>
-      <Provider store = {store}>
-        <Header />
-        <SideMenu />
-        <div className="ml-[17%] mt-[100px]">
-          <Routes>
+    <>
+      {!isLoginPage && <Header />}
+      {!isLoginPage && <SideMenu />}
+
+      <div className={!isLoginPage ? "ml-[220px] mt-[100px]" : ""}>
+        <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/opportunity" element={<Opportunity />} />
+          <Route path="/opportunity" element={<MyOpportunity />} />
+          <Route path="/opportunity/:id" element={<OpportunityDetail />} />
           <Route path="/opportunity/create" element={<CreateOpportunity />} />
           <Route path="/contract" element={<Contracts />} />
           <Route path="/contracts/hr" element={<ContractsHR />} />
           <Route path="/project" element={<Project />} />
           <Route path="/job" element={<Jobs />} />
         </Routes>
-        </div>
+      </div>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Provider store={store}>
+        <AppContent />
       </Provider>
     </BrowserRouter>
   );
-} 
-export default App
+}
+
+export default App;

@@ -8,4 +8,15 @@ const formatDate = (v) => {
   if (s.includes('T') || s.includes(' ')) return s.split(/[T ]/)[0];
   return s;
 };
-export {formatDate, formatPrice}
+
+const formatRate = (v) =>{
+  if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    if (Number.isNaN(n)) return null;
+    // show integer when whole number, otherwise trim trailing zeros
+    const s = Number.isInteger(n) ? String(n) : String(n).replace(/\.0+$/,'');
+    return `${s}%`;
+}
+
+
+export {formatDate, formatPrice, formatRate}

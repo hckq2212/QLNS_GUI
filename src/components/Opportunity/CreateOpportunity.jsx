@@ -95,7 +95,7 @@ export default function CreateOpportunity() {
   payload.description = description;
   payload.expected_price = Number(expectedPrice);
   payload.expected_revenue = Number(expectedRevenue);
-  if (budget) payload.budget = Number(budget);
+  if (budget) payload.expected_budget = Number(budget);
   if (successProbability) payload.success_rate = Number(successProbability);
   if (expectedEndDate) payload.expected_end_date = expectedEndDate;
   if (priority) payload.priority = priority;
@@ -118,8 +118,8 @@ export default function CreateOpportunity() {
         if (payload.name) fd.append('name', payload.name);
         if (payload.description) fd.append('description', payload.description);
         if (payload.expected_price !== undefined) fd.append('expected_price', String(payload.expected_price));
-        if (payload.expected_revenue !== undefined) fd.append('expected_revenue', String(payload.expected_revenue));
-        if (payload.budget !== undefined) fd.append('budget', String(payload.budget));
+  if (payload.expected_revenue !== undefined) fd.append('expected_revenue', String(payload.expected_revenue));
+  if (payload.expected_budget !== undefined) fd.append('expected_budget', String(payload.expected_budget));
         if (payload.success_rate !== undefined) fd.append('success_rate', String(payload.success_rate));
         if (payload.expected_end_date) fd.append('expected_end_date', payload.expected_end_date);
         if (payload.priority) fd.append('priority', payload.priority);

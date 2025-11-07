@@ -14,8 +14,15 @@ export const opportunityAPI = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Opportunity', id }],
     }),
     getOpportunityByStatus: build.query({
-      query: (status) => `/opportunity/${status}`,
+      query: (status) => `/opportunity/status/${status}`,
       providesTags: (result, error, status) => [{ type: 'Opportunity', status }],
+    }),
+    getMyOpportunities: build.query({
+      query: () => `/opportunity/me`,
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [...result.map((r) => ({ type: 'Opportunity', id: r.id })), { type: 'Opportunity', id: 'MY' }]
+          : [{ type: 'Opportunity', id: 'MY' }],
     }),
     createOpportunity: build.mutation({
       // Accepts either a plain JS object (JSON) or a FormData instance
@@ -59,10 +66,11 @@ export const opportunityAPI = api.injectEndpoints({
 export const {
   useCreateOpportunityMutation,
   useGetAllOpportunityQuery,
-  useLazyGetOpportunityByIdQuery,
+  useGetOpportunityByIdQuery,
   useApproveMutation,
   useGetOpportunityServicesQuery,
   useQuoteOpportunityMutation,
-  useGetOpportunityByStatusQuery
+  useGetOpportunityByStatusQuery,
+  useGetMyOpportunitiesQuery
 } = opportunityAPI;
 export default opportunityAPI;
