@@ -1,13 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useGetOpportunityByIdQuery } from '../../services/opportunity.js';
-import { useGetAllCustomerQuery } from '../../services/customer';
+import { useGetAllCustomerQuery, useUpdateCustomerMutation } from '../../services/customer';
 import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
 import { useParams } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS } from '../../utils/enums.js';
+// customer status options - adjust as your backend defines the enum
+const CUSTOMER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Khách hàng hiện hữu' },
+  { value: 'inactive', label: 'Không hoạt động' },
+  { value: 'prospect', label: 'Khách hàng tiềm năng' },
+];
 
 export default function OpportunityDetail({ id: propId } = {}) {
   // try to get id from prop, otherwise from route params
@@ -64,6 +70,16 @@ export default function OpportunityDetail({ id: propId } = {}) {
     return [];
   }, [opp]);
 
+  // editable customer draft for inline editing
+  const [editingCustomer, setEditingCustomer] = useState(false);
+  const [customerDraft, setCustomerDraft] = useState(null);
+  const [updateCustomer, { isLoading: updatingCustomer }] = useUpdateCustomerMutation();
+
+  // initialize draft when customer changes (but not while editing)
+  useEffect(() => {
+    if (!editingCustomer) setCustomerDraft(customer);
+  }, [customer, editingCustomer]);
+
   if (!id) return <div className="p-6">No opportunity id provided</div>;
   if (isLoading) return <div className="p-6">Loading opportunity...</div>;
   if (isError) return <div className="p-6 text-red-600">Error: {error?.message || 'Failed to load opportunity'}</div>;
@@ -75,7 +91,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
         <div className="col-span-8 bg-white rounded shadow p-6">
           <div>
-            <h2 className='text-lg font-semibold  text-blue-700'>
+            <h2 className='text-md font-semibold  text-blue-700'>
               Thông tin cơ hội
             </h2>
           </div>
@@ -190,15 +206,67 @@ export default function OpportunityDetail({ id: propId } = {}) {
         </div>
 
         <div className="col-span-4 bg-white rounded shadow p-6">
-          <div className="text-lg font-semibold  text-blue-700">Thông tin khách hàng</div>
+          <div className="text-md font-semibold  flex justify-between text-blue-700">
+            Thông tin khách hàng
+              {!editingCustomer ? (
+                <button onClick={() => { setEditingCustomer(true); setCustomerDraft(customer); }} className="text-sm bg-white border px-3 py-1 rounded">Chỉnh sửa</button>
+              ) : null}
+          </div>
           <hr className='my-4' />
           <div className="mt-3 text-sm text-gray-700">
-            <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name || customer?.customer_name || 'Chưa có'}</div>
-            <div className="mb-2 flex flex-col"><p className='text-gray-500'>Điện thoại:</p> {customer?.phone || customer?.phone_number || customer?.mobile || 'Chưa có'}</div>
-            <div className="mb-2 flex flex-col"><p className='text-gray-500'>Email:</p> {customer?.email || 'Chưa có'}</div>
-            <div className="mb-2 flex flex-col"><p className='text-gray-500'>Trạng thái:</p> {customer?.status || 'Chưa có'}</div>
-            <div className="mb-2 flex flex-col"><p className='text-gray-500'>Mã định danh:</p> {customer?.identify_code || customer?.id_number || 'Chưa có'}</div>
-            {customer?.address && <div className="mb-2"><p>Địa chỉ:</p> {customer.address}</div>}
+            <div className="flex justify-end mb-2">
+            </div>
+            {editingCustomer ? (
+              <div>
+                <div className="mb-2">
+                  <p className='text-gray-500'>Trạng thái khách hàng:</p>
+                  <select className="mt-1 w-full border rounded p-2" value={customerDraft?.status || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, status: e.target.value }))}>
+                    <option value="">-- Chọn trạng thái --</option>
+                    {CUSTOMER_STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-2">
+                  <p className='text-gray-500'>Khách hàng:</p>
+                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.name || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, name: e.target.value }))} />
+                </div>
+                <div className="mb-2">
+                  <p className='text-gray-500'>Điện thoại:</p>
+                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.phone || customerDraft?.phone_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, phone: e.target.value }))} />
+                </div>
+                <div className="mb-2">
+                  <p className='text-gray-500'>Email:</p>
+                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.email || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, email: e.target.value }))} />
+                </div>
+
+                <div className="mb-2">
+                  <p className='text-gray-500'>CMND / Hộ chiếu:</p>
+                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identify_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button className="bg-green-600 text-white px-3 py-1 rounded" disabled={updatingCustomer} onClick={async () => {
+                    if (!customerDraft || !customerDraft.id) return;
+                    try {
+                      await updateCustomer({ id: customerDraft.id, name: customerDraft.name, phone: customerDraft.phone, email: customerDraft.email, status: customerDraft.status, identify_code: customerDraft.identify_code || customerDraft.id_number }).unwrap();
+                      setEditingCustomer(false);
+                    } catch (err) {
+                      console.error('Update customer failed', err);
+                    }
+                  }}>{updatingCustomer ? 'Đang lưu...' : 'Lưu'}</button>
+                  <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => { setEditingCustomer(false); setCustomerDraft(customer); }}>Hủy</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name || customer?.customer_name || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Điện thoại:</p> {customer?.phone || customer?.phone_number || customer?.mobile || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Email:</p> {customer?.email || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Trạng thái:</p> {customer?.status || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Mã định danh:</p> {customer?.identify_code || customer?.id_number || 'Chưa có'}</div>
+                {customer?.address && <div className="mb-2"><p>Địa chỉ:</p> {customer.address}</div>}
+              </>
+            )}
           </div>
         </div>
       </div>
