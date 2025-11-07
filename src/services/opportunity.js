@@ -59,6 +59,14 @@ export const opportunityAPI = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
     }),
+    updateOpportunity: build.mutation({
+      query: ({ id, body } = {}) => ({
+        url: `/opportunity/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -70,6 +78,7 @@ export const {
   useApproveMutation,
   useGetOpportunityServicesQuery,
   useQuoteOpportunityMutation,
+  useUpdateOpportunityMutation,
   useGetOpportunityByStatusQuery,
   useGetMyOpportunitiesQuery
 } = opportunityAPI;

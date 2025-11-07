@@ -1,19 +1,18 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useGetOpportunityByIdQuery } from '../../services/opportunity.js';
-import { useGetAllCustomerQuery, useUpdateCustomerMutation } from '../../services/customer';
+import { useGetOpportunityByIdQuery, useApproveMutation } from '../../services/opportunity.js';
+import { useGetAllCustomerQuery } from '../../services/customer';
+import { useUpdateOpportunityMutation } from '../../services/opportunity';
 import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
 import { useParams } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
-import { PRIORITY_OPTIONS, REGION_OPTIONS } from '../../utils/enums.js';
-// customer status options - adjust as your backend defines the enum
-const CUSTOMER_STATUS_OPTIONS = [
-  { value: 'active', label: 'Khách hàng hiện hữu' },
-  { value: 'inactive', label: 'Không hoạt động' },
-  { value: 'prospect', label: 'Khách hàng tiềm năng' },
-];
+import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
+import PriceQuoteModal from '../ui/PriceQuoteModal';
+import opportunityAPI from '../../api/opportunity.js';
+import { toast } from 'react-toastify';
+
 
 export default function OpportunityDetail({ id: propId } = {}) {
   // try to get id from prop, otherwise from route params
@@ -28,7 +27,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
   const token = useSelector((s) => s.auth.accessToken);
 
-  const { data: opp, isLoading, isError, error } = useGetOpportunityByIdQuery(id, { skip: !id });
+  const { data: opp, isLoading, isError, error, refetch } = useGetOpportunityByIdQuery(id, { skip: !id });
   const { data: servicesData } = useGetOpportunityServicesQuery(id, { skip: !id });
   // all services master list (used to resolve service_id -> service name)
   const { data: servicesList = [] } = useGetServicesQuery();
@@ -73,11 +72,19 @@ export default function OpportunityDetail({ id: propId } = {}) {
   // editable customer draft for inline editing
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [customerDraft, setCustomerDraft] = useState(null);
-  const [updateCustomer, { isLoading: updatingCustomer }] = useUpdateCustomerMutation();
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  // price quote modal
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [updateOpportunity, { isLoading: updatingOpportunity }] = useUpdateOpportunityMutation();
+  const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
+  const role = useSelector((s) => s.auth.role);
 
   // initialize draft when customer changes (but not while editing)
   useEffect(() => {
-    if (!editingCustomer) setCustomerDraft(customer);
+    if (!editingCustomer) {
+      setCustomerDraft(customer);
+      setSelectedCustomerId(customer?.id || null);
+    }
   }, [customer, editingCustomer]);
 
   if (!id) return <div className="p-6">No opportunity id provided</div>;
@@ -227,49 +234,142 @@ export default function OpportunityDetail({ id: propId } = {}) {
                     ))}
                   </select>
                 </div>
-                <div className="mb-2">
-                  <p className='text-gray-500'>Khách hàng:</p>
-                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.name || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, name: e.target.value }))} />
-                </div>
-                <div className="mb-2">
-                  <p className='text-gray-500'>Điện thoại:</p>
-                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.phone || customerDraft?.phone_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, phone: e.target.value }))} />
-                </div>
-                <div className="mb-2">
-                  <p className='text-gray-500'>Email:</p>
-                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.email || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, email: e.target.value }))} />
-                </div>
 
-                <div className="mb-2">
-                  <p className='text-gray-500'>CMND / Hộ chiếu:</p>
-                  <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identify_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
-                </div>
+                {/* if prospect, allow freeform inputs and save to opportunity.customer_temp */}
+                {customerDraft?.status === 'prospect' ? (
+                  <>
+                    <div className="mb-2">
+                      <p className='text-gray-500'>Tên khách hàng (tiềm năng):</p>
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.name || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, name: e.target.value }))} />
+                    </div>
+                    <div className="mb-2">
+                      <p className='text-gray-500'>Điện thoại:</p>
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.phone || customerDraft?.phone_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, phone: e.target.value }))} />
+                    </div>
+                    <div className="mb-2">
+                      <p className='text-gray-500'>Email:</p>
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.email || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, email: e.target.value }))} />
+                    </div>
+                    <div className="mb-2">
+                      <p className='text-gray-500'>CMND/Hộ chiếu:</p>
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identify_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
+                    </div>
+                    <div className="mb-2">
+                      <p className='text-gray-500'>Địa chỉ:</p>
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.address || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, address: e.target.value }))} />
+                    </div>
+                  </>
+                ) : (
+                  /* otherwise allow selecting an existing customer from dropdown */
+                  <div className="mb-2">
+                    <p className='text-gray-500'>Chọn khách hàng hiện có:</p>
+                    <select className="mt-1 w-full border rounded p-2" value={selectedCustomerId || ''} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                      <option value="">-- Chọn khách hàng --</option>
+                      {Array.isArray(customers) && customers.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex gap-2 mt-2">
-                  <button className="bg-green-600 text-white px-3 py-1 rounded" disabled={updatingCustomer} onClick={async () => {
-                    if (!customerDraft || !customerDraft.id) return;
+                  <button className="bg-green-600 text-white px-3 py-1 rounded" disabled={updatingOpportunity} onClick={async () => {
                     try {
-                      await updateCustomer({ id: customerDraft.id, name: customerDraft.name, phone: customerDraft.phone, email: customerDraft.email, status: customerDraft.status, identify_code: customerDraft.identify_code || customerDraft.id_number }).unwrap();
+                      const body = {};
+                      if (customerDraft?.status === 'prospect') {
+                        body.customer_temp = {
+                          name: customerDraft.name || '',
+                          phone: customerDraft.phone || customerDraft.phone_number || '',
+                          email: customerDraft.email || '',
+                          status: customerDraft.status || 'prospect',
+                          identify_code: customerDraft.identify_code || customerDraft.id_number || '',
+                          address: customerDraft.address || '',
+                        };
+                        body.customer_id = null;
+                      } else {
+                        // use selectedCustomerId if present, otherwise fallback to draft.id
+                        const cid = selectedCustomerId || customerDraft?.id || null;
+                        if (cid) body.customer_id = Number(cid);
+                        body.customer_temp = null;
+                      }
+                      await updateOpportunity({ id: opp.id, body }).unwrap();
                       setEditingCustomer(false);
                     } catch (err) {
-                      console.error('Update customer failed', err);
+                      console.error('Update opportunity customer failed', err);
                     }
-                  }}>{updatingCustomer ? 'Đang lưu...' : 'Lưu'}</button>
-                  <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => { setEditingCustomer(false); setCustomerDraft(customer); }}>Hủy</button>
+                  }}>{updatingOpportunity ? 'Đang lưu...' : 'Lưu'}</button>
+                  <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => { setEditingCustomer(false); setCustomerDraft(customer); setSelectedCustomerId(customer?.id || null); }}>Hủy</button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name || customer?.customer_name || 'Chưa có'}</div>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Điện thoại:</p> {customer?.phone || customer?.phone_number || customer?.mobile || 'Chưa có'}</div>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Email:</p> {customer?.email || 'Chưa có'}</div>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Trạng thái:</p> {customer?.status || 'Chưa có'}</div>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Mã định danh:</p> {customer?.identify_code || customer?.id_number || 'Chưa có'}</div>
-                {customer?.address && <div className="mb-2"><p>Địa chỉ:</p> {customer.address}</div>}
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name  || opp?.customer_temp?.name || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Điện thoại:</p> {customer?.phone || customer?.phone_number || opp?.customer_temp?.phone || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Email:</p> {customer?.email || opp?.customer_temp?.email || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Trạng thái:</p> {(
+                  CUSTOMER_STATUS_OPTIONS.find((o) => o.value === (customer?.status || opp?.customer_temp?.status))?.label
+                  || customer?.status
+                  || opp?.customer_temp?.status
+                  || 'Chưa có'
+                )}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>CMNND/Hộ chiếu:</p> {customer?.identify_code || customer?.id_number || opp?.customer_temp?.identify_code || 'Chưa có'}</div>
+                {(customer?.address || opp?.customer_temp?.address) && <div className="mb-2"><p>Địa chỉ:</p> {customer?.address || opp?.customer_temp?.address}</div>}
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Price quote action footer */}
+      <div className="mt-6 flex items-center gap-3 justify-between">
+        <button onClick={() => setQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Làm báo giá</button>
+
+        {/* BOD / Admin actions: Duyệt / Không duyệt */}
+        {(role === 'bod' || role === 'admin') && (
+          <div className="ml-4 flex items-center gap-2">
+            <button
+              disabled={approving}
+              onClick={async () => {
+                if (!window.confirm('Bạn có chắc muốn duyệt cơ hội này?')) return;
+                try {
+                  await approveOpportunity(opp.id).unwrap();
+                  toast.success('Đã duyệt cơ hội');
+                  // RTK Query invalidation should refetch, but call refetch to be safe
+                  try { refetch && refetch(); } catch (e) { /* ignore */ }
+                } catch (err) {
+                  console.error('approve failed', err);
+                  toast.error(err?.message || 'Duyệt thất bại');
+                }
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              {approving ? 'Đang...' : 'Duyệt'}
+            </button>
+
+            <button
+              disabled={false}
+              onClick={async () => {
+                if (!window.confirm('Bạn có chắc muốn từ chối cơ hội này?')) return;
+                try {
+                  await opportunityAPI.reject(opp.id, {});
+                  toast.success('Đã từ chối cơ hội');
+                  // refetch the opportunity to update UI
+                  try { refetch && refetch(); } catch (e) { /* ignore */ }
+                } catch (err) {
+                  console.error('reject failed', err);
+                  toast.error(err?.message || 'Từ chối thất bại');
+                }
+              }}
+              className="bg-red-600 text-white px-4 py-2 rounded"
+            >
+              Không duyệt
+            </button>
+          </div>
+        )}
+      </div>
+
+      <PriceQuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} opportunity={opp} />
+
     </div>
   );
 }

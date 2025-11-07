@@ -45,4 +45,10 @@ const REGION_OPTIONS = [
   { value: 'south', label: 'Miền Nam' },
 ];
 
-export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS }
+const CUSTOMER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Khách hàng hiện hữu' },
+  { value: 'inactive', label: 'Không hoạt động' },
+  { value: 'prospect', label: 'Khách hàng tiềm năng' },
+];
+
+export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS, CUSTOMER_STATUS_OPTIONS }

@@ -235,8 +235,6 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                         </div>
                         {/* button submit   */}
                         <div className="mt-4 flex items-center justify-end gap-3">
-                            {submitError ? <div className="text-sm text-red-600">Lỗi: {submitError}</div> : null}
-                            {submitSuccess ? <div className="text-sm text-green-600">Báo giá gửi thành công</div> : null}
                             <button onClick={handleSubmitQuote} disabled={submitting} className={`px-3 py-1 text-sm rounded ${submitting ? 'bg-gray-300' : 'bg-blue-600 text-white'}`}>
                                 {submitting ? 'Đang gửi...' : 'Báo giá'}
                             </button>

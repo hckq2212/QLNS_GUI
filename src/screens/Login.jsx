@@ -7,7 +7,9 @@ import authAPI from '../api/auth.js'
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux'; 
-import { setCredentials } from '../features/auth/authSlice.js';
+import { setCredentials, setRole } from '../features/auth/authSlice.js';
+import { api } from '../services/api';
+import apiClient from '../api/apiConfig.js';
 import eyeIcon from '../assets/eye.png'
 
 
@@ -42,8 +44,26 @@ export default function Login() {
           throw new Error('Không tìm thấy access token trong response');
         }
 
-        // dispatch to redux
+        // dispatch accessToken and user first so RTK Query prepareHeaders can use the token
+        const roleFromBody = body?.role;
         dispatch(setCredentials({ accessToken, user }));
+
+        // determine role: prefer response payload, otherwise fetch from /me/role
+        let role = roleFromBody ?? null;
+        if (!role) {
+          try {
+            // authAPI.login already set Authorization header on the axios client (apiClient)
+            const r = await apiClient.get('/api/me/role');
+            const fetched = r?.data ?? null;
+            role = fetched && typeof fetched === 'object' ? (fetched.role ?? fetched) : fetched;
+            if (role) dispatch(setRole(role));
+          } catch (errRole) {
+            console.warn('Failed to fetch role after login via axios', errRole);
+            role = null;
+          }
+        } else {
+          dispatch(setRole(role));
+        }
 
         setErrorMsg('');
         navigate('/');

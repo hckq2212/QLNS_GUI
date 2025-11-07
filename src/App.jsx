@@ -16,6 +16,7 @@ import SideMenu from "./components/ui/SideMenu";
 import Header from "./components/ui/Header";
 import MyOpportunity from "./components/Opportunity/MyOpportunity";
 import OpportunityDetail from "./components/Opportunity/OpportunityDetail";
+import OpporunityList from "./components/Opportunity/OpporunityList";
 
 function AppContent() {
   const location = useLocation();
@@ -32,8 +33,10 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/opportunity" element={<MyOpportunity />} />
+          <Route path="/opportunity/me" element={<MyOpportunity />} />
           <Route path="/opportunity/:id" element={<OpportunityDetail />} />
+          <Route path="/opportunity" element={<OpporunityList />} />
+
           <Route path="/opportunity/create" element={<CreateOpportunity />} />
           <Route path="/contract" element={<Contracts />} />
           <Route path="/contracts/hr" element={<ContractsHR />} />

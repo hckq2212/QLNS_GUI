@@ -36,6 +36,7 @@ export default function SideMenu () {
                     {opportunityList && (
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/opportunity/create" className="text-[#184172]">Tạo cơ hội</a></li>
+                            <li><a href="/opportunity/me" className="text-[#184172]">Cơ hội đã tạo</a></li>
                             <li><a href="/opportunity" className="text-[#184172]">Danh sách cơ hội</a></li>
                         </ul>
                     )}
