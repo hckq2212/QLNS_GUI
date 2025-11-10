@@ -14,11 +14,11 @@ export default function CreateConFromOppoModal({
   const handleCreate = async () => {
     try {
       const payload = {
-        customerId: selectedOpportunity.customer_id ?? null,
+        customerId: selectedOpportunity.customer_id ?? selectedOpportunity.customer?.id ?? null,
         totalCost: 0,
         totalRevenue: selectedOpportunity.expected_price
           ? Number(selectedOpportunity.expected_price)
-          : 0,
+          : (selectedOpportunity.expected_revenue ? Number(selectedOpportunity.expected_revenue) : 0),
         customer_temp: selectedOpportunity.customer_temp ?? null,
       };
 
@@ -40,10 +40,10 @@ export default function CreateConFromOppoModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
       <div className="bg-white p-6 rounded shadow-lg w-96">
         <h3 className="font-semibold mb-2">
-          Tạo hợp đồng từ cơ hội {selectedOpportunity.id}
+          Tạo hợp đồng từ cơ hội {selectedOpportunity.name}
         </h3>
         <p className="text-sm mb-4">
-          Khách hàng: {selectedOpportunity.customerName || '—'}
+          Khách hàng: {selectedOpportunity.customer?.name || selectedOpportunity.customer_temp?.name || '—'}
         </p>
         <div className="flex justify-end gap-2">
           <button

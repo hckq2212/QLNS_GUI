@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/ui/Header.jsx';
 import SideMenu from '../components/ui/SideMenu.jsx';
 import ProjectChart from '../components/Dashboard/ProjectChart.jsx';
-import ContractList from '../components/Dashboard/ContractList.jsx';
 import { useState } from 'react';
 import ProjectList from '../components/Dashboard/ProjectList.jsx'
 

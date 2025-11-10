@@ -12,6 +12,7 @@ import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../..
 import PriceQuoteModal from '../ui/PriceQuoteModal';
 import opportunityAPI from '../../api/opportunity.js';
 import { toast } from 'react-toastify';
+import CreateConFromOppoModal from '../ui/CreateConFromOppoModal.jsx';
 
 
 export default function OpportunityDetail({ id: propId } = {}) {
@@ -75,6 +76,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   // price quote modal
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [createConOpen, setCreateConOpen] = useState(false);
   const [updateOpportunity, { isLoading: updatingOpportunity }] = useUpdateOpportunityMutation();
   const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
   const role = useSelector((s) => s.auth.role);
@@ -235,8 +237,8 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   </select>
                 </div>
 
-                {/* if prospect, allow freeform inputs and save to opportunity.customer_temp */}
-                {customerDraft?.status === 'prospect' ? (
+                {/* if potential, allow freeform inputs and save to opportunity.customer_temp */}
+                {customerDraft?.status === 'potential' ? (
                   <>
                     <div className="mb-2">
                       <p className='text-gray-500'>Tên khách hàng (tiềm năng):</p>
@@ -276,12 +278,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   <button className="bg-green-600 text-white px-3 py-1 rounded" disabled={updatingOpportunity} onClick={async () => {
                     try {
                       const body = {};
-                      if (customerDraft?.status === 'prospect') {
+                      if (customerDraft?.status === 'potential') {
                         body.customer_temp = {
                           name: customerDraft.name || '',
                           phone: customerDraft.phone || customerDraft.phone_number || '',
                           email: customerDraft.email || '',
-                          status: customerDraft.status || 'prospect',
+                          status: customerDraft.status || 'potential',
                           identify_code: customerDraft.identify_code || customerDraft.id_number || '',
                           address: customerDraft.address || '',
                         };
@@ -322,10 +324,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
       {/* Price quote action footer */}
       <div className="mt-6 flex items-center gap-3 justify-between">
-        <button onClick={() => setQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Làm báo giá</button>
 
+        {(opp.status == 'approved') && (
+          <button onClick={() => setQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Làm báo giá</button>
+        )}
         {/* BOD / Admin actions: Duyệt / Không duyệt */}
-        {(role === 'bod' || role === 'admin') && (
+        {(role === 'bod' || role === 'admin' && opp.status == 'waiting_bod_approval') && (
           <div className="ml-4 flex items-center gap-2">
             <button
               disabled={approving}
@@ -367,9 +371,22 @@ export default function OpportunityDetail({ id: propId } = {}) {
           </div>
         )}
       </div>
-
+      {(opp.status == 'quoted') && (
+        <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded mt-6">Tạo hợp đồng</button>
+      )}
       <PriceQuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} opportunity={opp} />
 
+      {createConOpen && (
+        <CreateConFromOppoModal
+          selectedOpportunity={opp}
+          onClose={() => setCreateConOpen(false)}
+          onCreated={() => {
+            // refresh opportunity and close modal
+            try { refetch && refetch(); } catch (e) {}
+            setCreateConOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -42,6 +42,19 @@ export default function SideMenu () {
                     )}
                 </li>
 
+                {/* Hợp đồng */}
+                <li className="p-4 cursor-pointer">
+                    <div onClick={toggleContractList} className="flex justify-between items-center">
+                        <span className="text-[#184172] text-md font-semibold">Hợp đồng</span>
+                        {contractList ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                    {contractList && (
+                        <ul className="p-2 flex flex-col gap-2">
+                            <li><a href="/contract" className="text-[#184172]">Danh sách hợp đồng</a></li>
+                        </ul>
+                    )}
+                </li>
+
                 {/* Công việc */}
                 <li className="p-4 cursor-pointer">
                     <div onClick={toggleJobList} className="flex justify-between items-center">
@@ -72,12 +85,12 @@ export default function SideMenu () {
                 {/* Chương trình */}
                 <li className="p-4 cursor-pointer">
                     <div onClick={toggleProjectList} className="flex justify-between items-center">
-                        <span className="text-[#184172] text-md font-semibold">Chương trình</span>
+                        <span className="text-[#184172] text-md font-semibold">Dự án</span>
                         {projectList ? <FaChevronUp /> : <FaChevronDown />}
                     </div>
                     {projectList && (
                         <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/projects" className="text-[#184172]">Danh sách chương trình</a></li>
+                            <li><a href="/projects" className="text-[#184172]">Danh sách dự án</a></li>
                         </ul>
                     )}
                 </li>

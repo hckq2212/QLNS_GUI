@@ -3,10 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import './App.css'
 import Home from './screens/Home'
 import Login from './screens/Login'
-import Opportunity from "./screens/Opportunity";
-import Contracts from "./screens/Contracts";
 import ContractsHR from "./screens/ContractsHR";
-import CreateConFromOppo from "./components/Opportunity/CreateConFromOppo";
 import Project from "./screens/Project";
 import Jobs from "./screens/Jobs";
 import { store } from './app/store'
@@ -17,6 +14,8 @@ import Header from "./components/ui/Header";
 import MyOpportunity from "./components/Opportunity/MyOpportunity";
 import OpportunityDetail from "./components/Opportunity/OpportunityDetail";
 import OpporunityList from "./components/Opportunity/OpporunityList";
+import ContractList from "./components/Contract/ContractList";
+import ContractDetail from "./components/Contract/ContractDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -38,7 +37,8 @@ function AppContent() {
           <Route path="/opportunity" element={<OpporunityList />} />
 
           <Route path="/opportunity/create" element={<CreateOpportunity />} />
-          <Route path="/contract" element={<Contracts />} />
+          <Route path="/contract/:id" element={<ContractDetail />} />
+          <Route path="/contract" element={<ContractList />} />
           <Route path="/contracts/hr" element={<ContractsHR />} />
           <Route path="/project" element={<Project />} />
           <Route path="/job" element={<Jobs />} />

@@ -7,7 +7,7 @@ export const contractApi = api.injectEndpoints({
     // lấy theo status: waiting_hr_confirm, waiting_bod_approval, not_assigned, without_debt
     getContractsByStatus: build.query({
       query: (status) => ({
-        url: `/contract/${status}`,
+        url: `/contract/status/${status}`,
         providesTags: (result, err, status) => [{ type: 'Contract', id: `LIST-${status}` }],
       }),
       // cache danh sách theo status
@@ -183,10 +183,11 @@ export const {
   useUploadSignedContractMutation,
   useUploadProposalMutation,
   useCreateContractFromOpportunityMutation,
-  useGetProposalContractUrlQuery,
-  useGetSignedContractUrlQuery,
+  useLazyGetProposalContractUrlQuery,
+  useLazyGetSignedContractUrlQuery,
   useGetAllContractsQuery,
   useGetContractsByIdsQuery,
   useGetContractServicesQuery,
   useUpdateContractMutation,
+  useGetContractByIdQuery
 } = contractApi;
