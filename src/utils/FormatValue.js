@@ -18,5 +18,4 @@ const formatRate = (v) =>{
     return `${s}%`;
 }
 
-
 export {formatDate, formatPrice, formatRate}

@@ -135,7 +135,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                       // opportunity_service row contains service_id -> resolve from master services list
                       const svcId = s.service_id || s.service?.id || s.service_id;
                       const svc = Array.isArray(servicesList) ? servicesList.find((x) => x.id === svcId) : null;
-                      const label = svc?.name || svc?.service_name || s.name || s.opportunity_service_name || `Service ${svcId || s.id}`;
+                      const label = svc?.name  || s.name  || `Service ${svcId || s.id}`;
                       return (
                         <span key={s.id || svcId} className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full mr-2 mb-2 text-sm">
                           {label}
@@ -254,7 +254,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>CMND/Hộ chiếu:</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identify_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
+                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identity_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>Địa chỉ:</p>
@@ -284,7 +284,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                           phone: customerDraft.phone || customerDraft.phone_number || '',
                           email: customerDraft.email || '',
                           status: customerDraft.status || 'potential',
-                          identify_code: customerDraft.identify_code || customerDraft.id_number || '',
+                          identity_code: customerDraft.identity_code || customerDraft.id_number || '',
                           address: customerDraft.address || '',
                         };
                         body.customer_id = null;
