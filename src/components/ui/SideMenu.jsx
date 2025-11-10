@@ -90,7 +90,7 @@ export default function SideMenu () {
                     </div>
                     {projectList && (
                         <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/projects" className="text-[#184172]">Danh sách dự án</a></li>
+                            <li><a href="/project" className="text-[#184172]">Danh sách dự án</a></li>
                         </ul>
                     )}
                 </li>

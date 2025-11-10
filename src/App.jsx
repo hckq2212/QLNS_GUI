@@ -16,6 +16,8 @@ import OpportunityDetail from "./components/Opportunity/OpportunityDetail";
 import OpporunityList from "./components/Opportunity/OpporunityList";
 import ContractList from "./components/Contract/ContractList";
 import ContractDetail from "./components/Contract/ContractDetail";
+import ProjectList from "./components/Project/ProjectList";
+import ProjectDetail from "./components/Project/ProjectDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -40,7 +42,8 @@ function AppContent() {
           <Route path="/contract/:id" element={<ContractDetail />} />
           <Route path="/contract" element={<ContractList />} />
           <Route path="/contracts/hr" element={<ContractsHR />} />
-          <Route path="/project" element={<Project />} />
+          <Route path="/project/:id" element={<ProjectDetail />} />
+          <Route path="/project" element={<ProjectList />} />
           <Route path="/job" element={<Jobs />} />
         </Routes>
       </div>
