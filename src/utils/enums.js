@@ -50,10 +50,15 @@ const REGION_OPTIONS = [
   { value: 'south', label: 'Miền Nam' },
 ];
 
+const PARTNER_TYPE = {
+  individual:'Cá nhân',
+  business:'Doanh nghiệp'
+}
+
 const CUSTOMER_STATUS_OPTIONS = [
   { value: 'active', label: 'Khách hàng hiện hữu' },
   { value: 'inactive', label: 'Không hoạt động' },
   { value: 'potential', label: 'Khách hàng tiềm năng' },
 ];
 
-export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS, CUSTOMER_STATUS_OPTIONS,SERVICE_JOB_LABELS}
+export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS, CUSTOMER_STATUS_OPTIONS,SERVICE_JOB_LABELS, PARTNER_TYPE}
