@@ -31,8 +31,8 @@ export default function SideMenu () {
     };
 
     return (
-        <div className="fixed left-0 w-[220px] bg-[#e7f1fd] top-[80px] h-[100%] shadow-md">
-            <ul className="flex flex-col text-left">
+        <div className="fixed left-0 w-[220px] bg-[#e7f1fd] top-[80px] bottom-0 shadow-md overflow-y-auto">
+            <ul className="flex flex-col text-left p-0 m-0">
                 <li className="p-4">
                     <a href="/" className="text-[#184172] text-lg font-semibold">Bảng điều khiển</a>
                 </li>

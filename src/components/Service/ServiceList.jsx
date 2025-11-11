@@ -15,7 +15,7 @@ export default function ServiceList() {
 	return (
 		<div className="p-6 max-w-7xl mx-auto">
 			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-lg font-semibold">Danh sách Dịch vụ</h2>
+				<h2 className="text-lg font-semibold text-blue-600">Danh sách Dịch vụ</h2>
 				<Link to="/service/create" className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo dịch vụ</Link>
 			</div>
 
@@ -41,7 +41,6 @@ export default function ServiceList() {
 									<td className="px-4 py-3 align-top">
 										<div className="flex gap-2">
 											<Link to={`/service/${s.id || s._id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>
-											<Link to={`/service/${s.id || s._id}/edit`} className="px-2 py-1 rounded bg-yellow-600 text-white text-xs">Sửa</Link>
 										</div>
 									</td>
 								</tr>

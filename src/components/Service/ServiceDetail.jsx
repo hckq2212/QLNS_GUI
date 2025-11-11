@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useGetServiceByIdQuery } from '../../services/service';
 import { useGetPartnersQuery } from '../../services/partner';
-import { useGetServiceJobsByServiceIdQuery } from '../../services/serviceJob';
+import { useGetServiceJobsByServiceIdQuery, useGetServiceJobsQuery } from '../../services/serviceJob';
+import { useCreateServiceJobMappingMutation } from '../../services/serviceJobMapping';
+import { toast } from 'react-toastify';
 import { formatPrice } from '../../utils/FormatValue';
 import { SERVICE_JOB_LABELS } from '../../utils/enums';
 
@@ -17,7 +19,11 @@ export default function ServiceDetail({ id: propId } = {}) {
   const id = propId || routeParamsId;
 
   const { data: service, isLoading, isError, error } = useGetServiceByIdQuery(id, { skip: !id });
-  const { data: jobsData } = useGetServiceJobsByServiceIdQuery(id, { skip: !id });
+  const { data: jobsData, refetch: refetchJobs } = useGetServiceJobsByServiceIdQuery(id, { skip: !id });
+  const { data: allJobs = [] } = useGetServiceJobsQuery();
+  const [createMapping, { isLoading: creatingMapping }] = useCreateServiceJobMappingMutation();
+  const [showAttach, setShowAttach] = useState(false);
+  const [selectedAttachJobId, setSelectedAttachJobId] = useState('');
   const { data: partners = [] } = useGetPartnersQuery();
 
   const jobs = useMemo(() => {
@@ -33,7 +39,7 @@ export default function ServiceDetail({ id: propId } = {}) {
   return (
     <div className="p-6 max-w-7xl mx-auto text-justify">
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-5 bg-white rounded shadow p-6">
+        <div className="col-span-4 bg-white rounded shadow p-6">
           <div className="flex justify-between items-start mb-3">
             <h2 className="text-md font-semibold text-blue-700">Thông tin dịch vụ</h2>
             <div className="flex gap-2">
@@ -69,11 +75,46 @@ export default function ServiceDetail({ id: propId } = {}) {
           </div>
         </div>
 
-        <div className="col-span-7 bg-white rounded shadow p-6">
+        <div className="col-span-8 bg-white rounded shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-md font-semibold text-blue-700">Hạng mục dịch vụ thuộc {service.name}</h2>
-            <Link to={`/service-job/create?service_id=${service.id}`} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
+            <div className="flex items-center gap-2">
+              <Link to={`/service-job/create?service_id=${service.id}`} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
+              <button onClick={() => setShowAttach((s) => !s)} className="px-3 py-1 rounded bg-green-600 text-white text-sm">Thêm hạng mục có sẵn</button>
+            </div>
           </div>
+
+          {showAttach && (
+            <div className="mb-4 p-3 bg-gray-50 rounded border">
+              <div className="flex items-center gap-2">
+                <select value={selectedAttachJobId} onChange={(e) => setSelectedAttachJobId(e.target.value)} className="border px-2 py-1 rounded text-sm">
+                  <option value="">-- Chọn hạng mục có sẵn --</option>
+                  {(Array.isArray(allJobs) ? allJobs : (allJobs.items || [])).filter((aj) => !jobs.some((j) => String(j.id) === String(aj.id))).map((aj) => (
+                    <option key={aj.id || aj._id} value={aj.id || aj._id}>{aj.name || aj.title || `#${aj.id || aj._id}`}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={!selectedAttachJobId || creatingMapping}
+                  onClick={async () => {
+                    if (!selectedAttachJobId) return;
+                    try {
+                      await createMapping({ service_job_id: selectedAttachJobId, service_id: service.id }).unwrap();
+                      toast.success('Đã thêm hạng mục vào dịch vụ');
+                      setSelectedAttachJobId('');
+                      setShowAttach(false);
+                      try { refetchJobs && refetchJobs(); } catch (e) {}
+                    } catch (err) {
+                      console.error('create mapping failed', err);
+                      toast.error(err?.data?.message || err?.message || 'Thêm thất bại');
+                    }
+                  }}
+                  className="px-3 py-1 rounded bg-indigo-600 text-white text-sm"
+                >
+                  Thêm
+                </button>
+              </div>
+            </div>
+          )}
 
           {jobs.length === 0 ? (
             <div className="text-sm text-gray-600">Không có hạng mục dịch vụ nào cho dịch vụ này</div>
@@ -103,7 +144,6 @@ export default function ServiceDetail({ id: propId } = {}) {
                         <td className="px-4 py-3 align-top">
                           <div className="flex gap-2">
                             <Link to={`/service-job/${j.id || j._id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>
-                            <Link to={`/service-job/${j.id || j._id}/edit`} className="px-2 py-1 rounded bg-yellow-600 text-white text-xs">Sửa</Link>
                           </div>
                         </td>
                       </tr>

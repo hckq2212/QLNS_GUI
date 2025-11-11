@@ -51,6 +51,5 @@ export const {
   useCreateServiceJobMutation,
   useUpdateServiceJobMutation,
   useRemoveServiceJobMutation,
-  useGetServiceJobMappingsQuery,
   useGetServiceJobsByServiceIdQuery,
 } = serviceJobApi;
