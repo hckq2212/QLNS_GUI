@@ -3,9 +3,6 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import './App.css'
 import Home from './screens/Home'
 import Login from './screens/Login'
-import ContractsHR from "./screens/ContractsHR";
-import Project from "./screens/Project";
-import Jobs from "./screens/Jobs";
 import { store } from './app/store'
 import { Provider } from 'react-redux';
 import CreateOpportunity from "./components/Opportunity/CreateOpportunity";
@@ -18,6 +15,9 @@ import ContractList from "./components/Contract/ContractList";
 import ContractDetail from "./components/Contract/ContractDetail";
 import ProjectList from "./components/Project/ProjectList";
 import ProjectDetail from "./components/Project/ProjectDetail";
+import ServiceJobList from "./components/Service Job/ServiceJobList";
+import ServiceList from "./components/Service/ServiceList";
+import ServiceJobDetail from "./components/Service Job/ServiceJobDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -41,10 +41,12 @@ function AppContent() {
           <Route path="/opportunity/create" element={<CreateOpportunity />} />
           <Route path="/contract/:id" element={<ContractDetail />} />
           <Route path="/contract" element={<ContractList />} />
-          <Route path="/contracts/hr" element={<ContractsHR />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/project" element={<ProjectList />} />
-          <Route path="/job" element={<Jobs />} />
+          <Route path="/service" element={<ServiceList />} />
+          <Route path="/service-job/:id" element={<ServiceJobDetail />} />
+          <Route path="/service-job" element={<ServiceJobList />} />
+          
         </Routes>
       </div>
     </>

@@ -6,6 +6,12 @@ export default function SideMenu () {
     const [contractList, setContractList] = useState(false);
     const [jobList, setJobList] = useState(false);
     const [projectList, setProjectList] = useState(false);
+    const [serviceList, setServiceList] = useState(false);
+    const [partnerList, setPartnerList] = useState(false);
+
+    const togglePartnerList = () => {
+        setPartnerList(prevState => !prevState);
+    };
 
     const toggleOpportunityList = () => {
         setOpportunityList(prevState => !prevState);
@@ -20,9 +26,13 @@ export default function SideMenu () {
         setProjectList(prevState => !prevState);
     };
 
+    const toggleServiceList = () => {
+        setServiceList(prevState => !prevState);
+    };
+
     return (
         <div className="fixed left-0 w-[220px] bg-[#e7f1fd] top-[80px] h-[100%] shadow-md">
-            <ul className="flex flex-col text-left p-4">
+            <ul className="flex flex-col text-left">
                 <li className="p-4">
                     <a href="/" className="text-[#184172] text-lg font-semibold">Bảng điều khiển</a>
                 </li>
@@ -63,7 +73,7 @@ export default function SideMenu () {
                     </div>
                     {jobList && (
                         <ul className="p-2 flex flex-col gap-2 ">
-                            <li><a href="/jobs" className="text-[#184172]">Danh sách công việc</a></li>
+                            <li><a href="/job" className="text-[#184172]">Danh sách công việc</a></li>
                         </ul>
                     )}
                 </li>
@@ -76,11 +86,40 @@ export default function SideMenu () {
                     </div>
                     {contractList && (
                         <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/customers" className="text-[#184172]">Danh sách khách hàng</a></li>
+                            <li><a href="/customer" className="text-[#184172]">Danh sách khách hàng</a></li>
+                        </ul>
+                    )}
+                </li>
+                
+                {/* Dịch vụ */}
+                <li className="p-4 cursor-pointer">
+                    <div onClick={toggleServiceList} className="flex justify-between items-center">
+                        <span className="text-[#184172] text-md font-semibold">Dịch vụ</span>
+                        {serviceList ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                    {serviceList && (
+                        <ul className="p-2 flex flex-col gap-2">
+                            <li><a href="/service" className="text-[#184172]">Danh sách dịch vụ</a></li>
+                            <li><a href="/service/create" className="text-[#184172]">Tạo dịch vụ</a></li>
+                             <li><a href="/service-job" className="text-[#184172]">Danh sách công việc của dịch vụ</a></li>
+                            <li><a href="/service-job/create" className="text-[#184172]">Tạo công việc của dịch vụ</a></li>
                         </ul>
                     )}
                 </li>
 
+                {/* Đối tác */}
+                <li className="p-4 cursor-pointer">
+                    <div onClick={togglePartnerList} className="flex justify-between items-center">
+                        <span className="text-[#184172] text-md font-semibold">Đối tác</span>
+                        {partnerList ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                    {partnerList && (
+                        <ul className="p-2 flex flex-col gap-2">
+                            <li><a href="/partner" className="text-[#184172]">Danh sách đối tác</a></li>
+                            <li><a href="/partner/create" className="text-[#184172]">Tạo đối tác</a></li>
+                        </ul>
+                    )}
+                </li>
 
                 {/* Chương trình */}
                 <li className="p-4 cursor-pointer">
