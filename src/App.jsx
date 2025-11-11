@@ -22,6 +22,8 @@ import CreateServiceJob from "./components/Service Job/CreateServiceJob";
 import PartnerList from "./components/Partner/PartnerList";
 import CreatePartner from "./components/Partner/CreatePartner";
 import PartnerDetail from "./components/Partner/PartnerDetail";
+import CreateService from "./components/Service/CreateService";
+import ServiceDetail from "./components/Service/ServiceDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -47,7 +49,9 @@ function AppContent() {
           <Route path="/contract" element={<ContractList />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/project" element={<ProjectList />} />
+          <Route path="/service/:id" element={<ServiceDetail />} />
           <Route path="/service" element={<ServiceList />} />
+          <Route path="/service/create" element={<CreateService />} />
           <Route path="/service-job/:id" element={<ServiceJobDetail />} />
           <Route path="/service-job/create" element={<CreateServiceJob />} />
           <Route path="/service-job" element={<ServiceJobList />} />

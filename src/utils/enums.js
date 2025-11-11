@@ -20,7 +20,7 @@ const CONTRACT_STATUS_LABELS ={
 
 const SERVICE_JOB_LABELS ={
   user: 'Nội bộ',
-  parter: 'Đối tác'
+  partner: 'Đối tác'
 }
 
 const OPPPORTUNITY_STATUS_LABELS = {
