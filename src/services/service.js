@@ -34,9 +34,13 @@ const serviceApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, id) => [{ type: 'Service', id }, { type: 'Service', id: 'LIST' }],
     }),
+    getServicesByJobId: build.query({
+      // expects backend route that returns services for a given service_job id
+      query: (serviceJobId) => `/service-job/${serviceJobId}/services`,
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useGetServicesQuery, useGetServiceByIdQuery, useCreateServiceMutation, useUpdateServiceMutation, useRemoveServiceMutation } = serviceApi;
+export const { useGetServicesQuery, useGetServiceByIdQuery, useCreateServiceMutation, useUpdateServiceMutation, useRemoveServiceMutation, useGetServicesByJobIdQuery } = serviceApi;
 export default serviceApi;

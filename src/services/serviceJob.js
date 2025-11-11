@@ -37,6 +37,10 @@ const serviceJobApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, id) => [{ type: 'ServiceJob', id }, { type: 'ServiceJob', id: 'LIST' }],
     }),
+    getServiceJobsByServiceId: build.query({
+      // returns service_job rows for a given service id (backend: serviceJobRoute.get('/service/:id'))
+      query: (serviceId) => `/service-job/service/${serviceId}`,
+    }),
   }),
   overrideExisting: false,
 });
@@ -47,4 +51,6 @@ export const {
   useCreateServiceJobMutation,
   useUpdateServiceJobMutation,
   useRemoveServiceJobMutation,
+  useGetServiceJobMappingsQuery,
+  useGetServiceJobsByServiceIdQuery,
 } = serviceJobApi;

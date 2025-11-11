@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useGetServiceJobByIdQuery, useUpdateServiceJobMutation, useRemoveServiceJobMutation } from '../../services/serviceJob';
-import { useGetServicesQuery } from '../../services/service';
+import { useGetServicesQuery, useGetServicesByJobIdQuery } from '../../services/service';
+import { useGetPartnersQuery } from '../../services/partner';
 import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 import { SERVICE_JOB_LABELS } from '../../utils/enums';
@@ -19,6 +20,8 @@ export default function ServiceJobDetail({ id: propId } = {}) {
 
   const { data: job, isLoading, isError, error, refetch } = useGetServiceJobByIdQuery(id, { skip: !id });
   const { data: servicesList = [] } = useGetServicesQuery();
+  const { data: servicesFromBackend = [] } = useGetServicesByJobIdQuery(job?.id, { skip: !job?.id });
+  const { data: partnersData = [] } = useGetPartnersQuery();
   const [updateJob, { isLoading: updating }] = useUpdateServiceJobMutation();
   const [removeJob, { isLoading: removing }] = useRemoveServiceJobMutation();
 
@@ -36,6 +39,33 @@ export default function ServiceJobDetail({ id: propId } = {}) {
     // if not in master list, return minimal object
     return { id: sid, name: job?.service_name || job?.service_name || `#${sid}` };
   }, [job, servicesList]);
+
+  const partnerName = useMemo(() => {
+    try {
+      const list = Array.isArray(partnersData) ? partnersData : (partnersData?.items || []);
+      const pid = job?.partner_id || job?.partner?.id || job?.partnerId;
+      if (!pid) return job?.partner_name || null;
+      const p = list.find((x) => String(x.id) === String(pid));
+      return p?.name || job?.partner_name || String(pid);
+    } catch (e) {
+      return job?.partner_name || null;
+    }
+  }, [partnersData, job]);
+
+  // prefer backend-provided full service objects for this job when available
+  const servicesForJob = useMemo(() => {
+    if (Array.isArray(servicesFromBackend) && servicesFromBackend.length > 0) return servicesFromBackend;
+    // fallback: try resolving via master services list and job.service_id
+    try {
+      const list = Array.isArray(servicesList) ? servicesList : (servicesList?.items || []);
+      const sid = job?.service_id ?? job?.service;
+      if (!sid) return [];
+      const s = list.filter((x) => String(x.id) === String(sid) || String(x.service_id) === String(sid));
+      return s;
+    } catch (e) {
+      return [];
+    }
+  }, [servicesFromBackend, servicesList, job]);
 
   if (!id) return <div className="p-6">No service job id provided</div>;
   if (isLoading) return <div className="p-6">Loading service job...</div>;
@@ -68,11 +98,11 @@ export default function ServiceJobDetail({ id: propId } = {}) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-10 gap-4 text-left">
+      <div className="grid grid-cols-12 gap-4 text-left">
         <div className="col-span-12 bg-white rounded shadow p-6">
             <div className='flex justify-between'>
-                <h2 className="text-md font-semibold text-blue-700">Chi tiết Service Job</h2>
-                <button onClick={() => {  }} className="text-sm bg-white border px-3 py-1 text-blue-700 rounded">Chỉnh sửa</button>
+                <h2 className="text-md font-semibold text-blue-700">Chi tiết hạng mục dịch vụ</h2>
+                <button onClick={() => {  }} className="text-sm text-white border px-3 py-1 bg-blue-700 rounded">Chỉnh sửa</button>
             </div>
           
           <hr className="my-4" />
@@ -94,7 +124,19 @@ export default function ServiceJobDetail({ id: propId } = {}) {
             <div className="mb-4">
               <div className="text-xs text-gray-500">Dịch vụ</div>
               <div className="text-sm text-gray-700">
-                {serviceObj ? (
+                {servicesForJob && servicesForJob.length > 0 ? (
+                  <div className="space-y-1">
+                    {servicesForJob.map((s) => (
+                      <div key={s.id || s._id}>
+                        {s.id ? (
+                          <Link to={`/service/${s.id}`} className="text-blue-600 underline">{s.name || s.title || `#${s.id}`}</Link>
+                        ) : (
+                          <span>{s.name || s.title || `#${s._id || s.id}`}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : serviceObj ? (
                   <div>
                     {serviceObj.id ? (
                       <Link to={`/service/${serviceObj.id}`} className="text-blue-600 underline">{serviceObj.name || serviceObj.service_name || `#${serviceObj.id}`}</Link>
@@ -109,16 +151,16 @@ export default function ServiceJobDetail({ id: propId } = {}) {
             </div>
 
           </div>
-            <div className='grid grid-cols-2'>
+            <div className='grid grid-cols-3'>
                 <div className="mb-4">
                     <div className="text-xs text-gray-500">Bên phụ trách</div>
                     <p>{SERVICE_JOB_LABELS[job.owner_type]}</p>
                 </div>
-                {job.partner_id && (
-                    <div className="mb-4">
-                    <div className="text-sm text-gray-500">Đối tác</div>
-                    <div className="text-sm text-gray-700">{job.partner_id}</div>
-                    </div>
+                {partnerName && (
+                <div className="mb-4">
+                <div className="text-sm text-gray-500">Đối tác</div>
+                <div className="text-sm text-gray-700">{partnerName}</div>
+                </div>
                 )}
             </div>       
 
