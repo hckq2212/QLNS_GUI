@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreatePartnerMutation } from '../../services/partner';
+import { PARTNER_TYPE } from '../../utils/enums';
 import { toast } from 'react-toastify';
 
 export default function CreatePartner() {
@@ -15,6 +16,8 @@ export default function CreatePartner() {
 		phone: '',
 		email: '',
 		address: '',
+		// default to individual
+		type: 'individual',
 		description: '',
 	});
 
@@ -39,32 +42,34 @@ export default function CreatePartner() {
 
 	return (
 		<div className="p-6 max-w-3xl mx-auto">
-			<h2 className="text-lg font-semibold mb-4">Tạo Đối tác</h2>
-			<form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded shadow">
+			<h2 className="text-lg font-semibold mb-4 text-blue-600">Tạo đối tác</h2>
+			<form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded shadow text-left">
 				<div>
 					<label className="block text-sm font-medium text-gray-700">Tên</label>
 					<input value={form.name} onChange={(e) => update('name', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
 				</div>
 
 				<div>
-					<label className="block text-sm font-medium text-gray-700">Mã (code)</label>
-					<input value={form.code} onChange={(e) => update('code', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
+					<label className="block text-sm font-medium text-gray-700">Loại đối tác</label>
+					<select value={form.type} onChange={(e) => update('type', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2">
+						{Object.keys(PARTNER_TYPE).map((k) => (
+							<option key={k} value={k}>{PARTNER_TYPE[k]}</option>
+						))}
+					</select>
 				</div>
 
-				<div className="grid grid-cols-2 gap-4">
 					<div>
 						<label className="block text-sm font-medium text-gray-700">Người liên hệ</label>
 						<input value={form.contact_name} onChange={(e) => update('contact_name', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
 					</div>
 					<div>
 						<label className="block text-sm font-medium text-gray-700">Điện thoại</label>
-						<input value={form.phone} onChange={(e) => update('phone', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
+						<input value={form.phone} type= 'number' onChange={(e) => update('phone', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
 					</div>
-				</div>
 
 				<div>
 					<label className="block text-sm font-medium text-gray-700">Email</label>
-					<input value={form.email} onChange={(e) => update('email', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
+					<input value={form.email} type='email' onChange={(e) => update('email', e.target.value)} className="mt-1 block w-full border rounded px-3 py-2" />
 				</div>
 
 				<div>

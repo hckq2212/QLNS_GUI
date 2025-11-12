@@ -99,84 +99,74 @@ export default function ServiceJobDetail({ id: propId } = {}) {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-12 gap-4 text-left">
-        <div className="col-span-12 bg-white rounded shadow p-6">
-            <div className='flex justify-between'>
-                <h2 className="text-md font-semibold text-blue-700">Chi tiết hạng mục dịch vụ</h2>
-                <button onClick={() => {  }} className="text-sm text-white border px-3 py-1 bg-blue-700 rounded">Chỉnh sửa</button>
-            </div>
-          
+        {/* Left: job info */}
+        <div className="col-span-5 bg-white rounded shadow p-6">
+          <div className='flex justify-between'>
+            <h2 className="text-md font-semibold text-blue-700">Chi tiết hạng mục dịch vụ</h2>
+            <button onClick={() => { /* toggle edit in future */ }} className="text-sm text-white border px-3 py-1 bg-blue-700 rounded">Chỉnh sửa</button>
+          </div>
+
           <hr className="my-4" />
 
-          <div className='grid grid-cols-3'>
-            <div className="mb-4">
+          <div className='space-y-4'>
+            <div>
               <div className="text-xs text-gray-500">Tên</div>
-              <p>{form.name}</p>
+              <div className="text-sm font-semibold">{job.name || job.title || '—'}</div>
             </div>
 
-            <div className="mb-4">
+            <div>
               <div className="text-xs text-gray-500">Giá vốn</div>
-              <p>{formatPrice(form.base_cost)} VND</p>
+              <div className="text-sm">{formatPrice(job.base_cost ?? job.price ?? 0)} VND</div>
             </div>
-          </div>
 
+            <div>
+              <div className="text-xs text-gray-500">Bên phụ trách</div>
+              <div className="text-sm">{SERVICE_JOB_LABELS[job.owner_type] || 'Nội bộ'}</div>
+              {partnerName && <div className="text-xs text-gray-500">{partnerName}</div>}
+            </div>
 
-          <div>
-            <div className="mb-4">
-              <div className="text-xs text-gray-500">Dịch vụ</div>
-              <div className="text-sm text-gray-700">
-                {servicesForJob && servicesForJob.length > 0 ? (
-                  <div className="space-y-1">
-                    {servicesForJob.map((s) => (
-                      <div key={s.id || s._id}>
-                        {s.id ? (
-                          <Link to={`/service/${s.id}`} className="text-blue-600 underline">{s.name || s.title || `#${s.id}`}</Link>
-                        ) : (
-                          <span>{s.name || s.title || `#${s._id || s.id}`}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : serviceObj ? (
-                  <div>
-                    {serviceObj.id ? (
-                      <Link to={`/service/${serviceObj.id}`} className="text-blue-600 underline">{serviceObj.name || serviceObj.service_name || `#${serviceObj.id}`}</Link>
-                    ) : (
-                      <span>{serviceObj.name || serviceObj.service_name || '—'}</span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-gray-500">—</span>
-                )}
+            {job.description && (
+              <div>
+                <div className="text-xs text-gray-500">Mô tả</div>
+                <div className="text-sm text-gray-700">{job.description}</div>
               </div>
-            </div>
-
+            )}
           </div>
-            <div className='grid grid-cols-3'>
-                <div className="mb-4">
-                    <div className="text-xs text-gray-500">Bên phụ trách</div>
-                    <p>{SERVICE_JOB_LABELS[job.owner_type]}</p>
-                </div>
-                {partnerName && (
-                <div className="mb-4">
-                <div className="text-sm text-gray-500">Đối tác</div>
-                <div className="text-sm text-gray-700">{partnerName}</div>
-                </div>
-                )}
-            </div>       
-
-
-          {job.description && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-500">Mô tả</div>
-              <div className="text-sm text-gray-700">{job.description}</div>
-            </div>
-          )}
-
-
-
-          
         </div>
 
+        {/* Right: services using this job */}
+        <div className="col-span-7 bg-white rounded shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-md font-semibold text-blue-700">Dịch vụ đang sử dụng hạng mục này</h2>
+          </div>
+
+          {(!servicesForJob || servicesForJob.length === 0) ? (
+            <div className="text-sm text-gray-600">Không có dịch vụ nào sử dụng hạng mục này</div>
+          ) : (
+            <div className="overflow-x-auto bg-white rounded">
+              <table className="min-w-full text-sm">
+                <thead className="bg-[#e7f1fd] text-left">
+                  <tr>
+                    <th className="px-4 py-3 text-blue-700">Tên dịch vụ</th>
+                    <th className="px-4 py-3 text-blue-700">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {servicesForJob.map((s) => (
+                    <tr key={s.id || s._id} className="border-t hover:bg-gray-50">
+                      <td className="px-4 py-3 align-top">{s.name || s.title || `#${s.id || s._id}`}</td>
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex gap-2">
+                          {s.id && <Link to={`/service/${s.id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

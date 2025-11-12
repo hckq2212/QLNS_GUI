@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useGetPartnerByIdQuery } from '../../services/partner';
+import { useGetPartnerByIdQuery, useUpdatePartnerMutation } from '../../services/partner';
 import { useGetServiceJobsQuery } from '../../services/serviceJob';
 import { useGetServicesQuery } from '../../services/service';
 import { formatPrice } from '../../utils/FormatValue';
 import { PARTNER_TYPE } from '../../utils/enums';
+import { toast } from 'react-toastify';
 
 export default function PartnerDetail({ id: propId } = {}) {
   let routeParamsId = null;
@@ -17,6 +18,32 @@ export default function PartnerDetail({ id: propId } = {}) {
   const id = propId || routeParamsId;
 
   const { data: partner, isLoading, isError, error, refetch } = useGetPartnerByIdQuery(id, { skip: !id });
+  const [updatePartner, { isLoading: isUpdating }] = useUpdatePartnerMutation();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    type: 'individual',
+    contact_name: '',
+    phone: '',
+    email: '',
+    address: '',
+    note: '',
+  });
+
+  useEffect(() => {
+    if (partner) {
+      setForm({
+        name: partner.name || '',
+        type: partner.type || 'individual',
+        contact_name: partner.contact_name || partner.contact || '',
+        phone: partner.phone || '',
+        email: partner.email || '',
+        address: partner.address || '',
+        note: partner.note || '',
+      });
+    }
+  }, [partner]);
   const { data: jobsData } = useGetServiceJobsQuery(undefined, { skip: !id });
   const { data: servicesList = [] } = useGetServicesQuery();
 
@@ -42,7 +69,47 @@ export default function PartnerDetail({ id: propId } = {}) {
           <div className="flex justify-between items-start mb-3">
             <h2 className="text-md font-semibold text-blue-700">Thông tin đối tác</h2>
             <div className="flex gap-2">
-              <Link to={`/partner/${partner.id}/edit`} className="text-sm bg-blue-600 border px-3 py-1 rounded text-white ">Chỉnh sửa</Link>
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updatePartner({ id: partner.id, ...form }).unwrap();
+                        toast.success('Cập nhật đối tác thành công');
+                        setIsEditing(false);
+                        try { refetch && refetch(); } catch (e) {}
+                      } catch (err) {
+                        console.error('update partner failed', err);
+                        toast.error(err?.data?.message || err?.message || 'Cập nhật thất bại');
+                      }
+                    }}
+                    disabled={isUpdating}
+                    className="text-sm bg-blue-600 border px-3 py-1 rounded text-white"
+                  >
+                    {isUpdating ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (partner) {
+                        setForm({
+                          name: partner.name || '',
+                          type: partner.type || 'individual',
+                          phone: partner.phone || '',
+                          email: partner.email || '',
+                          address: partner.address || '',
+                          note: partner.note || '',
+                        });
+                      }
+                    }}
+                    className="text-sm bg-gray-200 border px-3 py-1 rounded"
+                  >
+                    Hủy
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setIsEditing(true)} className="text-sm bg-blue-600 border px-3 py-1 rounded text-white ">Chỉnh sửa</button>
+              )}
             </div>
           </div>
           <hr className="my-4" />
@@ -50,40 +117,78 @@ export default function PartnerDetail({ id: propId } = {}) {
           <div className="space-y-3 text-sm text-gray-700">
             <div>
               <div className="text-xs text-gray-500">Tên</div>
-              <div className="text-sm font-semibold">{partner.name || partner.title || '—'}</div>
+              {isEditing ? (
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
+              ) : (
+                <div className="text-sm font-semibold">{partner.name || partner.title || '—'}</div>
+              )}
             </div>
              <div>
               <div className="text-xs text-gray-500">Loại</div>
-              <div className="text-sm ">{PARTNER_TYPE[partner.type] || '—'}</div>
+              {isEditing ? (
+                <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2">
+                  {Object.keys(PARTNER_TYPE).map((k) => (
+                    <option key={k} value={k}>{PARTNER_TYPE[k]}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-sm ">{PARTNER_TYPE[partner.type] || '—'}</div>
+              )}
             </div>
 
             <div>
               <div className="text-xs text-gray-500">Người liên hệ</div>
-              <div className="text-sm">{partner.contact_name || partner.contact || '—'}</div>
+              {isEditing ? (
+                <input value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
+              ) : (
+                <div className="text-sm">{partner.contact_name || partner.contact || '—'}</div>
+              )}
             </div>
 
             <div>
               <div className="text-xs text-gray-500">Điện thoại</div>
-              <div className="text-sm">{partner.phone || '—'}</div>
+              {isEditing ? (
+                <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
+              ) : (
+                <div className="text-sm">{partner.phone || '—'}</div>
+              )}
             </div>
 
             <div>
               <div className="text-xs text-gray-500">Email</div>
-              <div className="text-sm">{partner.email || '—'}</div>
+              {isEditing ? (
+                <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
+              ) : (
+                <div className="text-sm">{partner.email || '—'}</div>
+              )}
             </div>
 
-            {partner.address && (
+            {isEditing ? (
               <div>
                 <div className="text-xs text-gray-500">Địa chỉ</div>
-                <div className="text-sm">{partner.address}</div>
+                <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
               </div>
+            ) : (
+              partner.address && (
+                <div>
+                  <div className="text-xs text-gray-500">Địa chỉ</div>
+                  <div className="text-sm">{partner.address}</div>
+                </div>
+              )
             )}
 
-            {partner.description && (
+            {isEditing ? (
               <div>
                 <div className="text-xs text-gray-500">Mô tả</div>
-                <div className="text-sm">{partner.description}</div>
+                <textarea value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" rows={4} />
               </div>
+            ) : (
+              partner.note && (
+                <div>
+                  <div className="text-xs text-gray-500">Mô tả</div>
+                  <div className="text-sm">{partner.note}</div>
+                </div>
+              )
             )}
           </div>
         </div>

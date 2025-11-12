@@ -186,7 +186,7 @@ export default function CreateOpportunity() {
     <div className="p-6 w-full mx-auto">
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col max-w-7xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-2">Thông tin cơ hội</h2>
+        <h2 className="text-2xl font-semibold mb-2 text-blue-600">Tạo cơ hội</h2>
         <hr />
         <div className="mb-2">
           <input
@@ -206,7 +206,7 @@ export default function CreateOpportunity() {
           placeholder="Mô tả"
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 text-left">
           <div className="space-y-3">
             <div className="flex items-center gap-3 ">
               <label className="w-100 text-sm text-gray-700">Doanh thu kỳ vọng</label>

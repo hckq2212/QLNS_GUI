@@ -46,7 +46,6 @@ export default function CreateServiceJob() {
 
   const [form, setForm] = useState({
     name: '',
-    service_id: '',
     base_cost: '',
     owner_type: 'user',
     partner_id: '',
@@ -96,7 +95,7 @@ export default function CreateServiceJob() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-lg font-semibold mb-4">Tạo Service Job</h2>
+      <h2 className="text-lg font-semibold mb-4 text-blue-600">Tạo hạng mục dịch vụ</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded shadow text-left">
         <div>
@@ -109,19 +108,7 @@ export default function CreateServiceJob() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Dịch vụ</label>
-          <select
-            value={form.service_id}
-            onChange={(e) => update('service_id', e.target.value)}
-            className="mt-1 block w-full border rounded px-3 py-2"
-          >
-            <option value="">-- Chọn dịch vụ --</option>
-            {rows.map((s) => (
-              <option key={s.id || s._id} value={s.id || s._id}>{`${s.code || s.service_code || ''} ${s.name || s.service_name || ''}`.trim()}</option>
-            ))}
-          </select>
-        </div>
+      
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Giá vốn</label>
