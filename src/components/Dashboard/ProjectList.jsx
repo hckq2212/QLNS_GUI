@@ -57,7 +57,7 @@ export default function ProjectChart() {
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2">Danh sách dự án</h2>
+            <h2 className="text-xl font-semibold mb-2 text-blue-600">Danh sách dự án</h2>
             <div className="mb-4 flex flex-wrap gap-3 items-center">
                 <input
                     value={search}

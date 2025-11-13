@@ -42,9 +42,7 @@ export default function CreateConFromOppoModal({
         <h3 className="font-semibold mb-2">
           Tạo hợp đồng từ cơ hội {selectedOpportunity.name}
         </h3>
-        <p className="text-sm mb-4">
-          Khách hàng: {selectedOpportunity.customer?.name || selectedOpportunity.customer_temp?.name || '—'}
-        </p>
+
         <div className="flex justify-end gap-2">
           <button
             className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-60"

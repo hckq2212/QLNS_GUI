@@ -13,7 +13,8 @@ const CONTRACT_STATUS_LABELS ={
   waiting_bod_approval:'Đang đợi BOD duyệt',
   waiting_hr_confirm:'Đang đợi HR xác nhận',
   without_debt:'Chưa có công nợ',
-  assigned:'Đang đợi ký'
+  assigned:'Đang đợi ký',
+  not_assigned:'Đã duyệt'
   
 
 }
@@ -27,7 +28,8 @@ const OPPPORTUNITY_STATUS_LABELS = {
   waiting_bod_approval:'Đang chờ BOD duyệt',
   approved:'Đã được duyệt',
   not_assigned:'Chưa phân công công việc',
-  assigned:'Đã phân công công việc'
+  assigned:'Đã phân công công việc',
+  contract_created:'Cơ hội đã được tạo hợp đồng'
 }
 
 const  PROJECT_STATUS_LABELS = {

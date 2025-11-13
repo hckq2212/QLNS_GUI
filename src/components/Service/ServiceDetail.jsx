@@ -78,9 +78,10 @@ export default function ServiceDetail({ id: propId } = {}) {
         <div className="col-span-8 bg-white rounded shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-md font-semibold text-blue-700">Hạng mục dịch vụ thuộc {service.name}</h2>
+            <hr className='mb-4' />
             <div className="flex items-center gap-2">
               <Link to={`/service-job/create?service_id=${service.id}`} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
-              <button onClick={() => setShowAttach((s) => !s)} className="px-3 py-1 rounded bg-green-600 text-white text-sm">Thêm hạng mục có sẵn</button>
+              <button onClick={() => setShowAttach((s) => !s)} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Thêm hạng mục có sẵn</button>
             </div>
           </div>
 

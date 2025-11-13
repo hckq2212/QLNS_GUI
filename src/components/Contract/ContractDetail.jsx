@@ -86,12 +86,12 @@ export default function ContractDetail({ id: propId } = {}) {
           <div className='grid grid-cols-3'>
             <div className="mb-4">
             <div className="text-xs text-gray-500">Tên hợp đồng</div>
-            <div className="text-lg font-medium">{contract.name || contract.contract_name || '—'}</div>
+            <div className="text-lg font-medium text-blue-600">{contract.name || contract.contract_name || '—'}</div>
           </div>
           
         <div className="mb-4">
             <div className="text-xs text-gray-500">Mã hợp đồng</div>
-            <div className="text-lg font-medium">{contract.code || '—'}</div>
+            <div className="text-lg font-medium text-blue-600">{contract.code || '—'}</div>
           </div>
 
           </div>
@@ -276,43 +276,44 @@ export default function ContractDetail({ id: propId } = {}) {
       
         {(role === 'bod' || role === 'admin' && contract.status == 'waiting_bod_approval') && (
             <div className="ml-4 flex items-center gap-2 mt-6">
-            <button
-                disabled={approving}
-                onClick={async () => {
-                if (!window.confirm('Bạn có chắc muốn duyệt cơ hội này?')) return;
-                try {
-                    
-                    toast.success('Đã duyệt cơ hội');
-                    // RTK Query invalidation should refetch, but call refetch to be safe
-                    try { refetch && refetch(); } catch (e) { /* ignore */ }
-                } catch (err) {
-                    console.error('approve failed', err);
-                    toast.error(err?.message || 'Duyệt thất bại');
-                }
-                }}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-                {approving ? 'Đang...' : 'Duyệt'}
-            </button>
+      <button
+        disabled={approving}
+        onClick={async () => {
+        if (!window.confirm('Bạn có chắc muốn duyệt hợp đồng này?')) return;
+        try {
+          // call backend approve endpoint
+          await approveContract({ id: contract.id, approved: true }).unwrap();
+          toast.success('Đã duyệt hợp đồng');
+          // RTK Query invalidation should refetch, but call refetch to be safe
+          try { refetch && refetch(); } catch (e) { /* ignore */ }
+        } catch (err) {
+          console.error('approve failed', err);
+          toast.error(err?.data?.error || err?.message || 'Duyệt thất bại');
+        }
+        }}
+        className="bg-green-600 text-white px-4 py-2 rounded"
+      >
+        {approving ? 'Đang...' : 'Duyệt'}
+      </button>
 
-            <button
-                disabled={false}
-                onClick={async () => {
-                if (!window.confirm('Bạn có chắc muốn từ chối cơ hội này?')) return;
-                try {
-
-                    toast.success('Đã từ chối cơ hội');
-                    // refetch the opportunity to update UI
-                    try { refetch && refetch(); } catch (e) { /* ignore */ }
-                } catch (err) {
-                    console.error('reject failed', err);
-                    toast.error(err?.message || 'Từ chối thất bại');
-                }
-                }}
-                className="bg-red-600 text-white px-4 py-2 rounded "
-            >
-                Không duyệt
-            </button>
+      <button
+        disabled={approving}
+        onClick={async () => {
+        if (!window.confirm('Bạn có chắc muốn từ chối hợp đồng này?')) return;
+        try {
+          // call same approve endpoint but with approved=false (server should interpret as rejection)
+          await approveContract({ id: contract.id, approved: false }).unwrap();
+          toast.success('Đã từ chối hợp đồng');
+          try { refetch && refetch(); } catch (e) { /* ignore */ }
+        } catch (err) {
+          console.error('reject failed', err);
+          toast.error(err?.data?.error || err?.message || 'Từ chối thất bại');
+        }
+        }}
+        className="bg-red-600 text-white px-4 py-2 rounded "
+      >
+        Không duyệt
+      </button>
             </div>
         )}
     </div>

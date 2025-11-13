@@ -42,7 +42,7 @@ export default function ContractList({ statusFilter = 'all' } = {}) {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Danh sách hợp đồng</h2>
+        <h2 className="text-lg font-semibold text-blue-600">Danh sách hợp đồng</h2>
       </div>
 
       {loading ? (
