@@ -5,9 +5,11 @@ import { useGetCustomerByIdQuery } from '../../services/customer';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetContractServicesQuery } from '../../services/contract';
 import { useGetAllTeamsQuery } from '../../services/team';
-import { formatPrice } from '../../utils/FormatValue';
+import { formatPrice, formatDate } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import jobAPI from '../../api/job';
+import { JOB_STATUS_LABELS } from '../../utils/enums';
 
 export default function ProjectDetail({ id: propId } = {}) {
   let routeId = null;
@@ -60,21 +62,52 @@ export default function ProjectDetail({ id: propId } = {}) {
     setSelectedTeam(project?.team_id ?? project?.team?.id ?? null);
   }, [project]);
 
+  // Jobs for this project (right column)
+  const [jobs, setJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchJobs = async () => {
+      if (!project?.id) return;
+      setJobsLoading(true);
+      setJobsError(null);
+      try {
+        const res = await jobAPI.getByProject(project.id);
+        if (!mounted) return;
+        // backend may return array or { items }
+        const rows = Array.isArray(res) ? res : (res?.items || res?.data || []);
+        setJobs(rows);
+      } catch (err) {
+        console.error('fetch jobs failed', err);
+        if (!mounted) return;
+        setJobsError(err?.message || 'Failed to load jobs');
+      } finally {
+        if (mounted) setJobsLoading(false);
+      }
+    };
+    fetchJobs();
+    return () => { mounted = false; };
+  }, [project?.id]);
+
   if (!id) return <div className="p-6">No project id provided</div>;
   if (isLoading) return <div className="p-6">Loading project...</div>;
   if (isError) return <div className="p-6 text-red-600">Error: {error?.message || 'Failed to load project'}</div>;
   if (!project) return <div className="p-6 text-gray-600">Project not found</div>;
+  const hasJobs = Array.isArray(jobs) && jobs.length > 0;
+  const showJobsColumn = jobsLoading || jobsError || hasJobs;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-12 gap-4 text-left">
-        <div className="col-span-12 bg-white rounded shadow p-6">
+      <div className="grid grid-cols-12 gap-4 text-left ">
+  <div className={`${showJobsColumn ? 'col-span-4' : 'col-span-12'} bg-white rounded shadow p-6 h-fit`}>
           <h2 className="text-md font-semibold text-blue-700">Thông tin dự án</h2>
           <hr className="my-4" />
           <div className='grid grid-cols-3'>
             <div className="mb-4">
               <div className="text-xs text-gray-500">Tên dự án</div>
-              <div className="text-lg font-medium">{project.name || project.project_name || project.title || '—'}</div>
+              <div className="text-lg font-medium text-blue-600">{project.name || project.project_name || project.title || '—'}</div>
             </div>
 
           </div>
@@ -88,10 +121,12 @@ export default function ProjectDetail({ id: propId } = {}) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-gray-500">Trạng thái</div>
-              <div className="text-sm text-gray-700">{PROJECT_STATUS_LABELS[project.status] || project.status || '—'}</div>
-            </div>
+
+
+
           </div>
+
+        </div>
 
           {Array.isArray(displayedServices) && displayedServices.length > 0 && (
             <div className="mt-6">
@@ -123,8 +158,8 @@ export default function ProjectDetail({ id: propId } = {}) {
             </div>
           )}
 
-            
-            <div className="mt-6">
+          
+          <div className="mt-6">
             <div className="text-sm text-gray-500">Team</div>
             <div className="mt-2">
               <select
@@ -151,6 +186,8 @@ export default function ProjectDetail({ id: propId } = {}) {
             </div>
           </div>
 
+          
+
           {project.attachments && project.attachments.length > 0 && (
             <div className="mt-6">
               <div className="text-sm text-gray-500">Tệp đính kèm</div>
@@ -171,7 +208,43 @@ export default function ProjectDetail({ id: propId } = {}) {
           )}
         </div>
 
+            {showJobsColumn && (
+              <div className="col-span-8 bg-white rounded shadow p-6">
+                <h2 className="text-md font-semibold text-blue-700">Công việc của dự án</h2>
+                <hr className="my-4" />
+
+                {jobsLoading ? (
+                  <div className="p-3">Đang tải công việc...</div>
+                ) : jobsError ? (
+                  <div className="p-3 text-red-600">Lỗi: {jobsError}</div>
+                ) : hasJobs ? (
+                  <div className="mt-2">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-[#e7f1fd]">
+                          <th className="px-3 py-2 text-left text-blue-700">Tên công việc</th>
+                          <th className="px-3 py-2 text-left text-blue-700">Deadline</th>
+                          <th className="px-3 py-2 text-left text-blue-700">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobs.map((j) => (
+                          <tr key={j.id} className="border-t">
+                            <td className="px-3 py-2 align-top">{j.name || j.title || `#${j.id}`}</td>
+                            <td className="px-3 py-2 align-top">{formatDate(j.deadline) || '—'}</td>
+                            <td className="px-3 py-2 align-top">{JOB_STATUS_LABELS[j.status] || j.status || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-3 text-gray-600">Chưa có công việc cho dự án này</div>
+                )}
+              </div>
+            )}
       </div>
+      
     </div>
   );
 }

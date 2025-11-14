@@ -24,6 +24,7 @@ import CreatePartner from "./components/Partner/CreatePartner";
 import PartnerDetail from "./components/Partner/PartnerDetail";
 import CreateService from "./components/Service/CreateService";
 import ServiceDetail from "./components/Service/ServiceDetail";
+import AssigningProject from "./components/Project/AssigningProject";
 
 function AppContent() {
   const location = useLocation();
@@ -48,6 +49,7 @@ function AppContent() {
           <Route path="/contract/:id" element={<ContractDetail />} />
           <Route path="/contract" element={<ContractList />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
+          <Route path="/project/assigning" element={<AssigningProject />} />
           <Route path="/project" element={<ProjectList />} />
           <Route path="/service/:id" element={<ServiceDetail />} />
           <Route path="/service" element={<ServiceList />} />
@@ -58,6 +60,7 @@ function AppContent() {
            <Route path="/partner/:id" element={<PartnerDetail />} />
           <Route path="/partner" element={<PartnerList />} />
           <Route path="/partner/create" element={<CreatePartner />} />
+
           
         </Routes>
       </div>

@@ -136,6 +136,7 @@ export default function SideMenu () {
                     {projectList && (
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/project" className="text-blue-600">Danh sách dự án</a></li>
+                            <li><a href="/project/assigning" className="text-blue-600">Danh sách dự án đợi chấp nhận</a></li>
                         </ul>
                     )}
                 </li>
