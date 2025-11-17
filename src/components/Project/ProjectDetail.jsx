@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGetProjectByIdQuery, useAssignTeamMutation } from '../../services/project';
 import { useGetCustomerByIdQuery } from '../../services/customer';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetContractServicesQuery } from '../../services/contract';
 import { useGetAllTeamsQuery } from '../../services/team';
+import { useGetUserByIdQuery } from '../../services/user';
 import { formatPrice, formatDate } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
 import jobAPI from '../../api/job';
 import { JOB_STATUS_LABELS } from '../../utils/enums';
+import AssignJobModal from '../ui/AssignJobModal';
 
 export default function ProjectDetail({ id: propId } = {}) {
   let routeId = null;
@@ -62,10 +64,14 @@ export default function ProjectDetail({ id: propId } = {}) {
     setSelectedTeam(project?.team_id ?? project?.team?.id ?? null);
   }, [project]);
 
+  const navigate = useNavigate();
+
   // Jobs for this project (right column)
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobsError, setJobsError] = useState(null);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedJobForAssign, setSelectedJobForAssign] = useState(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -90,6 +96,21 @@ export default function ProjectDetail({ id: propId } = {}) {
     fetchJobs();
     return () => { mounted = false; };
   }, [project?.id]);
+
+  const reloadJobs = async () => {
+    try {
+      setJobsLoading(true);
+      const res = await jobAPI.getByProject(project.id);
+      const rows = Array.isArray(res) ? res : (res?.items || res?.data || []);
+      setJobs(rows);
+      setJobsError(null);
+    } catch (err) {
+      console.error('reload jobs failed', err);
+      setJobsError(err?.message || 'Failed to load jobs');
+    } finally {
+      setJobsLoading(false);
+    }
+  };
 
   if (!id) return <div className="p-6">No project id provided</div>;
   if (isLoading) return <div className="p-6">Loading project...</div>;
@@ -225,6 +246,8 @@ export default function ProjectDetail({ id: propId } = {}) {
                           <th className="px-3 py-2 text-left text-blue-700">Tên công việc</th>
                           <th className="px-3 py-2 text-left text-blue-700">Deadline</th>
                           <th className="px-3 py-2 text-left text-blue-700">Trạng thái</th>
+                          <th className="px-3 py-2 text-left text-blue-700">Người thực hiện</th>
+                          <th className="px-3 py-2 text-left text-blue-700">Hành động</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -233,6 +256,21 @@ export default function ProjectDetail({ id: propId } = {}) {
                             <td className="px-3 py-2 align-top">{j.name || j.title || `#${j.id}`}</td>
                             <td className="px-3 py-2 align-top">{formatDate(j.deadline) || '—'}</td>
                             <td className="px-3 py-2 align-top">{JOB_STATUS_LABELS[j.status] || j.status || '—'}</td>
+                            <td className="px-3 py-2 align-top"><UserName userId={j.assigned_id} /></td>
+                            <td className="px-3 py-2 align-top">
+                              <button
+                                className="px-3 py-1 rounded bg-blue-600 text-white text-xs"
+                                onClick={() => { setSelectedJobForAssign(j); setAssignModalOpen(true); }}
+                              >
+                                Phân công
+                              </button>
+                                                            <button
+                                className="px-3 py-1 rounded bg-blue-600 text-white text-xs ml-2"
+                                onClick={() => { navigate(`/job/${j.id}`); }}
+                              >
+                                Xem chi tiết
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -243,8 +281,24 @@ export default function ProjectDetail({ id: propId } = {}) {
                 )}
               </div>
             )}
+            <AssignJobModal
+              open={assignModalOpen}
+              onClose={() => setAssignModalOpen(false)}
+              job={selectedJobForAssign}
+              teamId={project?.team_id ?? project?.team?.id ?? null}
+              onAssigned={async () => { await reloadJobs(); }}
+            />
       </div>
       
     </div>
   );
 }
+
+
+function UserName({ userId }) {
+  const { data: user, isLoading } = useGetUserByIdQuery(userId, { skip: !userId });
+  if (!userId) return <span>—</span>;
+  if (isLoading) return <span className="text-sm text-gray-500">#{userId} (đang tải...)</span>;
+  return <span>{user?.full_name || user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.user_name || user?.username || `#${userId}`}</span>;
+}
+

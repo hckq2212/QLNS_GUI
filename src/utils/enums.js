@@ -5,7 +5,8 @@ const JOB_STATUS_LABELS = {
   review: 'Chờ duyệt',
   done: 'Hoàn thành',
   cancelled: 'Đã hủy',
-  archived: 'Lưu trữ'
+  archived: 'Lưu trữ',
+  not_assigned:'Chưa phân công'
 }
 
 const CONTRACT_STATUS_LABELS ={

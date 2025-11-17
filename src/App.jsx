@@ -25,6 +25,7 @@ import PartnerDetail from "./components/Partner/PartnerDetail";
 import CreateService from "./components/Service/CreateService";
 import ServiceDetail from "./components/Service/ServiceDetail";
 import AssigningProject from "./components/Project/AssigningProject";
+import JobDetail from "./components/Job/JobDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -57,9 +58,10 @@ function AppContent() {
           <Route path="/service-job/:id" element={<ServiceJobDetail />} />
           <Route path="/service-job/create" element={<CreateServiceJob />} />
           <Route path="/service-job" element={<ServiceJobList />} />
-           <Route path="/partner/:id" element={<PartnerDetail />} />
+          <Route path="/partner/:id" element={<PartnerDetail />} />
           <Route path="/partner" element={<PartnerList />} />
           <Route path="/partner/create" element={<CreatePartner />} />
+          <Route path="/job/:id" element={<JobDetail />} />
 
           
         </Routes>
