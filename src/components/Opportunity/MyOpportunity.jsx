@@ -43,7 +43,7 @@ export default function MyOpportunity() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse text-left">
             <thead>
-                <tr className="bg-gray-100">
+                <tr className="text-blue-600 bg-[#e7f1fd]">
                   <th className="px-3 py-2 border">Tên</th>
                   <th className="px-3 py-2 border">Khách hàng</th>
                   <th className="px-3 py-2 border">Trạng thái</th>

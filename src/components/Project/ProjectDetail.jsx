@@ -70,6 +70,7 @@ export default function ProjectDetail({ id: propId } = {}) {
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobsError, setJobsError] = useState(null);
+  const [jobFilterStatus, setJobFilterStatus] = useState('all');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedJobForAssign, setSelectedJobForAssign] = useState(null);
 
@@ -121,7 +122,7 @@ export default function ProjectDetail({ id: propId } = {}) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-12 gap-4 text-left ">
+      <div className="flex flex-col gap-4 text-left ">
   <div className={`${showJobsColumn ? 'col-span-4' : 'col-span-12'} bg-white rounded shadow p-6 h-fit`}>
           <h2 className="text-md font-semibold text-blue-700">Thông tin dự án</h2>
           <hr className="my-4" />
@@ -240,6 +241,18 @@ export default function ProjectDetail({ id: propId } = {}) {
                   <div className="p-3 text-red-600">Lỗi: {jobsError}</div>
                 ) : hasJobs ? (
                   <div className="mt-2">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div />
+                      <div className="flex items-center gap-3">
+                        <label className="text-sm">Lọc trạng thái:</label>
+                        <select value={jobFilterStatus} onChange={(e) => setJobFilterStatus(e.target.value)} className="border px-2 py-1 rounded text-sm">
+                          <option value="all">Tất cả</option>
+                          {Object.keys(JOB_STATUS_LABELS || {}).map((s) => (
+                            <option key={s} value={s}>{JOB_STATUS_LABELS[s] || s}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-[#e7f1fd]">
@@ -251,7 +264,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                         </tr>
                       </thead>
                       <tbody>
-                        {jobs.map((j) => (
+                        {((jobs || []).filter(j => (jobFilterStatus === 'all' ? true : j.status === jobFilterStatus))).map((j) => (
                           <tr key={j.id} className="border-t">
                             <td className="px-3 py-2 align-top">{j.name || j.title || `#${j.id}`}</td>
                             <td className="px-3 py-2 align-top">{formatDate(j.deadline) || '—'}</td>

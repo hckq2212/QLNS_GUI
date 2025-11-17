@@ -14,6 +14,7 @@ import { useGetServicesQuery } from '../../services/service';
 import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 import { CONTRACT_STATUS_LABELS } from '../../utils/enums'
+import ViewQuoteModal from '../ui/ViewQuoteModal';
 
 export default function ContractDetail({ id: propId } = {}) {
   let routeId = null;
@@ -42,6 +43,8 @@ export default function ContractDetail({ id: propId } = {}) {
   const [localSignedFile, setLocalSignedFile] = React.useState(null);
 
   const { data: fetchedCustomer } = useGetCustomerByIdQuery(contract?.customer_id, { skip: !contract?.customer_id });
+
+  const [viewQuoteOpen, setViewQuoteOpen] = React.useState(false);
 
 
 
@@ -78,6 +81,7 @@ export default function ContractDetail({ id: propId } = {}) {
   if (!contract) return <div className="p-6 text-gray-600">Contract not found</div>;
 
   return (
+    <>
     <div className="p-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-12 gap-4 text-left">
         <div className="col-span-8 bg-white rounded shadow p-6">
@@ -260,18 +264,36 @@ export default function ContractDetail({ id: propId } = {}) {
           )}
         </div>
 
-        <div className="col-span-4 bg-white rounded shadow p-6">
-          <div className="text-md font-semibold text-blue-700">Khách hàng</div>
-          <hr className="my-4" />
-          <div className="text-sm text-gray-700">
-            <div className="mb-2"><p className="text-gray-500">Tên:</p> {customer?.name || contract.customer_temp?.name || '—'}</div>
-            <div className="mb-2"><p className="text-gray-500">Điện thoại:</p> {customer?.phone || contract.customer_temp?.phone || '—'}</div>
-            <div className="mb-2"><p className="text-gray-500">Email:</p> {customer?.email || contract.customer_temp?.email || '—'}</div>
-            <div className="mb-2"><p className="text-gray-500">CMND/Hộ chiếu:</p> {customer?.identity_code || '—'}</div>
-            {(customer?.address || contract.customer_temp?.address) && <div className="mb-2"><p className="text-gray-500">Địa chỉ:</p> {customer?.address || contract.customer_temp?.address}</div>}
+        <div className="col-span-4 bg-white rounded shadow p-6 h-fit">
+          <div>
+            <div className="text-md font-semibold text-blue-700">Khách hàng</div>
+            <hr className="my-4" />
+            <div className="text-sm text-gray-700">
+              <div className="mb-2"><p className="text-gray-500">Tên:</p> {customer?.name || contract.customer_temp?.name || '—'}</div>
+              <div className="mb-2"><p className="text-gray-500">Điện thoại:</p> {customer?.phone || contract.customer_temp?.phone || '—'}</div>
+              <div className="mb-2"><p className="text-gray-500">Email:</p> {customer?.email || contract.customer_temp?.email || '—'}</div>
+              <div className="mb-2"><p className="text-gray-500">CMND/Hộ chiếu:</p> {customer?.identity_code || '—'}</div>
+              {(customer?.address || contract.customer_temp?.address) && <div className="mb-2"><p className="text-gray-500">Địa chỉ:</p> {customer?.address || contract.customer_temp?.address}</div>}
+            </div>
           </div>
-
+          <div>
+            
+          </div>
+          <button
+              className='bg-blue-600 px-2 py-1 text-white rounded'
+              onClick={() => {
+                const oppId = contract?.opportunity_id || contract?.opportunity?.id;
+                if (!oppId) {
+                  toast.info('Không có báo giá liên quan đến hợp đồng này');
+                  return;
+                }
+                setViewQuoteOpen(true);
+              }}
+            >
+              Xem báo giá
+          </button>
         </div>
+        
       </div>
       
         {(role === 'bod' || role === 'admin' && contract.status == 'waiting_bod_approval') && (
@@ -314,8 +336,14 @@ export default function ContractDetail({ id: propId } = {}) {
       >
         Không duyệt
       </button>
-            </div>
+        </div>
         )}
     </div>
+    <ViewQuoteModal
+      isOpen={viewQuoteOpen}
+      onClose={() => setViewQuoteOpen(false)}
+      opportunity={{ id: contract?.opportunity_id || contract?.opportunity?.id, name: contract?.name || contract?.contract_name }}
+    />
+    </>
   );
 }

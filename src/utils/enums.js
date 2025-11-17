@@ -37,7 +37,8 @@ const  PROJECT_STATUS_LABELS = {
   in_progress:'Đang thực hiện',
   team_acknowledged:'Team được phân công đã nhận thông tin',
   not_assigned:'Chưa phân công công việc',
-  assigned:'Đã phân công công việc'
+  assigned:'Đã phân công công việc',
+  assigning:'Đang phân công'
 }
 
 const PRIORITY_OPTIONS = [

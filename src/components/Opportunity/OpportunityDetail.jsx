@@ -10,6 +10,7 @@ import { useParams } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
 import PriceQuoteModal from '../ui/PriceQuoteModal';
+import ViewQuoteModal from '../ui/ViewQuoteModal';
 import opportunityAPI from '../../api/opportunity.js';
 import { toast } from 'react-toastify';
 import CreateConFromOppoModal from '../ui/CreateConFromOppoModal.jsx';
@@ -30,7 +31,6 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
   const { data: opp, isLoading, isError, error, refetch } = useGetOpportunityByIdQuery(id, { skip: !id });
   const { data: servicesData } = useGetOpportunityServicesQuery(id, { skip: !id });
-  // all services master list (used to resolve service_id -> service name)
   const { data: servicesList = [] } = useGetServicesQuery();
   const { data: customers } = useGetAllCustomerQuery(undefined, { skip: !token });
   const { data: users } = useGetAllUserQuery(undefined, { skip: !token });
@@ -76,6 +76,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   // price quote modal
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [viewQuoteOpen, setViewQuoteOpen] = useState(false);
   const [createConOpen, setCreateConOpen] = useState(false);
   const [updateOpportunity, { isLoading: updatingOpportunity }] = useUpdateOpportunityMutation();
   const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
@@ -108,13 +109,13 @@ export default function OpportunityDetail({ id: propId } = {}) {
           <div className="flex justify-between items-start mb-4">
             <div>
               <div className="text-xs text-gray-500">Người tạo</div>
-              <div className="text-sm font-semibold">{creator?.full_name}</div>
+              <div className="text-lg font-semibold text-blue-600">{creator?.full_name}</div>
             </div>
           </div>
 
           <div className="mb-4">
             <div className="text-sm text-gray-500">Tên cơ hội</div>
-            <div className="text-lg font-medium">{opp.name  || '—'}</div>
+            <div className="text-lg font-medium text-blue-600">{opp.name  || '—'}</div>
           </div>
 
           {opp.description && (
@@ -214,7 +215,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
         </div>
 
-        <div className="col-span-4 bg-white rounded shadow p-6">
+        <div className="col-span-4 bg-white rounded shadow p-6 h-fit">
           <div className="text-md font-semibold  flex justify-between text-blue-700">
             Thông tin khách hàng
               {!editingCustomer ? (
@@ -372,9 +373,17 @@ export default function OpportunityDetail({ id: propId } = {}) {
         )}
       </div>
       {(opp.status == 'quoted') && (
-        <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded mt-6">Tạo hợp đồng</button>
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Tạo hợp đồng</button>
+        </div>
+      )}
+      {(opp.status == 'quoted' || opp.status == 'contract_created' ) && (
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => setViewQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Xem báo giá</button>
+        </div>
       )}
       <PriceQuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} opportunity={opp} />
+      <ViewQuoteModal isOpen={viewQuoteOpen} onClose={() => setViewQuoteOpen(false)} opportunity={opp} />
 
       {createConOpen && (
         <CreateConFromOppoModal
