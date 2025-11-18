@@ -242,24 +242,29 @@ export default function OpportunityDetail({ id: propId } = {}) {
                 {customerDraft?.status === 'potential' ? (
                   <>
                     <div className="mb-2">
-                      <p className='text-gray-500'>Tên khách hàng (tiềm năng):</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.name || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, name: e.target.value }))} />
+                      <p className='text-gray-500'>Tên khách hàng:</p>
+                      <input type='text' className="mt-1 w-full border rounded p-2" value={customerDraft?.name || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, name: e.target.value }))} />
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>Điện thoại:</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.phone || customerDraft?.phone_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, phone: e.target.value }))} />
+                      <input type='number' className="mt-1 w-full border rounded p-2" value={customerDraft?.phone || customerDraft?.phone_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, phone: e.target.value }))} />
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>Email:</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.email || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, email: e.target.value }))} />
+                      <input type='email' className="mt-1 w-full border rounded p-2" value={customerDraft?.email || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, email: e.target.value }))} />
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>CMND/Hộ chiếu:</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.identity_code || customerDraft?.id_number || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, identify_code: e.target.value }))} />
+                      <input
+                        type='text'
+                        className="mt-1 w-full border rounded p-2"
+                        value={customerDraft?.identity_code || customerDraft?.identify_code || customerDraft?.id_number || ''}
+                        onChange={(e) => setCustomerDraft((d) => ({ ...d, identity_code: e.target.value, identify_code: e.target.value }))}
+                      />
                     </div>
                     <div className="mb-2">
                       <p className='text-gray-500'>Địa chỉ:</p>
-                      <input className="mt-1 w-full border rounded p-2" value={customerDraft?.address || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, address: e.target.value }))} />
+                      <input type='text' className="mt-1 w-full border rounded p-2" value={customerDraft?.address || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, address: e.target.value }))} />
                     </div>
                   </>
                 ) : (
@@ -276,7 +281,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                 )}
 
                 <div className="flex gap-2 mt-2">
-                  <button className="bg-green-600 text-white px-3 py-1 rounded" disabled={updatingOpportunity} onClick={async () => {
+                  <button className="bg-blue-600 text-white px-3 py-1 rounded" disabled={updatingOpportunity} onClick={async () => {
                     try {
                       const body = {};
                       if (customerDraft?.status === 'potential') {
@@ -315,7 +320,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   || opp?.customer_temp?.status
                   || 'Chưa có'
                 )}</div>
-                <div className="mb-2 flex flex-col"><p className='text-gray-500'>CMNND/Hộ chiếu:</p> {customer?.identify_code || customer?.id_number || opp?.customer_temp?.identify_code || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>CMNND/Hộ chiếu:</p> {customer?.identity_code || customer?.identify_code || customer?.id_number || opp?.customer_temp?.identity_code || opp?.customer_temp?.identify_code || 'Chưa có'}</div>
                 {(customer?.address || opp?.customer_temp?.address) && <div className="mb-2"><p>Địa chỉ:</p> {customer?.address || opp?.customer_temp?.address}</div>}
               </>
             )}
@@ -346,7 +351,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   toast.error(err?.message || 'Duyệt thất bại');
                 }
               }}
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              className="bg-blue-600 text-white px-4 py-2 rounded"
             >
               {approving ? 'Đang...' : 'Duyệt'}
             </button>
@@ -365,23 +370,24 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   toast.error(err?.message || 'Từ chối thất bại');
                 }
               }}
-              className="bg-red-600 text-white px-4 py-2 rounded"
+              className="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded"
             >
               Không duyệt
             </button>
           </div>
         )}
       </div>
-      {(opp.status == 'quoted') && (
-        <div className="flex gap-2 mt-6">
-          <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Tạo hợp đồng</button>
-        </div>
-      )}
       {(opp.status == 'quoted' || opp.status == 'contract_created' ) && (
         <div className="flex gap-2 mt-6">
           <button onClick={() => setViewQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Xem báo giá</button>
         </div>
       )}
+      {(opp.status == 'quoted') && (
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Tạo hợp đồng</button>
+        </div>
+      )}
+
       <PriceQuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} opportunity={opp} />
       <ViewQuoteModal isOpen={viewQuoteOpen} onClose={() => setViewQuoteOpen(false)} opportunity={opp} />
 

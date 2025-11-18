@@ -9,7 +9,8 @@ import { useGetUserByIdQuery } from '../../services/user';
 import { formatDate } from '../../utils/FormatValue';
 import { JOB_STATUS_LABELS } from '../../utils/enums';
 import { toast } from 'react-toastify';
-import { useFinishJobMutation } from '../../services/job';
+import { useFinishJobMutation, useUpdateJobMutation } from '../../services/job';
+import { useGetTeamByIdQuery } from '../../services/team';
 
 export default function JobDetail({ id: propId } = {}) {
   let routeId = null;
@@ -30,6 +31,7 @@ export default function JobDetail({ id: propId } = {}) {
   const [updating, setUpdating] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [finishJob, { isLoading: finishing }] = useFinishJobMutation();
+  const [updateJob, { isLoading: updatingJob }] = useUpdateJobMutation();
 
   useEffect(() => {
     if (!id) return;
@@ -73,6 +75,30 @@ export default function JobDetail({ id: propId } = {}) {
 
   const { data: customer } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
   const { data: assignedUser } = useGetUserByIdQuery(job?.assigned_id, { skip: !job?.assigned_id });
+  const teamId = project?.team_id || project?.team?.id || project?.teamId || null;
+  const { data: team } = useGetTeamByIdQuery(teamId, { skip: !teamId });
+  const currentUser = useSelector((s) => s.auth.user || null);
+  const tokenFromState = useSelector((s) => s.auth.accessToken || null);
+
+  const currentUserId = React.useMemo(() => {
+    // prefer explicit user object from store
+    if (currentUser) {
+      if (currentUser.id) return currentUser.id;
+      if (currentUser.user_id) return currentUser.user_id;
+    }
+    // fallback: parse JWT access token (state or localStorage)
+    const raw = tokenFromState || (typeof window !== 'undefined' && localStorage.getItem('accessToken'));
+    if (!raw) return null;
+    try {
+      const parts = raw.split('.');
+      if (parts.length < 2) return null;
+      const payload = JSON.parse(window.atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return payload.user_id || payload.id || payload.sub || null;
+    } catch (e) {
+      console.warn('Failed to parse JWT for user id fallback', e);
+      return null;
+    }
+  }, [currentUser, tokenFromState]);
 
   const statusOptions = Object.keys(JOB_STATUS_LABELS || {});
 
@@ -192,23 +218,7 @@ export default function JobDetail({ id: propId } = {}) {
           <hr className="my-4" />
 
           <div className="text-sm text-gray-700">
-            <div className="mb-3">
-              <label className="text-sm text-gray-500">Upload bằng chứng </label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
-                className="block mt-2"
-              />
-              {evidenceFiles && evidenceFiles.length > 0 && (
-                <div className="mt-2 text-sm text-gray-600">
-                  <div>Đã chọn {evidenceFiles.length} tệp:</div>
-                  <ul className="list-disc ml-5 mt-1">
-                    {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
+           
             {evidenceList && evidenceList.length > 0 && (
               <div className="mt-4">
                 <div className="text-sm text-gray-500">Bằng chứng đã upload</div>
@@ -228,9 +238,28 @@ export default function JobDetail({ id: propId } = {}) {
               </div>
             )}
             {(job.status == "in_progress") && (
+                
+
                 <div className="mt-4">
+                     <div className="mb-3">
+              <label className="text-sm text-gray-500">Upload bằng chứng </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
+                className="block mt-2"
+              />
+              {evidenceFiles && evidenceFiles.length > 0 && (
+                <div className="mt-2 text-sm text-gray-600">
+                  <div>Đã chọn {evidenceFiles.length} tệp:</div>
+                  <ul className="list-disc ml-5 mt-1">
+                    {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
               <button
-                className="px-3 py-2 bg-blue-600 text-white rounded"
+                className="px-3 py-2 bg-blue-600 text-white rounded"   
                 disabled={finishing}
                 onClick={async () => {
                   if (!job?.id) return toast.error('Không xác định được công việc');
@@ -255,6 +284,34 @@ export default function JobDetail({ id: propId } = {}) {
               </button>
             </div>
             )}
+
+            {job.status === 'review' && team && (String(team.lead_user_id) === String(currentUserId)) && (
+              <div className="mt-4">
+                <button
+                  className="px-3 py-2 bg-blue-600 text-white rounded"
+                  disabled={updatingJob}
+                  onClick={async () => {
+                    if (!job?.id) return toast.error('Không xác định được công việc');
+                    if (!window.confirm('Xác nhận hoàn thành công việc này?')) return;
+                    try {
+                      await updateJob({ id: job.id, body: { status: 'done' } }).unwrap();
+                      toast.success('Đã xác nhận hoàn thành công việc');
+                      try {
+                        const fresh = await jobAPI.getById(job.id);
+                        setJob(fresh);
+                      } catch (e) { console.warn('Failed to refresh job after update', e); }
+                    } catch (err) {
+                      console.error('Update job failed', err);
+                      toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
+                    }
+                  }}
+                >
+                  {updatingJob ? 'Đang xử lý...' : 'Xác nhận hoàn thành công việc'}
+                </button>
+              </div>
+            )}
+
+
             
 
 

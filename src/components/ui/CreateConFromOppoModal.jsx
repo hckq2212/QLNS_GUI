@@ -39,8 +39,8 @@ export default function CreateConFromOppoModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
       <div className="bg-white p-6 rounded shadow-lg w-96">
-        <h3 className="font-semibold mb-2">
-          Tạo hợp đồng từ cơ hội {selectedOpportunity.name}
+        <h3 className="font-semibold mb-2 text-blue-600">
+          Tạo hợp đồng cho cơ hội {selectedOpportunity.name}
         </h3>
 
         <div className="flex justify-end gap-2">

@@ -23,13 +23,17 @@ export default function ViewQuoteModal({ isOpen = false, onClose = () => {}, opp
                 const mapped = entries.map((e, idx) => {
                     const svcId = e.service_id || null;
                     const svc = svcId ? (allServices && Array.isArray(allServices) ? allServices.find(s => String(s.id) === String(svcId)) : null) : null;
+                    // determine base cost using service master data first, then fallback to opportunity row
+                    const baseRaw = svc?.base_cost ?? svc?.baseCost ?? svc?.price ?? svc?.cost ?? e.base_cost ?? e.baseCost ?? 0;
+                    const proposedRaw = e.proposed_price ?? e.proposedPrice ?? e.price ?? null;
+                    const proposedFromSvc = svc ? (svc.suggested_price ?? svc.suggestedPrice ?? svc.price ?? null) : null;
                     return {
                         id: e.id ?? idx,
                         serviceId: svcId,
                         name: svc?.name || e.name || e.service_name || `Service ${svcId ?? idx+1}`,
                         quantity: Number(e.quantity || e.qty || 1),
-                        proposedPrice: Number(e.proposed_price ?? e.proposedPrice ?? e.price ?? 0),
-                        baseCost: Number(e.base_cost ?? e.baseCost ?? 0),
+                        proposedPrice: Number(proposedRaw != null ? proposedRaw : (proposedFromSvc != null ? proposedFromSvc : 0)),
+                        baseCost: Number(baseRaw || 0),
                     };
                 });
                 if (!mounted) return;

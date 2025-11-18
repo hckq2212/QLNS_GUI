@@ -2,7 +2,7 @@ const JOB_STATUS_LABELS = {
   created: 'Mới tạo',
   assigned: 'Đã giao',
   in_progress: 'Đang thực hiện',
-  review: 'Chờ duyệt',
+  review: 'Chờ kiểm tra',
   done: 'Hoàn thành',
   cancelled: 'Đã hủy',
   archived: 'Lưu trữ',
@@ -30,7 +30,8 @@ const OPPPORTUNITY_STATUS_LABELS = {
   approved:'Đã được duyệt',
   not_assigned:'Chưa phân công công việc',
   assigned:'Đã phân công công việc',
-  contract_created:'Cơ hội đã được tạo hợp đồng'
+  contract_created:'Cơ hội đã được tạo hợp đồng',
+  quoted:'Đã tạo báo giá'
 }
 
 const  PROJECT_STATUS_LABELS = {

@@ -37,7 +37,7 @@ export default function OpporunityList() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Danh sách cơ hội</h2>
+        <h2 className="text-lg font-semibold text-blue-600">Danh sách cơ hội</h2>
         <div className="flex items-center gap-3">
           <label className="text-sm text-gray-600">Lọc theo trạng thái</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded p-2 text-sm">
@@ -51,7 +51,7 @@ export default function OpporunityList() {
       <div className="overflow-x-auto bg-white rounded shadow">
         <table className="w-full table-auto text-sm text-left">
           <thead>
-            <tr className="bg-gray-50">
+            <tr className="bg-gray-50 text-blue-600">
               <th className="px-4 py-2 text-left">Tên cơ hội</th>
               <th className="px-4 py-2 text-left">Khách hàng</th>
               <th className="px-4 py-2 text-left">Trạng thái</th>

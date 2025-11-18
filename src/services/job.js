@@ -29,6 +29,12 @@ export const jobAPI = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id } = {}) => [{ type: 'Job', id }, { type: 'Job', id: 'ME' }],
     })
+    ,
+    updateJob: build.mutation({
+      // expects { id, body }
+      query: ({ id, body }) => ({ url: `/job/${id}`, method: 'PATCH', body }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Job', id }, { type: 'Job', id: 'ME' }],
+    })
   }),
 });
 
@@ -36,6 +42,7 @@ export const {
     getAllJob,
     getJobById,
     useGetMyJobQuery,
-    useFinishJobMutation
+    useFinishJobMutation,
+    useUpdateJobMutation
  } = jobAPI;
 
