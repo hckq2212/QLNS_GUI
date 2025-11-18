@@ -59,9 +59,12 @@ export default function ProjectDetail({ id: propId } = {}) {
   }, [teams]);
 
   const [selectedTeam, setSelectedTeam] = useState(project?.team_id ?? project?.team?.id ?? null);
+  const [isAssignEditing, setIsAssignEditing] = useState(false);
 
   React.useEffect(() => {
     setSelectedTeam(project?.team_id ?? project?.team?.id ?? null);
+    // if project has no team assigned, allow selecting but require explicit 'Phân công' click
+    setIsAssignEditing(!project?.team_id && !project?.team?.id);
   }, [project]);
 
   const navigate = useNavigate();
@@ -184,27 +187,41 @@ export default function ProjectDetail({ id: propId } = {}) {
           <div className="mt-6">
             <div className="text-sm text-gray-500">Team</div>
             <div className="mt-2">
-              <select
-                value={selectedTeam || ''}
-                onChange={async (e) => {
-                  const v = e.target.value || null;
-                  setSelectedTeam(v);
-                  try {
-                    await assignTeam({ id: project.id, teamId: v || null }).unwrap();
-                    toast.success('Đã phân team cho dự án');
-                    try { refetch && refetch(); } catch (e) {}
-                  } catch (err) {
-                    console.error('assign team failed', err);
-                    toast.error(err?.data?.message || err?.message || 'Phân team thất bại');
-                  }
-                }}
-                className="w-full border rounded px-3 py-2 text-sm"
-              >
-                <option value="">-- Chọn team --</option>
-                {(teams || []).map((t) => (
-                  <option key={t.id ?? t.team_id} value={t.id ?? t.team_id}>{t.name || t.team_name || `#${t.id ?? t.team_id}`}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={selectedTeam || ''}
+                  onChange={(e) => { setSelectedTeam(e.target.value || null); }}
+                  className="flex-1 border rounded px-3 py-2 text-sm"
+                  disabled={!isAssignEditing}
+                >
+                  <option value="">-- Chọn team --</option>
+                  {(teams || []).map((t) => (
+                    <option key={t.id ?? t.team_id} value={t.id ?? t.team_id}>{t.name || t.team_name || `#${t.id ?? t.team_id}`}</option>
+                  ))}
+                </select>
+                <button
+                  className={`px-3 py-2 rounded text-sm ${isAssignEditing ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 border'}`}
+                  onClick={async () => {
+                    // if currently editing, perform assign; otherwise enable editing
+                    if (isAssignEditing) {
+                      try {
+                        await assignTeam({ id: project.id, teamId: selectedTeam || null }).unwrap();
+                        toast.success('Đã phân team cho dự án');
+                        setIsAssignEditing(false);
+                        try { refetch && refetch(); } catch (e) {}
+                      } catch (err) {
+                        console.error('assign team failed', err);
+                        toast.error(err?.data?.message || err?.message || 'Phân team thất bại');
+                      }
+                    } else {
+                      setIsAssignEditing(true);
+                    }
+                  }}
+                  disabled={assigning}
+                >
+                  {isAssignEditing ? (assigning ? 'Đang...' : 'Phân công') : 'Chỉnh sửa'}
+                </button>
+              </div>
             </div>
           </div>
 

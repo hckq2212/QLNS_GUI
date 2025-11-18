@@ -197,7 +197,10 @@ export default function ContractDetail({ id: propId } = {}) {
               )}
             </div>
 
-            <div className="mt-4">
+            
+            {contract?.status !== 'waiting_bod_approval' && contract?.status !== 'waiting_hr_confirm' && contract?.status !== 'without_debt' 
+            && (
+              <div className="mt-4">
               <div className="text-sm text-gray-500">Hợp đồng đã ký</div>
               <div className="text-sm text-gray-700 mt-2">
                 {signedInfo.name ? (
@@ -242,6 +245,8 @@ export default function ContractDetail({ id: propId } = {}) {
                 )}
               </div>
             </div>
+            )}
+            
           </div>
 
           {contract.attachments && contract.attachments.length > 0 && (
@@ -313,7 +318,7 @@ export default function ContractDetail({ id: propId } = {}) {
           toast.error(err?.data?.error || err?.message || 'Duyệt thất bại');
         }
         }}
-        className="bg-green-600 text-white px-4 py-2 rounded"
+        className="bg-blue-600 text-white px-4 py-2 rounded"
       >
         {approving ? 'Đang...' : 'Duyệt'}
       </button>
@@ -332,7 +337,7 @@ export default function ContractDetail({ id: propId } = {}) {
           toast.error(err?.data?.error || err?.message || 'Từ chối thất bại');
         }
         }}
-        className="bg-red-600 text-white px-4 py-2 rounded "
+        className="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded "
       >
         Không duyệt
       </button>
