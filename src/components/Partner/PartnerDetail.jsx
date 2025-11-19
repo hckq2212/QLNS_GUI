@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useGetPartnerByIdQuery, useUpdatePartnerMutation } from '../../services/partner';
 import { useGetServiceJobsQuery } from '../../services/serviceJob';
 import { useGetServicesQuery } from '../../services/service';
+import { useCreatePartnerServiceJobMutation, useGetPartnerServiceJobsByPartnerQuery, useUpdatePartnerServiceJobMutation } from '../../services/partnerServiceJob';
 import { formatPrice } from '../../utils/FormatValue';
 import { PARTNER_TYPE } from '../../utils/enums';
 import { toast } from 'react-toastify';
@@ -46,16 +47,52 @@ export default function PartnerDetail({ id: propId } = {}) {
   }, [partner]);
   const { data: jobsData } = useGetServiceJobsQuery(undefined, { skip: !id });
   const { data: servicesList = [] } = useGetServicesQuery();
+  const { data: partnerMappings = [], refetch: refetchMappings } = useGetPartnerServiceJobsByPartnerQuery(id, { skip: !id });
+  const [createPartnerServiceJob, { isLoading: creatingPartnerMapping }] = useCreatePartnerServiceJobMutation();
+  const [updatePartnerServiceJob, { isLoading: updatingPartnerMapping }] = useUpdatePartnerServiceJobMutation();
 
   const jobs = useMemo(() => {
+    // Prefer service-job mappings returned by partnerServiceJob.getByPartner
+    if (partnerMappings && (Array.isArray(partnerMappings) || partnerMappings.items || partnerMappings.data)) {
+      const mappings = Array.isArray(partnerMappings) ? partnerMappings : (partnerMappings.items || partnerMappings.data || []);
+      // For each mapping, prefer an embedded `service_job` object. If only an id is present,
+      // try to resolve it from the full `jobsData` list. Return an array of { job, mapping } so
+      // we can display mapping-level fields like `base_cost`.
+      const allJobs = jobsData ? (Array.isArray(jobsData) ? jobsData : (jobsData.items || [])) : [];
+      return mappings.map((m) => {
+        if (!m) return null;
+        const embedded = m.service_job || (m.service_job_id && allJobs.find((aj) => String(aj.id || aj._id) === String(m.service_job_id)));
+        let resolvedJob = null;
+        if (embedded) resolvedJob = embedded;
+        else {
+          // Some mappings may store only the id under different keys
+          const idCandidate = m.service_job_id ?? (m.service_job && (m.service_job.id || m.service_job._id)) ?? m.service_job;
+          if (idCandidate) resolvedJob = allJobs.find((aj) => String(aj.id || aj._id) === String(idCandidate)) || { id: idCandidate };
+        }
+        return resolvedJob ? { job: resolvedJob, mapping: m } : null;
+      }).filter(Boolean);
+    }
+    // Fallback: older data shape where service jobs include a partner_id field
     if (!jobsData) return [];
     const rows = Array.isArray(jobsData) ? jobsData : (jobsData.items || []);
     return rows.filter((j) => {
       if (!j) return false;
-      const pid = j.partner_id ;
+      const pid = j.partner_id;
       return pid && String(pid) === String(id);
-    });
-  }, [jobsData, id]);
+    }).map((j) => ({ job: j, mapping: null }));
+  }, [jobsData, id, partnerMappings]);
+
+  // helper: existing mapping ids for this partner
+  const mappedServiceJobIds = React.useMemo(() => {
+    if (!partnerMappings) return new Set();
+    const arr = Array.isArray(partnerMappings) ? partnerMappings : (partnerMappings.items || partnerMappings.data || []);
+    return new Set(arr.map((m) => String(m.service_job_id ?? m.service_job?.id ?? m.service_job)));
+  }, [partnerMappings]);
+
+  const [showAttach, setShowAttach] = useState(false);
+  const [selectedAttachJobId, setSelectedAttachJobId] = useState('');
+  const [editingMapId, setEditingMapId] = useState(null);
+  const [editingValue, setEditingValue] = useState('');
 
   if (!id) return <div className="p-6">No partner id provided</div>;
   if (isLoading) return <div className="p-6">Loading partner...</div>;
@@ -79,7 +116,6 @@ export default function PartnerDetail({ id: propId } = {}) {
                         setIsEditing(false);
                         try { refetch && refetch(); } catch (e) {}
                       } catch (err) {
-                        console.error('update partner failed', err);
                         toast.error(err?.data?.message || err?.message || 'Cập nhật thất bại');
                       }
                     }}
@@ -196,8 +232,43 @@ export default function PartnerDetail({ id: propId } = {}) {
         <div className="col-span-7 bg-white rounded shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-md font-semibold text-blue-700">Hạng mục dịch vụ cung cấp</h2>
-            <Link to="/service-job/create" className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
+            <div className="flex items-center gap-2">
+              <Link to="/service-job/create" className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
+              <button onClick={() => setShowAttach((s) => !s)} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Phân công hạng mục có sẵn</button>
+            </div>
           </div>
+
+          {showAttach && (
+            <div className="mb-4 p-3 bg-gray-50 rounded border">
+              <div className="flex items-center gap-2">
+                <select value={selectedAttachJobId} onChange={(e) => setSelectedAttachJobId(e.target.value)} className="border px-2 py-1 rounded text-sm flex-1">
+                  <option value="">-- Chọn hạng mục có sẵn --</option>
+                  {(Array.isArray(jobsData) ? jobsData : (jobsData?.items || [])).filter((aj) => aj && aj.owner_type === 'partner' && !mappedServiceJobIds.has(String(aj.id || aj._id))).map((aj) => (
+                    <option key={aj.id || aj._id} value={aj.id || aj._id}>{aj.name || aj.title || `#${aj.id || aj._id}`}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={!selectedAttachJobId || creatingPartnerMapping}
+                  onClick={async () => {
+                    if (!selectedAttachJobId) return;
+                    try {
+                      await createPartnerServiceJob({ partner_id: partner.id, service_job_id: selectedAttachJobId }).unwrap();
+                      toast.success('Đã phân công hạng mục cho đối tác');
+                      setSelectedAttachJobId('');
+                      setShowAttach(false);
+                      try { refetch && refetch(); } catch (e) {}
+                      try { refetchMappings && refetchMappings(); } catch (e) {}
+                    } catch (err) {
+                      toast.error(err?.data?.message || err?.message || 'Phân công thất bại');
+                    }
+                  }}
+                  className="px-3 py-1 rounded bg-indigo-600 text-white text-sm"
+                >
+                  Thêm
+                </button>
+              </div>
+            </div>
+          )}
 
           {jobs.length === 0 ? (
             <div className="text-sm text-gray-600">Không có hạng mục dịch vụ nào gắn với đối tác này</div>
@@ -207,24 +278,103 @@ export default function PartnerDetail({ id: propId } = {}) {
                 <thead className="bg-[#e7f1fd] text-left">
                   <tr>
                     <th className="px-4 py-3 text-blue-700">Tên</th>
-                    <th className="px-4 py-3 text-blue-700">Dịch vụ</th>
                     <th className="px-4 py-3 text-blue-700">Giá vốn</th>
+                    <th className="px-4 py-3 text-blue-700">Giá cung cấp</th>
                     <th className="px-4 py-3 text-blue-700">Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {jobs.map((j) => {
+                  {jobs.map((entry) => {
+                    const j = entry.job || entry;
+                    const mapping = entry.mapping || null;
+                    const jobId = j.id || j._id || (j.id === 0 ? 0 : undefined);
                     const svcId = j.service_id || j.service?.id || j.serviceId;
                     const svc = Array.isArray(servicesList) ? servicesList.find((s) => String(s.id) === String(svcId)) : null;
+                    const supplyPrice = mapping?.base_cost  ?? 0;
                     return (
-                      <tr key={j.id || j._id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 align-top">{j.name || j.title || `#${j.id || j._id}`}</td>
-                        <td className="px-4 py-3 align-top">{svc?.name || j.service_name || `#${svcId || ''}`}</td>
+                      <tr key={jobId || `${mapping?.id || mapping?.service_job_id || Math.random()}`} className="border-t hover:bg-gray-50">
+                        <td className="px-4 py-3 align-top">{j.name || j.title || `#${jobId}`}</td>
                         <td className="px-4 py-3 align-top">{formatPrice(j.base_cost ?? j.price ?? 0)}</td>
                         <td className="px-4 py-3 align-top">
+                          {mapping && (editingMapId === (mapping.id || mapping._id || mapping.partner_service_job_id)) ? (
+                            <input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="border px-2 py-1 rounded text-sm w-28"
+                            />
+                          ) : (
+                            formatPrice(supplyPrice)
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top">
                           <div className="flex gap-2">
-                            <Link to={`/service-job/${j.id || j._id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>
-                            <Link to={`/service-job/${j.id || j._id}/edit`} className="px-2 py-1 rounded bg-yellow-600 text-white text-xs">Sửa</Link>
+                            <Link to={`/service-job/${jobId}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem chi tiết</Link>
+                            {mapping && (() => {
+                              // Use the mapping's own id fields only. Do not use service_job_id here.
+                              const mapId = mapping.id || mapping._id || mapping.partner_service_job_id;
+                              if (editingMapId === mapId) {
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      disabled={updatingPartnerMapping}
+                                      onClick={async () => {
+                                        try {
+                                          const parsed = Number(String(editingValue).replace(/[^0-9.-]+/g, ''));
+                                          if (Number.isNaN(parsed)) {
+                                            toast.error('Giá không hợp lệ');
+                                            return;
+                                          }
+                                          if (!mapId) {
+                                            toast.error('Không xác định được mapping id');
+                                            return;
+                                          }
+                                          // Build a richer payload — some backend update handlers expect related ids too
+                                          const payload = {
+                                            base_cost: parsed,
+                                            partner_id: mapping.partner_id ?? mapping.partner?.id ?? partner?.id,
+                                            service_job_id: mapping.service_job_id ?? mapping.service_job?.id ?? j?.id,
+                                          };
+                                          // debug log to inspect payload being sent
+                                          await updatePartnerServiceJob({ id: mapId, body: payload }).unwrap();
+                                          toast.success('Cập nhật giá cung cấp thành công');
+                                          setEditingMapId(null);
+                                          setEditingValue('');
+                                          try { refetchMappings && refetchMappings(); } catch (e) {}
+                                        } catch (err) {
+                                          toast.error(err?.data?.message || err?.message || 'Cập nhật thất bại');
+                                        }
+                                      }}
+                                      className="px-2 py-1 rounded bg-green-600 text-white text-xs"
+                                    >
+                                      Lưu
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingMapId(null);
+                                        setEditingValue('');
+                                      }}
+                                      className="px-2 py-1 rounded bg-gray-200 text-sm"
+                                    >
+                                      Hủy
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <button
+                                  disabled={updatingPartnerMapping}
+                                  onClick={() => {
+                                    const current = mapping.base_cost ?? 0;
+                                    setEditingMapId(mapId);
+                                    setEditingValue(String(current));
+                                  }}
+                                  className="px-2 py-1 rounded bg-green-600 text-white text-xs"
+                                >
+                                  Chỉnh sửa giá
+                                </button>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>

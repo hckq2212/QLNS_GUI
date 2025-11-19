@@ -122,7 +122,6 @@ export default function ServiceJobDetail({ id: propId } = {}) {
             <div>
               <div className="text-xs text-gray-500">Bên phụ trách</div>
               <div className="text-sm">{SERVICE_JOB_LABELS[job.owner_type] || 'Nội bộ'}</div>
-              {partnerName && <div className="text-xs text-gray-500">{partnerName}</div>}
             </div>
 
             {job.description && (

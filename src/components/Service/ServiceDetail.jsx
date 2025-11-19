@@ -139,7 +139,6 @@ export default function ServiceDetail({ id: propId } = {}) {
                         <td className="px-4 py-3 align-top">{j.name || j.title || `#${j.id || j._id}`}</td>
                         <td className="px-4 py-3 align-top">
                           <div className="text-sm">{SERVICE_JOB_LABELS[j.owner_type] || 'Nội bộ'}</div>
-                          <div className="text-xs text-gray-500">{partner?.name || j.partner_name || ''}</div>
                         </td>
                         <td className="px-4 py-3 align-top">{formatPrice(j.base_cost ?? j.price ?? 0)}</td>
                         <td className="px-4 py-3 align-top">

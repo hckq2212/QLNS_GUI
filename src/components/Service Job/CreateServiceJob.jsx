@@ -8,34 +8,6 @@ import { toast } from 'react-toastify';
 import { SERVICE_JOB_LABELS } from '../../utils/enums';
 import { PARTNER_TYPE } from '../../utils/enums';
 
-function PartnerSelector({ value, onChange, filterType }) {
-  // simple selector component using partners RTK query
-  const { data: partnersData = [], isLoading, isError } = useGetPartnersQuery();
-  const list = Array.isArray(partnersData) ? partnersData : (partnersData?.items || []);
-
-  if (isLoading) return <div className="text-sm text-gray-600 mt-2">Đang tải danh sách đối tác...</div>;
-  if (isError) return (
-    <div className="mt-2">
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Nhập partner id" className="mt-1 block w-full border rounded px-3 py-2" />
-      <p className="text-sm text-gray-500 mt-1">Không thể tải danh sách đối tác — bạn có thể nhập ID đối tác thủ công hoặc thử lại sau.</p>
-    </div>
-  );
-
-  // allow filtering by partner.type if provided
-  const filtered = filterType ? list.filter((p) => (p.type || p.partner_type) === filterType) : list;
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Chọn đối tác</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 block w-full border rounded px-3 py-2">
-        <option value="">-- Chọn đối tác --</option>
-        {filtered.map((p) => (
-          <option key={p.id || p._id} value={p.id || p._id}>{p.name || p.title || `#${p.id || p._id}`}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 export default function CreateServiceJob() {
   const navigate = useNavigate();
@@ -48,7 +20,6 @@ export default function CreateServiceJob() {
     name: '',
     base_cost: '',
     owner_type: 'user',
-    partner_id: '',
     description: '',
   });
 
@@ -79,7 +50,6 @@ export default function CreateServiceJob() {
       service_id: form.service_id,
       base_cost: form.base_cost !== '' ? Number(form.base_cost) : undefined,
       owner_type: form.owner_type || undefined,
-      partner_id: form.partner_id || undefined,
       description: form.description || undefined,
     };
 
@@ -148,7 +118,6 @@ export default function CreateServiceJob() {
               </select>
             </div>
 
-            <PartnerSelector value={form.partner_id} onChange={(v) => update('partner_id', v)} filterType={form.partner_type} />
           </>
         )}
 
