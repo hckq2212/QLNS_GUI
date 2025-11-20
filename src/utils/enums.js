@@ -9,6 +9,12 @@ const JOB_STATUS_LABELS = {
   not_assigned:'Chưa phân công'
 }
 
+
+const JOB_TYPE_LABELS = {
+  user: 'Nội bộ',
+  partner: 'Đối tác',
+}
+
 const CONTRACT_STATUS_LABELS ={
   signed: 'Đã ký',
   waiting_bod_approval:'Đang đợi BOD duyệt',
@@ -39,7 +45,8 @@ const  PROJECT_STATUS_LABELS = {
   team_acknowledged:'Team được phân công đã nhận thông tin',
   not_assigned:'Chưa phân công công việc',
   assigned:'Đã phân công công việc',
-  assigning:'Đang phân công'
+  assigning:'Đang phân công',
+  review:'Đợi xem xét'
 }
 
 const PRIORITY_OPTIONS = [
@@ -66,4 +73,4 @@ const CUSTOMER_STATUS_OPTIONS = [
   { value: 'potential', label: 'Khách hàng tiềm năng' },
 ];
 
-export { JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS, CUSTOMER_STATUS_OPTIONS,SERVICE_JOB_LABELS, PARTNER_TYPE}
+export {JOB_TYPE_LABELS, JOB_STATUS_LABELS, CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, PRIORITY_OPTIONS, REGION_OPTIONS, OPPPORTUNITY_STATUS_LABELS, CUSTOMER_STATUS_OPTIONS,SERVICE_JOB_LABELS, PARTNER_TYPE}

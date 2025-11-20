@@ -156,7 +156,7 @@ export default function PartnerDetail({ id: propId } = {}) {
               {isEditing ? (
                 <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="mt-1 block w-full border rounded px-3 py-2" />
               ) : (
-                <div className="text-sm font-semibold">{partner.name || partner.title || '—'}</div>
+                <div className="text-sm font-semibold text-blue-600">{partner.name || partner.title || '—'}</div>
               )}
             </div>
              <div>

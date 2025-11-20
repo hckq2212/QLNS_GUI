@@ -27,6 +27,8 @@ import ServiceDetail from "./components/Service/ServiceDetail";
 import AssigningProject from "./components/Project/AssigningProject";
 import JobDetail from "./components/Job/JobDetail";
 import MyJob from "./components/Job/MyJob";
+import ReviewProject from "./components/Review/ReviewProject";
+import ReviewDetail from "./components/Review/ReviewDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -64,6 +66,9 @@ function AppContent() {
           <Route path="/partner/create" element={<CreatePartner />} />
           <Route path="/job/me" element={<MyJob />} />
           <Route path="/job/:id" element={<JobDetail />} />
+          <Route path="/review/:id" element={<ReviewDetail />} />
+          <Route path="/review" element={<ReviewProject />} />
+
 
 
           

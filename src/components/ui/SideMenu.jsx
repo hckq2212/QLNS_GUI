@@ -10,6 +10,11 @@ export default function SideMenu () {
     const [serviceList, setServiceList] = useState(false);
     const [partnerList, setPartnerList] = useState(false);
     const [customerList, setCustomerList] = useState(false);
+    const [reviewList, setReviewList] = useState(false);
+
+     const toggleReviewList = () => {
+        setReviewList(prevState => !prevState);
+    };
 
     const togglePartnerList = () => {
         setPartnerList(prevState => !prevState);
@@ -54,6 +59,18 @@ export default function SideMenu () {
                             <li><a href="/opportunity/create" className="text-blue-600">Tạo cơ hội</a></li>
                             <li><a href="/opportunity/me" className="text-blue-600">Cơ hội đã tạo</a></li>
                             <li><a href="/opportunity" className="text-blue-600">Danh sách cơ hội</a></li>
+                        </ul>
+                    )}
+                </li>
+                 {/* Đánh giá */}
+                <li className="p-4 cursor-pointer">
+                    <div onClick={toggleReviewList} className="flex justify-between items-center">
+                        <span className="text-blue-600 text-md font-semibold">Đánh giá</span>
+                        {reviewList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                    </div>
+                    {reviewList && (
+                        <ul className="p-2 flex flex-col gap-2">
+                            <li><a href="/review" className="text-blue-600">Danh sách dự án chờ đánh giá</a></li>
                         </ul>
                     )}
                 </li>

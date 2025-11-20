@@ -6,6 +6,7 @@ import projectAPI from '../../api/project';
 import { useGetContractByIdQuery } from '../../services/contract';
 import { useGetCustomerByIdQuery } from '../../services/customer';
 import { useGetUserByIdQuery } from '../../services/user';
+import { useGetPartnerByIdQuery } from '../../services/partner';
 import { formatDate } from '../../utils/FormatValue';
 import { JOB_STATUS_LABELS } from '../../utils/enums';
 import { toast } from 'react-toastify';
@@ -74,7 +75,7 @@ export default function JobDetail({ id: propId } = {}) {
   }, [job, contract]);
 
   const { data: customer } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
-  const { data: assignedUser } = useGetUserByIdQuery(job?.assigned_id, { skip: !job?.assigned_id });
+  // assigned user/partner will be resolved in AssigneeName component
   const teamId = project?.team_id || project?.team?.id || project?.teamId || null;
   const { data: team } = useGetTeamByIdQuery(teamId, { skip: !teamId });
   const currentUser = useSelector((s) => s.auth.user || null);
@@ -146,7 +147,7 @@ export default function JobDetail({ id: propId } = {}) {
 
           <div className="mt-6">
             <div className="text-sm text-gray-500">Người thực hiện</div>
-            <div className="text-sm text-gray-700">{assignedUser?.full_name || assignedUser?.name || job.assigned_id || 'Chưa có'}</div>
+            <div className="text-sm text-gray-700"><AssigneeName job={job} /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
@@ -161,10 +162,6 @@ export default function JobDetail({ id: propId } = {}) {
             </div>
           </div>
 
-          <div className="mt-6">
-            <div className="text-sm text-gray-500">Người thực hiện</div>
-            <div className="text-sm text-gray-700">{assignedUser?.full_name || assignedUser?.name || job.assigned_id || 'Chưa có'}</div>
-          </div>
             {job.description && (
             <div className="mb-4 mt-4">
               <div className="text-sm text-gray-500">Mô tả</div>
@@ -322,4 +319,22 @@ export default function JobDetail({ id: propId } = {}) {
       </div>
     </div>
   );
+}
+
+
+function AssigneeName({ job }) {
+  const assignedId = job?.assigned_id;
+  const assignedType = job?.assigned_type;
+  // fetch partner only when assigned type is partner
+  const { data: partner, isLoading: partnerLoading } = useGetPartnerByIdQuery(assignedId, { skip: !(assignedType === 'partner' && assignedId) });
+  const { data: user, isLoading: userLoading } = useGetUserByIdQuery(assignedType === 'partner' ? null : assignedId, { skip: assignedType === 'partner' || !assignedId });
+
+  if (!assignedId) return <span>Chưa có</span>;
+  if (assignedType === 'partner') {
+    if (partnerLoading) return <span className="text-sm text-gray-500">#{assignedId} (đang tải...)</span>;
+    return <span>{partner?.name || partner?.company_name || `#${assignedId}`}</span>;
+  }
+
+  if (userLoading) return <span className="text-sm text-gray-500">#{assignedId} (đang tải...)</span>;
+  return <span>{user?.full_name || user?.name || `#${assignedId}`}</span>;
 }

@@ -6,12 +6,15 @@ import { useGetServicesQuery } from '../../services/service';
 import { useGetContractServicesQuery } from '../../services/contract';
 import { useGetAllTeamsQuery } from '../../services/team';
 import { useGetUserByIdQuery } from '../../services/user';
+import { useGetPartnerByIdQuery } from '../../services/partner';
 import { formatPrice, formatDate } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
-import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { JOB_TYPE_LABELS, PROJECT_STATUS_LABELS } from '../../utils/enums';
 import jobAPI from '../../api/job';
 import { JOB_STATUS_LABELS } from '../../utils/enums';
 import AssignJobModal from '../ui/AssignJobModal';
+import AssignJobPartnerModal from '../ui/AssignJobPartnerModal';
+import { useRequestReviewMutation } from '../../services/project';
 
 export default function ProjectDetail({ id: propId } = {}) {
   let routeId = null;
@@ -76,6 +79,8 @@ export default function ProjectDetail({ id: propId } = {}) {
   const [jobFilterStatus, setJobFilterStatus] = useState('all');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedJobForAssign, setSelectedJobForAssign] = useState(null);
+  const [assignPartnerModalOpen, setAssignPartnerModalOpen] = useState(false);
+  const [requestReview, { isLoading: requestingReview }] = useRequestReviewMutation();
 
   React.useEffect(() => {
     let mounted = true;
@@ -225,6 +230,29 @@ export default function ProjectDetail({ id: propId } = {}) {
             </div>
           </div>
 
+          {(hasJobs && Array.isArray(jobs) && jobs.length > 0 && project?.status === 'in_progress' && jobs.every((jj) => jj.status === 'done')) && (
+            <div className="mt-4">
+              <button
+                className="px-3 py-2 rounded text-sm bg-yellow-500 text-white"
+                disabled={requestingReview}
+                onClick={async () => {
+                  if (!project?.id) return;
+                  if (!window.confirm('Xác nhận gửi yêu cầu xem xét cho dự án này?')) return;
+                  try {
+                    await requestReview({ id: project.id }).unwrap();
+                    toast.success('Đã gửi yêu cầu xem xét');
+                    try { refetch && refetch(); } catch (e) {}
+                  } catch (err) {
+                    console.error('Request review failed', err);
+                    toast.error(err?.data?.message || err?.message || 'Gửi yêu cầu xem xét thất bại');
+                  }
+                }}
+              >
+                Yêu cầu xem xét
+              </button>
+            </div>
+          )}
+
           
 
           {project.attachments && project.attachments.length > 0 && (
@@ -247,11 +275,42 @@ export default function ProjectDetail({ id: propId } = {}) {
           )}
         </div>
 
+          {Array.isArray(displayedServices) && displayedServices.length > 0 && (
+            <div className="mb-4">
+              <div className="bg-white rounded shadow p-4">
+                <div className="text-md font-semibold text-blue-600">Dịch vụ đã sử dụng trong dự án</div>
+                <hr className='my-5' />
+                <div className="mt-2">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#f3f7fb]">
+                        <th className="px-3 py-2 text-left text-blue-700">Tên dịch vụ</th>
+                        <th className="px-3 py-2 text-left text-blue-700">Số lượng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedServices.map((s, i) => (
+                        <tr key={s.id ?? i} className="border-t">
+                          <td className="px-3 py-2 align-top">{
+                            s.name || s.service_name || (
+                              s.service_id
+                                ? (servicesList.find((ss) => ss.id == s.service_id || ss.service_id == s.service_id)?.name)
+                                : null
+                            ) || `#${s.service_id ?? s.id ?? i}`
+                          }</td>
+                          <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
             {showJobsColumn && (
               <div className="col-span-8 bg-white rounded shadow p-6">
                 <h2 className="text-md font-semibold text-blue-700">Công việc của dự án</h2>
                 <hr className="my-4" />
-
                 {jobsLoading ? (
                   <div className="p-3">Đang tải công việc...</div>
                 ) : jobsError ? (
@@ -277,6 +336,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                           <th className="px-3 py-2 text-left text-blue-700">Deadline</th>
                           <th className="px-3 py-2 text-left text-blue-700">Trạng thái</th>
                           <th className="px-3 py-2 text-left text-blue-700">Người thực hiện</th>
+                          <th className="px-3 py-2 text-left text-blue-700">Bên phụ trách</th>
                           <th className="px-3 py-2 text-left text-blue-700">Hành động</th>
                         </tr>
                       </thead>
@@ -286,11 +346,20 @@ export default function ProjectDetail({ id: propId } = {}) {
                             <td className="px-3 py-2 align-top">{j.name || j.title || `#${j.id}`}</td>
                             <td className="px-3 py-2 align-top">{formatDate(j.deadline) || '—'}</td>
                             <td className="px-3 py-2 align-top">{JOB_STATUS_LABELS[j.status] || j.status || '—'}</td>
-                            <td className="px-3 py-2 align-top"><UserName userId={j.assigned_id} /></td>
+                            <td className="px-3 py-2 align-top"><AssigneeName job={j} /></td>
+                            <td className="px-3 py-2 align-top">{JOB_TYPE_LABELS[j.assigned_type] || '—'}</td>
+
                             <td className="px-3 py-2 align-top">
                               <button
                                 className="px-3 py-1 rounded bg-blue-600 text-white text-xs"
-                                onClick={() => { setSelectedJobForAssign(j); setAssignModalOpen(true); }}
+                                onClick={() => {
+                                  setSelectedJobForAssign(j);
+                                  if (j?.assigned_type === 'partner') {
+                                    setAssignPartnerModalOpen(true);
+                                  } else {
+                                    setAssignModalOpen(true);
+                                  }
+                                }}
                               >
                                 Phân công
                               </button>
@@ -318,6 +387,12 @@ export default function ProjectDetail({ id: propId } = {}) {
               teamId={project?.team_id ?? project?.team?.id ?? null}
               onAssigned={async () => { await reloadJobs(); }}
             />
+            <AssignJobPartnerModal
+              open={assignPartnerModalOpen}
+              onClose={() => setAssignPartnerModalOpen(false)}
+              job={selectedJobForAssign}
+              onAssigned={async () => { await reloadJobs(); }}
+            />
       </div>
       
     </div>
@@ -330,5 +405,20 @@ function UserName({ userId }) {
   if (!userId) return <span>—</span>;
   if (isLoading) return <span className="text-sm text-gray-500">#{userId} (đang tải...)</span>;
   return <span>{user?.full_name || user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.user_name || user?.username || `#${userId}`}</span>;
+}
+
+function AssigneeName({ job }) {
+  const assignedId = job?.assigned_id;
+  const assignedType = job?.assigned_type;
+  // fetch partner only when assigned type is partner
+  const { data: partner, isLoading: partnerLoading } = useGetPartnerByIdQuery(assignedId, { skip: !(assignedType === 'partner' && assignedId) });
+
+  if (!assignedId) return <span>—</span>;
+  if (assignedType === 'partner') {
+    if (partnerLoading) return <span className="text-sm text-gray-500">#{assignedId} (đang tải...)</span>;
+    return <span>{partner?.name || partner?.company_name || `#${assignedId}`}</span>;
+  }
+
+  return <UserName userId={assignedId} />;
 }
 

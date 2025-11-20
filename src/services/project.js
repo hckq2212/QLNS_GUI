@@ -57,6 +57,16 @@ export const projectAPI = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, id) => [{ type: 'Project', id }, { type: 'Project', id: 'LIST' }],
     }),
+
+    requestReview: build.mutation({
+      // expects { id, userId }
+      query: ({ id, userId } = {}) => ({
+        url: `/project/${id}/request-review`,
+        method: 'POST',
+        body: userId ? { user_id: userId } : undefined,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Project', id }, { type: 'Project', id: 'LIST' }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -69,6 +79,7 @@ export const {
   useAssignTeamMutation,
   useUpdateProjectMutation,
   useAckProjectMutation,
+  useRequestReviewMutation
 } = projectAPI;
 
 export default projectAPI;
