@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import jobAPI from '../../api/job';
 import { useGetPartnerServiceJobsByServiceJobQuery } from '../../services/partnerServiceJob';
 import { formatPrice } from '../../utils/FormatValue';
+import { JOB_PRIORITY_OPTIONS } from '../../utils/enums';
 import { toast } from 'react-toastify';
 
 export default function AssignJobPartnerModal({ open, onClose, job, onAssigned }) {
@@ -11,6 +12,7 @@ export default function AssignJobPartnerModal({ open, onClose, job, onAssigned }
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState(JOB_PRIORITY_OPTIONS[1]?.value);
   const [files, setFiles] = useState([]);
   const [partnerPrice, setPartnerPrice] = useState('');
 
@@ -19,6 +21,7 @@ export default function AssignJobPartnerModal({ open, onClose, job, onAssigned }
     setSelectedMappingId('');
     setSubmitting(false);
     setStartDate('');
+    setPriority(JOB_PRIORITY_OPTIONS[1]?.value);
     setDeadline('');
     setDescription('');
     setFiles([]);
@@ -50,6 +53,7 @@ export default function AssignJobPartnerModal({ open, onClose, job, onAssigned }
         assigned_id: partnerId,
         partner_service_job_id: mappingId,
         partner_price: price,
+        priority: priority || null,
         description: description || null,
         start_date: startDate || null,
         deadline: deadline || null,
@@ -117,6 +121,15 @@ export default function AssignJobPartnerModal({ open, onClose, job, onAssigned }
             <div>
               <label className="text-sm">Giá cung cấp</label>
               <input type="number" readOnly value={formatPrice(partnerPrice)} className="w-full border px-2 py-1 rounded" />
+            </div>
+            <div>
+              <label className="text-sm">Độ ưu tiên</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full border px-2 py-1 rounded">
+                <option value="">--- Độ ưu tiên công việc ---</option>
+                {JOB_PRIORITY_OPTIONS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-sm">Ngày bắt đầu</label>

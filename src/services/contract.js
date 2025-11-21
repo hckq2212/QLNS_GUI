@@ -104,6 +104,94 @@ export const contractApi = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'ContractServices', id }],
     }),
 
+    // save result link for a contract service row
+    saveContractServiceResult: build.mutation({
+     query: ({ id, url, description } = {}) => {
+      
+      if (!url) throw new Error("Missing URL");
+        return {
+          url: `/contract-service/${id}/result`,
+          method: "POST",
+          headers: { 'Content-Type': 'application/json' },
+          body: {
+            url,
+            description: description ?? ""
+          }
+        };
+      },
+      // if server returns the updated item with contract_id we can invalidate that contract's services cache
+      invalidatesTags: (result, error, { id } = {}) => {
+        if (result && result.item && result.item.contract_id) {
+          return [{ type: 'ContractServices', id: result.item.contract_id }];
+        }
+        return [];
+      },
+    }),
+
+    // Contract-service resource endpoints (server-side router: /contract-service)
+    getContractServiceList: build.query({
+      query: () => ({ url: `/contract-service` }),
+      transformResponse: (res) => {
+        if (!res) return [];
+        if (Array.isArray(res)) return res;
+        if (res.items && Array.isArray(res.items)) return res.items;
+        if (res.data && Array.isArray(res.data)) return res.data;
+        return [];
+      },
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [...result.map((r) => ({ type: 'ContractService', id: r.id })), { type: 'ContractService', id: 'LIST' }]
+          : [{ type: 'ContractService', id: 'LIST' }],
+    }),
+
+    createContractService: build.mutation({
+      query: ({ body } = {}) => ({
+        url: `/contract-service`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'ContractService', id: 'LIST' }],
+    }),
+
+    getContractServiceByContract: build.query({
+      query: (contractId) => ({ url: `/contract-service/contract/${contractId}` }),
+      transformResponse: (res) => {
+        if (!res) return [];
+        if (Array.isArray(res)) return res;
+        if (res.items && Array.isArray(res.items)) return res.items;
+        if (res.data && Array.isArray(res.data)) return res.data;
+        return [];
+      },
+      providesTags: (result, error, contractId) => [{ type: 'ContractService', id: `CONTRACT-${contractId}` }],
+    }),
+
+    getContractServiceById: build.query({
+      query: (id) => ({ url: `/contract-service/${id}` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        if (res.data) return res.data;
+        return res;
+      },
+      providesTags: (result, error, id) => [{ type: 'ContractService', id }],
+    }),
+
+    updateContractService: build.mutation({
+      query: ({ id, body } = {}) => ({
+        url: `/contract-service/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'ContractService', id }],
+    }),
+
+    deleteContractService: build.mutation({
+      query: ({ id } = {}) => ({
+        url: `/contract-service/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'ContractService', id: 'LIST' }],
+    }),
+
     // update contract (PATCH /contract/:id)
     updateContract: build.mutation({
       query: ({ id, body } = {}) => ({
@@ -188,6 +276,13 @@ export const {
   useGetAllContractsQuery,
   useGetContractsByIdsQuery,
   useGetContractServicesQuery,
+  useSaveContractServiceResultMutation,
+  useGetContractServiceListQuery,
+  useCreateContractServiceMutation,
+  useGetContractServiceByContractQuery,
+  useGetContractServiceByIdQuery,
+  useUpdateContractServiceMutation,
+  useDeleteContractServiceMutation,
   useUpdateContractMutation,
   useGetContractByIdQuery
 } = contractApi;

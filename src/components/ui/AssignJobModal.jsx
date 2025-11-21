@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import jobAPI from '../../api/job';
 import { useGetTeamMembersQuery } from '../../services/team';
 import { useGetUserByIdQuery } from '../../services/user';
+import { JOB_PRIORITY_OPTIONS } from '../../utils/enums';
 import { toast } from 'react-toastify';
 
 export default function AssignJobModal({ open, onClose, job, onAssigned, teamId }) {
@@ -10,6 +11,7 @@ export default function AssignJobModal({ open, onClose, job, onAssigned, teamId 
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState('');
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,6 +19,7 @@ export default function AssignJobModal({ open, onClose, job, onAssigned, teamId 
     if (!open) return;
     // prefill from job if available
     setAssignedId(job?.assigned_id ?? '');
+    setPriority(job?.priority ?? '');
     setStartDate('');
     setDeadline('');
     setDescription('');
@@ -46,6 +49,7 @@ export default function AssignJobModal({ open, onClose, job, onAssigned, teamId 
         description: description || null,
         start_date: startDate,
         deadline,
+        priority: priority
       };
 
       // if files present, send multipart/form-data
@@ -92,6 +96,15 @@ export default function AssignJobModal({ open, onClose, job, onAssigned, teamId 
             <div>
               <label className="text-sm">Ngày bắt đầu</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full border px-2 py-1 rounded" />
+            </div>
+            <div>
+              <label className="text-sm">Độ ưu tiên</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full border px-2 py-1 rounded">
+                <option value="">--- Độ ưu tiên công việc ---</option>
+                {JOB_PRIORITY_OPTIONS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-sm">Deadline</label>

@@ -4,6 +4,7 @@ import { useGetProjectByIdQuery, useAssignTeamMutation } from '../../services/pr
 import { useGetCustomerByIdQuery } from '../../services/customer';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetContractServicesQuery } from '../../services/contract';
+import ResultUploadModal from '../ui/ResultUploadModal';
 import { useGetAllTeamsQuery } from '../../services/team';
 import { useGetUserByIdQuery } from '../../services/user';
 import { useGetPartnerByIdQuery } from '../../services/partner';
@@ -46,7 +47,11 @@ export default function ProjectDetail({ id: propId } = {}) {
   }, [project]);
 
   // If project has a contract_id, prefer contract_service rows from the contract service
-  const { data: contractServicesData = [] } = useGetContractServicesQuery(project?.contract_id, { skip: !project?.contract_id });
+  const { data: contractServicesData = [], refetch: refetchContractServices } = useGetContractServicesQuery(project?.contract_id, { skip: !project?.contract_id });
+
+  const [savingResultId, setSavingResultId] = useState(null);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [currentServiceForResult, setCurrentServiceForResult] = useState(null);
 
   const displayedServices = useMemo(() => {
     // normalize contractServicesData which may be array or { items }
@@ -60,6 +65,42 @@ export default function ProjectDetail({ id: propId } = {}) {
     (teams || []).forEach((t) => { if (t && (t.id || t.team_id)) m[t.id ?? t.team_id] = t; });
     return m;
   }, [teams]);
+
+  const renderResult = (res) => {
+    if (!res) return 'Chưa upload kết quả';
+    const makeLink = (url, label, key) => (
+      <div key={key}>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+        //  className="text-blue-600 underline"
+         className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full mr-2 mb-2 text-sm"
+         >
+          {label || 'Xem kết quả'}
+        </a>
+      </div>
+    );
+
+    if (Array.isArray(res)) {
+      return res.map((it, idx) => {
+        if (!it) return null;
+        if (typeof it === 'string') return makeLink(it, 'Xem kết quả', idx);
+        const url = it.url || it.link || (it.value && String(it.value));
+        const labelFromSaved = it.saved_by ? `${it.saved_by}${it.saved_at ? ' · ' + formatDate(it.saved_at) : ''}` : null;
+        const label = it.description || it.name || it.title || labelFromSaved || 'Xem kết quả';
+        return url ? makeLink(url, label, idx) : (label || JSON.stringify(it));
+      });
+    }
+
+    if (typeof res === 'string') return (
+      <a href={res} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Xem kết quả</a>
+    );
+
+    // object
+    const url = res.url || res.link || (res.value && String(res.value));
+    const labelFromSaved = res.saved_by ? `${res.saved_by}${res.saved_at ? ' · ' + formatDate(res.saved_at) : ''}` : null;
+    const label = res.description || res.name || res.title || labelFromSaved || 'Xem kết quả';
+    if (url) return makeLink(url, label, 'single');
+    return label || JSON.stringify(res);
+  };
 
   const [selectedTeam, setSelectedTeam] = useState(project?.team_id ?? project?.team?.id ?? null);
   const [isAssignEditing, setIsAssignEditing] = useState(false);
@@ -283,9 +324,11 @@ export default function ProjectDetail({ id: propId } = {}) {
                 <div className="mt-2">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-[#f3f7fb]">
+                      <tr className="bg-[#e7f1fd]">
                         <th className="px-3 py-2 text-left text-blue-700">Tên dịch vụ</th>
                         <th className="px-3 py-2 text-left text-blue-700">Số lượng</th>
+                        <th className="px-3 py-2 text-left text-blue-700">Kết quả</th>
+                        <th className="px-3 py-2 text-left text-blue-700">Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -299,6 +342,22 @@ export default function ProjectDetail({ id: propId } = {}) {
                             ) || `#${s.service_id ?? s.id ?? i}`
                           }</td>
                           <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
+                          <td className="px-3 py-2 align-top">{renderResult(s.result)}</td>
+                          <td className="px-3 py-2 align-top">
+                            <button
+                              className="px-2 py-1 rounded bg-blue-600 text-white text-xs"
+                              
+                              onClick={() => {
+                                // open modal to input up to 3 links
+                                const idToSave = s.id ?? s.contract_service_id ?? null;
+                                setCurrentServiceForResult({ ...s, idToSave });
+                                setShowResultModal(true);
+                              }}
+                              disabled={savingResultId === (s.id ?? s.contract_service_id)}
+                            >
+                              {savingResultId === (s.id ?? s.contract_service_id) ? 'Đang gửi...' : (s.result ? 'Cập nhật kết quả' : 'Upload kết quả')}
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -392,6 +451,16 @@ export default function ProjectDetail({ id: propId } = {}) {
               onClose={() => setAssignPartnerModalOpen(false)}
               job={selectedJobForAssign}
               onAssigned={async () => { await reloadJobs(); }}
+            />
+            <ResultUploadModal
+              open={showResultModal}
+              onClose={() => { setShowResultModal(false); setCurrentServiceForResult(null); }}
+              service={currentServiceForResult}
+              initialUrls={[]}
+              onSaved={async () => {
+                try { refetchContractServices && refetchContractServices(); } catch (e) {}
+                try { refetch && refetch(); } catch (e) {}
+              }}
             />
       </div>
       
