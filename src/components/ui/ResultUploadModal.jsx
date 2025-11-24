@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
-import { useSaveContractServiceResultMutation, useDeleteContractServiceResultMutation } from '../../services/contract';
+import { useSaveContractServiceResultMutation } from '../../services/contract';
 
 export default function ResultUploadModal({ open, onClose, service, initialUrls = [], onSaved }) {
   const [rows, setRows] = useState([{ description: '', url: '' }]);
   const [modalSaving, setModalSaving] = useState(false);
   const [saveContractServiceResult] = useSaveContractServiceResultMutation();
-  const [deleteContractServiceResult] = useDeleteContractServiceResultMutation();
   const [deletedUrls, setDeletedUrls] = useState([]);
 
   useEffect(() => {

@@ -1,8 +1,25 @@
 import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGetProjectByIdQuery } from '../../services/project';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetContractServicesQuery } from '../../services/contract';
+
+function ActionCell({ contractService } = {}) {
+  const navigate = useNavigate();
+  const id = contractService?.id;
+  if (!id) return null;
+  return (
+    <div className="flex items-center space-x-2">
+      <button
+        onClick={() => navigate(`/review/service/${id}`)}
+        className="px-3 py-1 rounded bg-blue-600 text-white text-xs"
+        type="button"
+      >
+        Đánh giá
+      </button>
+    </div>
+  );
+}
 
 export default function ReviewDetail({ id: propId } = {}) {
   let routeId = null;
@@ -61,7 +78,10 @@ export default function ReviewDetail({ id: propId } = {}) {
                       ) || `#${s.service_id ?? s.id ?? i}`
                     }</td>
                     <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
-                    <td className="px-3 py-2 align-top"></td>
+                    <td className="px-3 py-2 align-top">
+                      {/* Đánh giá button: navigate to ReviewService page for this contract service */}
+                      <ActionCell contractService={s} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

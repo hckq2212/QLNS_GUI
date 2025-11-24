@@ -175,6 +175,39 @@ export const contractApi = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'ContractService', id }],
     }),
 
+    // get review form for a contract service row
+    getContractServiceReviewForm: build.query({
+      query: (id) => ({ url: `/contract-service-review/${id}/review-form` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        if (res.data) return res.data;
+        return res;
+      },
+      providesTags: (result, error, id) => [{ type: 'ContractService', id }],
+    }),
+
+    // get existing review for a contract service (GET /contract-service-review/:id/review)
+    getContractServiceReview: build.query({
+      query: (id) => ({ url: `/contract-service-review/${id}/review` }),
+      transformResponse: (res) => {
+        if (!res) return null;
+        if (res.data) return res.data;
+        return res;
+      },
+      providesTags: (result, error, id) => [{ type: 'ContractService', id }],
+    }),
+
+    // create/update review for a contract service (POST /contract-service-review/:id/review)
+    createContractServiceReview: build.mutation({
+      query: ({ id, body } = {}) => ({
+        url: `/contract-service-review/${id}/review`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'ContractService', id }],
+    }),
+
     updateContractService: build.mutation({
       query: ({ id, body } = {}) => ({
         url: `/contract-service/${id}`,
@@ -281,6 +314,9 @@ export const {
   useCreateContractServiceMutation,
   useGetContractServiceByContractQuery,
   useGetContractServiceByIdQuery,
+  useGetContractServiceReviewFormQuery,
+  useGetContractServiceReviewQuery,
+  useCreateContractServiceReviewMutation,
   useUpdateContractServiceMutation,
   useDeleteContractServiceMutation,
   useUpdateContractMutation,
