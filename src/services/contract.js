@@ -128,6 +128,39 @@ export const contractApi = api.injectEndpoints({
       },
     }),
 
+    // update an existing result item by index (PUT /contract-service/:id/result/:index)
+    updateContractServiceResult: build.mutation({
+      query: ({ id, index, url, description } = {}) => {
+        if (!url) throw new Error('Missing URL');
+        return {
+          url: `/contract-service/${id}/result/${index}`,
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: { url, description: description ?? '' },
+        };
+      },
+      invalidatesTags: (result, error, { id } = {}) => {
+        if (result && result.item && result.item.contract_id) {
+          return [{ type: 'ContractServices', id: result.item.contract_id }];
+        }
+        return [];
+      },
+    }),
+
+    // delete a result item by index (DELETE /contract-service/:id/result/:index)
+    deleteContractServiceResult: build.mutation({
+      query: ({ id, index } = {}) => ({
+        url: `/contract-service/${id}/result/${index}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { id } = {}) => {
+        if (result && result.item && result.item.contract_id) {
+          return [{ type: 'ContractServices', id: result.item.contract_id }];
+        }
+        return [];
+      },
+    }),
+
     // Contract-service resource endpoints (server-side router: /contract-service)
     getContractServiceList: build.query({
       query: () => ({ url: `/contract-service` }),
@@ -310,6 +343,8 @@ export const {
   useGetContractsByIdsQuery,
   useGetContractServicesQuery,
   useSaveContractServiceResultMutation,
+  useUpdateContractServiceResultMutation,
+  useDeleteContractServiceResultMutation,
   useGetContractServiceListQuery,
   useCreateContractServiceMutation,
   useGetContractServiceByContractQuery,

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
-import { useSaveContractServiceResultMutation } from '../../services/contract';
+import { useSaveContractServiceResultMutation, useUpdateContractServiceResultMutation, useDeleteContractServiceResultMutation } from '../../services/contract';
 
 export default function ResultUploadModal({ open, onClose, service, initialUrls = [], onSaved }) {
   const [rows, setRows] = useState([{ description: '', url: '' }]);
   const [modalSaving, setModalSaving] = useState(false);
   const [saveContractServiceResult] = useSaveContractServiceResultMutation();
-  const [deletedUrls, setDeletedUrls] = useState([]);
+  const [updateContractServiceResult] = useUpdateContractServiceResultMutation();
+  const [deleteContractServiceResult] = useDeleteContractServiceResultMutation();
+  const [deletedIndexes, setDeletedIndexes] = useState([]);
 
   useEffect(() => {
     if (!open) return;
@@ -15,16 +17,16 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
     if (service && service.result) {
       if (Array.isArray(service.result)) {
         // items may be strings or { description, url }
-        const parsed = service.result.slice(0, 3).map((it) => {
+        const parsed = service.result.slice(0, 3).map((it, origIdx) => {
           if (!it) return { description: '', url: '' };
-          if (typeof it === 'string') return { description: '', url: String(it), _existing: true, _originalUrl: String(it) };
-            return { description: it.description || it.name || it.title || '', url: it.url || it.link || '', _existing: true, _originalUrl: it.url || it.link || '' };
+          if (typeof it === 'string') return { description: '', url: String(it), _existing: true, _originalUrl: String(it), _existingIndex: origIdx };
+            return { description: it.description || it.name || it.title || '', url: it.url || it.link || '', _existing: true, _originalUrl: it.url || it.link || '', _existingIndex: origIdx };
         });
         setRows(parsed.length ? parsed : [{ description: '', url: '' }]);
       } else if (typeof service.result === 'string') {
-          setRows([{ description: '', url: String(service.result), _existing: true, _originalUrl: String(service.result) }]);
+          setRows([{ description: '', url: String(service.result), _existing: true, _originalUrl: String(service.result), _existingIndex: 0 }]);
       } else if (service.result && typeof service.result === 'object') {
-        setRows([{ description: service.result.description || service.result.name || '', url: service.result.url || '', _existing: true, _originalUrl: service.result.url || '' }]);
+        setRows([{ description: service.result.description || service.result.name || '', url: service.result.url || '', _existing: true, _originalUrl: service.result.url || '', _existingIndex: 0 }]);
       } else {
         setRows([{ name: '', url: '' }]);
       }
@@ -46,8 +48,8 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
   const deleteRow = (idx) => {
     setRows((r) => {
       const toRemove = r[idx];
-      if (toRemove && toRemove._existing && toRemove._originalUrl) {
-        setDeletedUrls((d) => [...d, toRemove._originalUrl]);
+      if (toRemove && toRemove._existing && (typeof toRemove._existingIndex === 'number')) {
+        setDeletedIndexes((d) => [...d, toRemove._existingIndex]);
       }
       return r.filter((_, i) => i !== idx);
     });
@@ -68,22 +70,40 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
 
     try {
       setModalSaving(true);
-      // first delete any removed existing urls
-      for (const url of deletedUrls) {
+      // first delete any removed existing indexes (sort desc to avoid reindexing issues)
+      const toDelete = Array.from(new Set(deletedIndexes)).sort((a, b) => b - a);
+      for (const idx of toDelete) {
         try {
-          console.log('DELETING OLD RESULT:', { id: idToSave, url });
-          await deleteContractServiceResult({ id: idToSave, url }).unwrap();
+          console.log('DELETING OLD RESULT BY INDEX:', { id: idToSave, index: idx });
+          await deleteContractServiceResult({ id: idToSave, index: idx }).unwrap();
         } catch (e) {
-          console.warn('Failed to delete old result', url, e);
+          console.warn('Failed to delete old result index', idx, e);
         }
       }
 
-      // then save new payloads
-      for (const p of payloads) {
-        // backend accepts { url, description }
-        const bodyToSend = { id: idToSave, url: p.url, description: (p.description ?? '') };
-        console.log('SENDING TO MUTATION:', bodyToSend);
-        await saveContractServiceResult(bodyToSend).unwrap();
+      // then save or update payloads
+      for (const pRow of rows) {
+        const p = { description: (pRow.description || '').trim(), url: (pRow.url || '').trim() };
+        if (!p.url) continue;
+        if (pRow._existing && (typeof pRow._existingIndex === 'number')) {
+          // update existing item at index
+          try {
+            console.log('UPDATING EXISTING RESULT:', { id: idToSave, index: pRow._existingIndex, ...p });
+            await updateContractServiceResult({ id: idToSave, index: pRow._existingIndex, url: p.url, description: p.description }).unwrap();
+          } catch (e) {
+            console.warn('Failed to update result at index', pRow._existingIndex, e);
+            // fallback to save as new
+            try { await saveContractServiceResult({ id: idToSave, url: p.url, description: p.description }).unwrap(); } catch (e2) { console.warn('Fallback save failed', e2); }
+          }
+        } else {
+          // new item
+          try {
+            console.log('SAVING NEW RESULT:', { id: idToSave, ...p });
+            await saveContractServiceResult({ id: idToSave, url: p.url, description: p.description }).unwrap();
+          } catch (e) {
+            console.warn('Failed to save new result', p, e);
+          }
+        }
       }
       toast.success('Đã lưu kết quả');
       onSaved && onSaved();

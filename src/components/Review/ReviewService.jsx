@@ -21,17 +21,34 @@ function ResultsList({ results } = {}) {
   );
 }
 
+function ReviewSummary({ review = [] } = {}) {
+  const list = Array.isArray(review) ? review : [];
+  if (!list || list.length === 0) return null;
+  const summary = list.find((r) => r.criteria_id === null || r.criteria_id === undefined) || null;
+  if (!summary) return null;
+  return (
+    <section className="bg-white rounded shadow p-4">
+      <h3 className="font-medium mb-3 text-left text-blue-500">Bản đánh giá</h3>
+      <hr className='mb-4' />
+      <div className="text-sm text-gray-800">{summary.comment ?? summary.note ?? '—'}</div>
+      {summary.total_score != null && <div className="text-xs text-gray-500 mt-2">Tổng điểm: {summary.total_score}</div>}
+    </section>
+  );
+}
+
 
 function CriteriaReview({ criteria = [], initialReview = [], onChange } = {}) {
   // initialReview: array of review rows from API (may contain is_checked)
+  const initialList = Array.isArray(initialReview) ? initialReview : [];
   const [rows, setRows] = useState(() =>
     criteria.map((c) => {
-      const found = (initialReview || []).find((r) => Number(r.criteria_id) === Number(c.id));
+      const found = initialList.find((r) => Number(r.criteria_id) === Number(c.id));
+      const criteriaSource = (criteria || []).find((cc) => Number(cc.id) === Number(c.id));
       return {
         criteria_id: c.id,
         criteria_name: c.name,
-        is_checked: !!(found && found.is_checked),
-        score: found?.score ?? null,
+        is_checked: !!(found?.is_checked ?? criteriaSource?.is_checked),
+        score: found?.score ?? criteriaSource?.score ?? null,
         note: found?.note ?? found?.comment ?? '',
         review_id: found?.review_id ?? null,
       };
@@ -40,13 +57,15 @@ function CriteriaReview({ criteria = [], initialReview = [], onChange } = {}) {
 
   useEffect(() => {
     // when initialReview or criteria change, reinitialize
+    const list = Array.isArray(initialReview) ? initialReview : [];
     const next = criteria.map((c) => {
-      const found = (initialReview || []).find((r) => Number(r.criteria_id) === Number(c.id));
+      const found = list.find((r) => Number(r.criteria_id) === Number(c.id));
+      const criteriaSource = (criteria || []).find((cc) => Number(cc.id) === Number(c.id));
       return {
         criteria_id: c.id,
         criteria_name: c.name,
-        is_checked: !!(found && found.is_checked),
-        score: found?.score ?? null,
+        is_checked: !!(found?.is_checked ?? criteriaSource?.is_checked),
+        score: found?.score ?? criteriaSource?.score ?? null,
         note: found?.note ?? found?.comment ?? '',
         review_id: found?.review_id ?? null,
       };
@@ -97,7 +116,8 @@ export default function ReviewService() {
   const contractService = data?.contract_service ?? data?.contractService ?? null;
   const results = (data?.results && data.results.result) ? data.results.result : (Array.isArray(data?.results) ? data.results : data?.results?.result || []);
   const criteria = data?.criteria || [];
-  const review = data?.review || [];
+  const reviewObj = data?.review ?? null; // review may be an object { comment, criteria: [...] } or an array of rows
+  const review = reviewObj; 
 
   const [localReviewRows, setLocalReviewRows] = useState([]);
   const [overallComment, setOverallComment] = useState('');
@@ -105,13 +125,20 @@ export default function ReviewService() {
 
   useEffect(() => {
     // initialize local review rows from API review data and criteria
+    const reviewList = Array.isArray(reviewObj)
+      ? reviewObj
+      : Array.isArray(reviewObj?.criteria)
+      ? reviewObj.criteria
+      : [];
+    const summary = !Array.isArray(reviewObj) && reviewObj ? reviewObj : null;
     const init = criteria.map((c) => {
-      const found = (review || []).find((r) => Number(r.criteria_id) === Number(c.id));
+      const found = reviewList.find((r) => Number(r.criteria_id) === Number(c.id));
+      const criteriaSource = (criteria || []).find((cc) => Number(cc.id) === Number(c.id));
       return {
         criteria_id: c.id,
         review_id: found?.review_id ?? null,
-        is_checked: !!(found && found.is_checked),
-        score: found?.score ?? null,
+        is_checked: !!(found?.is_checked ?? criteriaSource?.is_checked),
+        score: found?.score ?? criteriaSource?.score ?? null,
         note: found?.note ?? found?.comment ?? '',
       };
     });
@@ -123,8 +150,8 @@ export default function ReviewService() {
       }
       return init;
     });
-    // if API provides an overall review comment field (not present in example), pick it
-    setOverallComment(data?.review_comment ?? data?.comment ?? '');
+    // if API provides an overall review comment field (or a summary row), pick it
+    setOverallComment(summary?.comment ?? summary?.note ?? data?.review_comment ?? data?.comment ?? '');
   }, [criteria, review, data]);
 
   if (!id) return <div className="p-6">No contract service id provided</div>;
@@ -166,7 +193,7 @@ export default function ReviewService() {
         <h2 className="text-2xl font-semibold text-blue-600">Đánh giá dịch vụ </h2>
         <div className="flex items-center space-x-3">
           <button onClick={() => navigate(-1)} className="px-3 py-1 rounded bg-white border text-sm hover:bg-gray-50">Quay lại</button>
-          <button onClick={() => refetch()} className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Refresh</button>
+          <button onClick={() => refetch()} className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Load lại</button>
         </div>
       </div>
 
