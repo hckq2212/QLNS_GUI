@@ -96,7 +96,7 @@ export default function SideMenu () {
                     </div>
                     {jobList && (
                         <ul className="p-2 flex flex-col gap-2 ">
-                            <li><a href="/job" className="text-blue-600">Danh sách công việc</a></li>
+                            {/* <li><a href="/job" className="text-blue-600">Danh sách công việc</a></li> */}
                             <li><a href="/job/me" className="text-blue-600">Công việc của tôi</a></li>
                         </ul>
                     )}

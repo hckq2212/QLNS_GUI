@@ -30,6 +30,7 @@ import MyJob from "./components/Job/MyJob";
 import ReviewProject from "./components/Review/ReviewProject";
 import ReviewDetail from "./components/Review/ReviewDetail";
 import ReviewService from "./components/Review/ReviewService";
+import DebtDetail from "./components/Debt/DebtDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -70,7 +71,7 @@ function AppContent() {
           <Route path="/review/:id" element={<ReviewDetail />} />
           <Route path="/review/service/:id" element={<ReviewService />} />
           <Route path="/review" element={<ReviewProject />} />
-
+          <Route path="/debt/:id" element={<DebtDetail />} />
 
 
           

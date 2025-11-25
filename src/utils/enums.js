@@ -8,7 +8,11 @@ const JOB_STATUS_LABELS = {
   archived: 'Lưu trữ',
   not_assigned:'Chưa phân công'
 }
-
+const DEBT_STATUS = {
+  pending: 'Đang trả',
+  paid: 'Đã trả',
+  overdue:'Quá hạn'
+}
 
 const JOB_TYPE_LABELS = {
   user: 'Nội bộ',
@@ -93,5 +97,6 @@ export {
     CUSTOMER_STATUS_OPTIONS,
     SERVICE_JOB_LABELS,
     PARTNER_TYPE,
-    JOB_PRIORITY_OPTIONS
+    JOB_PRIORITY_OPTIONS,
+    DEBT_STATUS
   }

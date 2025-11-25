@@ -57,6 +57,7 @@ export default function ContractList({ statusFilter = 'all' } = {}) {
             <thead className="bg-[#e7f1fd] text-left">
               <tr>
                 <th className="px-4 py-3 border text-blue-700">Tên hợp đồng</th>
+                <th className="px-4 py-3 border text-blue-700">Mã hợp đồng</th>
                 <th className="px-4 py-3 border text-blue-700">Khách hàng</th>
                 <th className="px-4 py-3 border text-blue-700">Trạng thái</th>
                 <th className="px-4 py-3 border text-blue-700">Doanh thu</th>
@@ -67,6 +68,7 @@ export default function ContractList({ statusFilter = 'all' } = {}) {
               {contracts.map((c) => (
                 <tr key={c.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-3 align-top">{c.name || c.contract_name || c.title || '—'}</td>
+                  <td className="px-4 py-3 align-top">{c.code || '—'}</td>
                   <td className="px-4 py-3 align-top">{(
                     (c.customer_id && customerById[c.customer_id] && (customerById[c.customer_id].name || customerById[c.customer_id].customer_name)) ||
                     '—'
