@@ -11,10 +11,16 @@ export default function SideMenu () {
     const [partnerList, setPartnerList] = useState(false);
     const [customerList, setCustomerList] = useState(false);
     const [reviewList, setReviewList] = useState(false);
+    const [userList, setUserList] = useState(false);
 
      const toggleReviewList = () => {
         setReviewList(prevState => !prevState);
     };
+
+    const toggleUserList = () => {
+        setUserList(prevState => !prevState);
+    };
+
 
     const togglePartnerList = () => {
         setPartnerList(prevState => !prevState);
@@ -155,6 +161,21 @@ export default function SideMenu () {
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/project" className="text-blue-600">Danh sách dự án</a></li>
                             <li><a href="/project/assigning" className="text-blue-600">Danh sách dự án đợi chấp nhận</a></li>
+                        </ul>
+                    )}
+                </li>
+
+
+                {/* Nhân viên */}
+                <li className="p-4 cursor-pointer">
+                    <div onClick={toggleUserList} className="flex justify-between items-center">
+                        <span className="text-blue-600 text-md font-semibold">Nhân viên</span>
+                        {userList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                    </div>
+                    {userList && (
+                        <ul className="p-2 flex flex-col gap-2">
+                            <li><a href="/user" className="text-blue-600">Danh sách nhân viên</a></li>
+                            <li><a href="/user/create" className="text-blue-600">Tạo tài khoản cho nhân viên</a></li>
                         </ul>
                     )}
                 </li>

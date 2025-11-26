@@ -105,16 +105,9 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setActiveTab('login')} 
-              className={`flex justify-center items-center border w-[50%] h-[60px] text-[20px]  ${activeTab === 'login' ? 'bg-white font-bold' : ''}`}
+              className={`flex justify-center items-center border w-[100%] h-[60px] text-[20px]  ${activeTab === 'login' ? 'bg-white font-bold' : ''}`}
             >
               Log in
-            </button>
-            <button 
-              type="button"
-              onClick={() => setActiveTab('signup')} 
-              className={`flex justify-center items-center border w-[50%] h-[60px] text-[20px]  ${activeTab === 'signup' ? 'bg-white font-bold' : ''}`}
-            >
-              Sign up
             </button>
           </div>
           
@@ -166,66 +159,6 @@ export default function Login() {
             </div>
           )}
           
-          {/* Sign Up Form */}
-          {activeTab === 'signup' && (
-            <div className="mt-20">
-              <div className="text-[50px] font-bold">
-                Sign up
-              </div>
-              <div className="mt-14">
-                <div className='relative w-[75%] h-[50px] mx-auto mb-10'>
-                  <img src={email} alt="" className='absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 opacity-70'/>
-                  <input 
-                    type="text" placeholder="Họ và tên" name="fullName"
-                    value={form.fullName}
-                    onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-                    className="w-full h-[50px] border pl-12 rounded-md hover:bg-sky-100 hover:border-white hover:border-10"
-                  />            
-                </div>
-                <div className='relative w-[75%] h-[50px] mx-auto'>
-                  <img src={username} alt="" className='absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 opacity-70'/>
-                  <input 
-                    type="text" placeholder="Username" name="username"
-                    value={form.username}
-                    onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                    className="w-full h-[50px] border pl-12 rounded-md hover:bg-sky-100 hover:border-white hover:border-10"
-                  />            
-                </div>
-                <div className='relative w-[75%] h-[50px] mx-auto mt-10'>
-                  <img src={password} alt="" className='absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 opacity-70'/>
-                  <input 
-                    type="password" placeholder="Password" name="password"
-                    value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    className="w-full h-[50px] border pl-12 rounded-md hover:bg-sky-100 hover:border-white hover:border-10"
-                  />            
-                </div>
-                <div className='relative w-[75%] h-[50px] mx-auto mt-10'>
-                  <img src={email} alt="" className='absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 opacity-70'/>
-                  <input 
-                    type="email" placeholder="Email" name="email"
-                    value={form.email}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full h-[50px] border pl-12 rounded-md hover:bg-sky-100 hover:border-white hover:border-10"
-                  />            
-                </div>
-                <div className='relative w-[75%] h-[50px] mx-auto mt-10'>
-                  <img src={email} alt="" className='absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 opacity-70'/>
-                  <input 
-                    type="number" placeholder="Số điện thoại" name="phoneNumber"
-                    value={form.phoneNumber}
-                    onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))}
-                    className="w-full h-[50px] border pl-12 rounded-md hover:bg-sky-100 hover:border-white hover:border-10"
-                  />            
-                </div>
-              </div>
-                <div className='w-full flex justify-center'>
-                <button type="submit" className='mt-12 bg-sky-100 w-20 h-20 rounded-full flex justify-center items-center hover:bg-[#54A2D2] border'>
-                  <img src={login} alt="" className='w-[30px] h-[30px] opacity-50 hover:opacity-100' />
-                </button>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

@@ -6,6 +6,8 @@ import Login from './screens/Login'
 import { store } from './app/store'
 import { Provider } from 'react-redux';
 import CreateOpportunity from "./components/Opportunity/CreateOpportunity";
+import CreateUser from "./components/User/CreateUser";
+import UserList from "./components/User/UserList";
 import SideMenu from "./components/ui/SideMenu";
 import Header from "./components/ui/Header";
 import MyOpportunity from "./components/Opportunity/MyOpportunity";
@@ -47,6 +49,8 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/user/create" element={<CreateUser />} />
+          <Route path="/user" element={<UserList />} />
           <Route path="/opportunity/me" element={<MyOpportunity />} />
           <Route path="/opportunity/:id" element={<OpportunityDetail />} />
           <Route path="/opportunity" element={<OpporunityList />} />
