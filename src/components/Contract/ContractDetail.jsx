@@ -116,18 +116,16 @@ export default function ContractDetail({ id: propId } = {}) {
         <div className="col-span-6 bg-white rounded shadow p-6 row-span-2 h-fit">
           <h2 className="text-md font-semibold text-blue-700">Thông tin hợp đồng</h2>
           <hr className="my-4" />
-          <div className='grid grid-cols-3'>
-            <div className="mb-4">
-            <div className="text-xs text-gray-500">Tên hợp đồng</div>
+            <div className="mb-4 ">
+              <div className="text-xs text-gray-500">Tên hợp đồng</div>
             <div className="text-lg font-medium text-blue-600">{contract.name || contract.contract_name || '—'}</div>
-          </div>
-          
-        <div className="mb-4">
-            <div className="text-xs text-gray-500">Mã hợp đồng</div>
-            <div className="text-lg font-medium text-blue-600">{contract.code || '—'}</div>
-          </div>
+        
 
           </div>
+            <div className="mb-4">
+                <div className="text-xs text-gray-500">Mã hợp đồng</div>
+                <div className="text-lg font-medium text-blue-600">{contract.code || '—'}</div>
+            </div>
           
           {contract.description && (
             <div className="mb-4">
