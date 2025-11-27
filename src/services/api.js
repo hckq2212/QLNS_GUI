@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL || 'https://qlns-production.up.railway.app' || 'http://localhost:3000/api',
+    baseUrl: import.meta.env.VITE_API_URL || 'https://qlns-production.up.railway.app/api' || 'http://localhost:3000/api',
     prepareHeaders: (headers, { getState }) => {
       const token = getState().auth.accessToken;
       if (token) {
