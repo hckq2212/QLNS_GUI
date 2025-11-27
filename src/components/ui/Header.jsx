@@ -1,41 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 import user from '../../assets/default_avatar.jpg';
-import userAPI from '../../api/user.js';
+import { useGetPersonalInfoQuery } from '../../services/user';
 
 function Header(){
     const navigate = useNavigate();
-    const [profile, setProfile] = useState(null);
-
     function login(){
         navigate('/login');
     }
 
-    useEffect(() => {
-        // If we have an access token, try to fetch the current user's profile
-        const token = (() => {
-            try { return localStorage.getItem('accessToken'); } catch (e) { return null; }
-        })();
-
-        if (!token) return;
-
-        let mounted = true;
-        (async () => {
-            try {
-                const data = await userAPI.getPersonalInfo();
-                if (mounted) setProfile(data);
-            } catch (err) {
-                // ignore fetch errors (user may be logged out / token expired)
-                // eslint-disable-next-line no-console
-                console.debug('Could not load personal info for header', err.message || err);
-            }
-        })();
-
-        return () => { mounted = false; };
+    const token = useMemo(() => {
+        try { return localStorage.getItem('accessToken'); } catch (e) { return null; }
     }, []);
 
-    const displayName = profile?.full_name ;
+    // Use RTK Query to fetch personal info; skip if no token present
+    const { data: profile } = useGetPersonalInfoQuery(undefined, { skip: !token });
+
+    const displayName = profile?.full_name;
     const avatarSrc = profile?.avatar || user;
 
     return(
