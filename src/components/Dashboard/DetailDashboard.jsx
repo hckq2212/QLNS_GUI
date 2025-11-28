@@ -50,6 +50,51 @@ function Donut({ value = 0, total = 1, color = '#3b82f6', label = 'Cơ hội' })
   );
 }
 
+function MultiDonut({ segments = [], radius = 40, stroke = 14 }) {
+  // segments: [{ value, color, label }]
+  const circumference = 2 * Math.PI * radius;
+  const total = segments.reduce((s, seg) => s + (seg.value || 0), 0) || 1;
+
+  let acc = 0;
+  const parts = segments.map((seg) => {
+    const len = (seg.value / total) * circumference;
+    const off = circumference - acc; // strokeDashoffset positions the segment
+    acc += len;
+    return { ...seg, len, off };
+  });
+
+  return (
+    <div className="flex items-center justify-center flex-col">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <g transform="translate(55,55)">
+          <circle r={radius} fill="transparent" stroke="#eef2ff" strokeWidth={stroke} />
+          {parts.map((p, i) => (
+            <circle
+              key={i}
+              r={radius}
+              fill="transparent"
+              stroke={p.color || '#3b82f6'}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeDasharray={`${p.len} ${circumference - p.len}`}
+              strokeDashoffset={p.off}
+              transform="rotate(-90)"
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={(e) => {
+                const ev = new CustomEvent('segmentHover', { detail: { id: p.id, label: p.label, value: p.value } });
+                // dispatch on svg element to bubble up if needed
+                e.currentTarget.dispatchEvent(ev);
+              }}
+            />
+          ))}
+          <text x="0" y="4" textAnchor="middle" fontSize="14" fill="#333">{total}</text>
+        </g>
+      </svg>
+      <div className="text-sm text-gray-500 mt-2">Dịch vụ (Top)</div>
+    </div>
+  );
+}
+
 function SummaryCard({ title, children }) {
   return (
     <div className="bg-white rounded shadow-sm p-4 h-full">
@@ -108,24 +153,24 @@ export default function DetailDashboard({ data = {} }) {
 
   // derive popular services by scanning opportunity objects for service references
   const popularServices = useMemo(() => {
-    // helper to extract service ids from an opportunity object (best-effort)
-    const extractIds = (o) => {
+    // helper to extract {id, qty} from an opportunity object (best-effort)
+    const extractItems = (o) => {
       if (!o) return [];
-      if (Array.isArray(o.services) && o.services.length) return o.services.map(s => s.service_id ?? s.serviceId ?? s.id ?? s.service_id);
-      if (Array.isArray(o.items) && o.items.length) return o.items.map(s => s.service_id ?? s.serviceId ?? s.id);
-      if (Array.isArray(o.rows) && o.rows.length) return o.rows.map(s => s.service_id ?? s.serviceId ?? s.id);
+      if (Array.isArray(o.services) && o.services.length) return o.services.map(s => ({ id: s.service_id ?? s.serviceId ?? s.id, qty: Number(s.quantity ?? s.qty ?? s.amount ?? 1) || 1 }));
+      if (Array.isArray(o.items) && o.items.length) return o.items.map(s => ({ id: s.service_id ?? s.serviceId ?? s.id, qty: Number(s.quantity ?? s.qty ?? s.amount ?? 1) || 1 }));
+      if (Array.isArray(o.rows) && o.rows.length) return o.rows.map(s => ({ id: s.service_id ?? s.serviceId ?? s.id, qty: Number(s.quantity ?? s.qty ?? s.amount ?? 1) || 1 }));
       // fallback: opportunity may include a `service_id` field directly
-      if (o.service_id || o.serviceId) return [o.service_id ?? o.serviceId];
+      if (o.service_id || o.serviceId) return [{ id: o.service_id ?? o.serviceId, qty: 1 }];
       return [];
     };
 
     const counts = new Map();
     (Array.isArray(opps) ? opps : []).forEach((o) => {
-      const ids = extractIds(o) || [];
-      ids.forEach((id) => {
+      const items = extractItems(o) || [];
+      items.forEach(({ id, qty }) => {
         if (!id) return;
         const key = String(id);
-        counts.set(key, (counts.get(key) || 0) + 1);
+        counts.set(key, (counts.get(key) || 0) + (Number(qty) || 0));
       });
     });
 
@@ -133,8 +178,9 @@ export default function DetailDashboard({ data = {} }) {
     (Array.isArray(contractServices) ? contractServices : []).forEach((cs) => {
       const sid = cs.service_id ?? cs.serviceId ?? (cs.service && (cs.service.id ?? cs.serviceId)) ?? null;
       if (!sid) return;
+      const qty = Number(cs.quantity ?? cs.qty ?? cs.amount ?? 1) || 1;
       const key = String(sid);
-      counts.set(key, (counts.get(key) || 0) + 1);
+      counts.set(key, (counts.get(key) || 0) + qty);
     });
 
     // map counts to service master names when available
@@ -145,7 +191,7 @@ export default function DetailDashboard({ data = {} }) {
       return svcMaster.map(s => ({ id: String(s.id), name: s.name, count: 0 }));
     }
     return arr.sort((a, b) => b.count - a.count);
-  }, [opps, svcMaster]);
+  }, [opps, svcMaster, contractServices]);
 
   const totalServices = popularServices.reduce((s, r) => s + (r.count || 0), 0) || 1;
   const topServices = (Array.isArray(popularServices) ? [...popularServices] : []).slice(0, 3);
@@ -222,12 +268,11 @@ export default function DetailDashboard({ data = {} }) {
             <div className="bg-white rounded shadow-sm p-4 h-full">
               <div className="text-sm font-medium text-gray-700 mb-3">Nhóm dịch vụ phổ biến</div>
               <div className="flex flex-col gap-3">
-                <div className="flex gap-4 items-center">
-                  {topServices.map((svc, idx) => (
-                    <div key={svc.id} className="flex items-center gap-3">
-                      <Donut value={svc.count || 0} total={totalServices} color={["#3b82f6", "#10b981", "#f59e0b"][idx] || '#3b82f6'} label={svc.name} />
-                    </div>
-                  ))}
+                <div className="flex gap-4 items-center justify-center">
+                  {/* Single donut showing distribution of top services */}
+                  <MultiDonut
+                    segments={topServices.map((svc, idx) => ({ value: svc.count || 0, color: ["#3b82f6", "#10b981", "#f59e0b"][idx] || '#3b82f6', label: svc.name }))}
+                  />
                 </div>
                 <div className="flex-1">
                   <div className="text-sm text-gray-500">Chi tiết </div>
@@ -248,7 +293,7 @@ export default function DetailDashboard({ data = {} }) {
             <div className="bg-white rounded shadow-sm p-4 h-full">
               <div className="text-sm font-medium text-gray-700 mb-3">Trạng thái cơ hội</div>
               <div className="flex gap-2 items-center">
-                <Donut value={statusSummary[0]?.count || 0} total={totalStatus} color="#3b82f6" label="Cơ hội" />
+                <Donut value={statusSummary[0]?.count || 0}  total={totalStatus} color="#3b82f6" label="Cơ hội" />
                 <div className="flex-1">
                   <ul className="mt-3 text-sm">
                     {statusSummary.map((r) => (

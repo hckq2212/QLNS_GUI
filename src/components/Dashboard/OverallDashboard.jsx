@@ -32,11 +32,9 @@ function MetricCard({ title, value, tone = 'blue', href }) {
 export default function OverallDashboard({ stats = {} }) {
   // stats: { potentialCustomers, newOpportunities, pending, projectedRevenue, successRate }
   const {
-    potentialCustomers = 0,
     newOpportunities = 0,
     pending = 0,
     projectedRevenue = 0,
-    successRate = 0,
   } = stats;
 
   // fetch opportunities with status waiting_bod_approval for the "Cơ hội mới" card
@@ -63,10 +61,8 @@ export default function OverallDashboard({ stats = {} }) {
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-        <MetricCard title="Khách hàng tiềm năng mới" value={String(potentialCustomers)} tone="blue" href="#" />
         <MetricCard title="Cơ hội chờ duyệt" value={String(newOppCount || newOpportunities)} tone="blue" href="#" />
         <MetricCard title="Doanh thu dự kiến" value={fmtRevenue(projectedValue)} tone="green" href="#" />
-        <MetricCard title="Tỷ lệ cơ hội thành công" value={`${String(successRate)}%`} tone="blue" href="#" />
       </div>
     </div>
   );
