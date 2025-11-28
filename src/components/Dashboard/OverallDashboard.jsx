@@ -17,13 +17,6 @@ function MetricCard({ title, value, tone = 'blue', href }) {
           <div className="text-sm text-gray-500">{title}</div>
           <div className={`mt-3 text-2xl font-bold ${c.text}`}>{value}</div>
         </div>
-        <div className="mt-4">
-          {href ? (
-            <a href={href} className="text-sm text-blue-600">Xem chi tiết</a>
-          ) : (
-            <span className="text-sm text-blue-600">Xem chi tiết</span>
-          )}
-        </div>
       </div>
     </div>
   );

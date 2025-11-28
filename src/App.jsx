@@ -33,6 +33,7 @@ import ReviewProject from "./components/Review/ReviewProject";
 import ReviewDetail from "./components/Review/ReviewDetail";
 import ReviewService from "./components/Review/ReviewService";
 import DebtDetail from "./components/Debt/DebtDetail";
+import UserDetail from "./components/User/UserDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -50,7 +51,9 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/user/create" element={<CreateUser />} />
+          <Route path="/user/:id" element={<UserDetail />} />
           <Route path="/user" element={<UserList />} />
+
           <Route path="/opportunity/me" element={<MyOpportunity />} />
           <Route path="/opportunity/:id" element={<OpportunityDetail />} />
           <Route path="/opportunity" element={<OpporunityList />} />

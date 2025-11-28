@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import user from '../../assets/default_avatar.jpg';
 import { useGetPersonalInfoQuery } from '../../services/user';
-import { setCredentials } from '../../features/auth/authSlice';
+import { setCredentials, logout as logoutAction } from '../../features/auth/authSlice';
 
 function Header(){
     const navigate = useNavigate();
@@ -39,6 +39,17 @@ function Header(){
         const displayName = profile?.full_name;
         const avatarSrc = profile?.avatar || user;
 
+        const handleLogout = () => {
+            try {
+                // clear entire localStorage as requested
+                localStorage.clear();
+            } catch (e) {
+                // ignore
+            }
+            try { dispatch(logoutAction()); } catch (e) {}
+            navigate('/login');
+        };
+
     return(
         <div className="bg-gradient-to-t fixed w-full left-0 h-[80px] top-0 flex items-center z-[1000] border-b-2 bg-slate-50">
             <h1 className=" text-[40px] font-bold ml-4 text-blue-600">QLNS</h1>
@@ -54,6 +65,7 @@ function Header(){
                 <div className="absolute right-20 flex items-center gap-3">
                     <img src={avatarSrc} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
                     <span className="text-lg font-medium text-blue-600">{displayName}</span>
+                    <button onClick={handleLogout} className="ml-3 px-3 py-1 rounded bg-red-50 text-red-600 text-sm border border-red-100">Đăng xuất</button>
                 </div>
             )}
         </div>

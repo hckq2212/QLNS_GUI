@@ -39,10 +39,12 @@ export const jobAPI = api.injectEndpoints({
 });
 
 export const { 
-    getAllJob,
-    getJobById,
-    useGetMyJobQuery,
-    useFinishJobMutation,
-    useUpdateJobMutation
+  getAllJob,
+  getJobById,
+  useGetAllJobQuery,
+  useGetJobByIdQuery,
+  useGetMyJobQuery,
+  useFinishJobMutation,
+  useUpdateJobMutation
  } = jobAPI;
 

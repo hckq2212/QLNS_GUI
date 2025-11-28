@@ -90,7 +90,7 @@ function MultiDonut({ segments = [], radius = 40, stroke = 14 }) {
           <text x="0" y="4" textAnchor="middle" fontSize="14" fill="#333">{total}</text>
         </g>
       </svg>
-      <div className="text-sm text-gray-500 mt-2">Dịch vụ (Top)</div>
+      <div className="text-sm text-gray-500 mt-2">Dịch vụ</div>
     </div>
   );
 }
@@ -275,7 +275,6 @@ export default function DetailDashboard({ data = {} }) {
                   />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm text-gray-500">Chi tiết </div>
                   <ul className="mt-3 text-sm">
                     {topServices.map((r, i) => (
                       <li key={r.id} className="flex justify-between py-1">
