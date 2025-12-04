@@ -330,7 +330,7 @@ export default function ContractDetail({ id: propId } = {}) {
 
           {Array.isArray(debtRows) && debtRows.length > 0 ? (
             <div className=" col-span-6 bg-yellow-50 border border-yellow-100 rounded p-4 h-fit shadow items-start">
-              <div className="text-md font-semibold text-yellow-700">Công nợ</div>
+              <div className="text-md font-semibold text-yellow-700">Lộ trình thanh toán</div>
               <hr className="my-2" />
               <div className="text-sm text-gray-700">
                 <table className="w-full text-sm">
@@ -358,7 +358,7 @@ export default function ContractDetail({ id: propId } = {}) {
               <button
                 className="px-2 mb-4 w-[8rem] py-1 bg-yellow-600 text-white rounded text-md"
                 onClick={() => setDebtModalOpen(true)}
-              >Tạo công nợ</button>
+              >Tạo lộ trình thanh toán</button>
             </div>
           )}
 

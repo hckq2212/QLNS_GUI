@@ -271,7 +271,7 @@ export default function ProjectDetail({ id: propId } = {}) {
             </div>
           </div>
 
-          {(hasJobs && Array.isArray(jobs) && jobs.length > 0 && project?.status === 'in_progress' && jobs.every((jj) => jj.status === 'done')) && (
+          {/* {(hasJobs && Array.isArray(jobs) && jobs.length > 0 && project?.status === 'in_progress' && jobs.every((jj) => jj.status === 'done')) && ( */}
             <div className="mt-4">
               <button
                 className="px-3 py-2 rounded text-sm bg-yellow-500 text-white"
@@ -292,7 +292,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                 Yêu cầu xem xét
               </button>
             </div>
-          )}
+          {/* )} */}
 
           
 

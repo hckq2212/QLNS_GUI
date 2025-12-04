@@ -184,8 +184,8 @@ const contractNo = new Table({
     const headerRight = new Paragraph({
     alignment: AlignmentType.CENTER, 
     children: [
-      new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true }),
-      new TextRun({ break: 1, text: 'SOCIALIST REPUBLIC OF VIETNAM', bold: true , italics: true}),
+        new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true }),
+        new TextRun({ break: 1, text: 'SOCIALIST REPUBLIC OF VIETNAM', bold: true , italics: true}),
       new TextRun({ break: 1, text: 'Độc lập - Tự do - Hạnh phúc', bold: true }),
       new TextRun({ break: 1, text: 'Independence - Freedom - Happiness', bold: true, italics: true }),
 

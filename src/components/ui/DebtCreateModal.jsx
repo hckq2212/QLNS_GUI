@@ -75,7 +75,7 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
       <div className="bg-white rounded shadow  w-fit p-10">
-        <h4 className="font-semibold mb-2">Tạo công nợ cho hợp đồng {activeContract.code}</h4>
+        <h4 className="font-semibold mb-2">Tạo lộ trình thanh toán cho hợp đồng {activeContract.code}</h4>
         <div className="text-sm mb-2">Tổng doanh thu: {formatPrice(activeContract.total_revenue || 0)}</div>
         <div className="space-y-2">
           {installments.map((it, idx) => (
@@ -146,15 +146,15 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
                 const results = await Promise.allSettled(ops);
                 const rejected = results.filter((r) => r.status === 'rejected');
                 if (rejected.length > 0) {
-                  toast.error('Tạo công nợ thất bại');
+                  toast.error('Tạo lộ trình thanh toán thất bại');
                 } else {
-                  toast.success('Tạo công nợ thành công');
+                  toast.success('Tạo lộ trình thanh toán thành công');
                   onClose();
                   if (onSuccess) onSuccess();
                 }
               } catch (err) {
                 console.error('create debt failed', err);
-                setDebtError(err?.message || 'Tạo công nợ thất bại');
+                setDebtError(err?.message || 'Tạo lộ trình thanh toán thất bại');
               } finally {
                 setDebtSubmitting(false);
               }

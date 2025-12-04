@@ -37,7 +37,7 @@ const CONTRACT_STATUS_LABELS ={
   signed: 'Đã ký',
   waiting_bod_approval:'Đang đợi BOD duyệt',
   waiting_hr_confirm:'Đang đợi HR xác nhận',
-  without_debt:'Chưa có công nợ',
+  without_debt:'Chưa có lộ trình thanh toán',
   assigned:'Đang đợi ký',
   not_assigned:'Đã duyệt'
   

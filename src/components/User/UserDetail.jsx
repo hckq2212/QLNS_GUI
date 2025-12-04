@@ -40,7 +40,7 @@ export default function UserDetail() {
         <div className="col-span-7 bg-white rounded shadow p-6">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-md font-medium text-blue-600">Thông tin người dùng</div>
+              <div className="text-md font-medium text-blue-600">Thông tin nhân viên</div>
             </div>
             <div className="flex items-center gap-2">
             </div>

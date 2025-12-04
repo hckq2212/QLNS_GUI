@@ -105,7 +105,7 @@ export default function DebtDetail() {
         <div className="grid grid-cols-12 gap-4 text-left grid-rows-2">
           <div className="col-span-7 bg-white rounded shadow p-6 row-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-md font-semibold text-blue-600">Chi tiết công nợ</h2>
+              <h2 className="text-md font-semibold text-blue-600">Chi tiết lộ trình thanh toán</h2>
             </div>
             <hr className="mt-4" />
 
@@ -115,7 +115,7 @@ export default function DebtDetail() {
                 <div className="text-md font-medium text-blue-600">{debt.title  || `#${debt.id ?? debt.debt_id}`}</div>
               </div>
               <div className="text-gray-500 text-sm col-span-1 bg-white rounded p-4">
-                <p className="">Trạng thái công nợ:</p>
+                <p className="">Trạng thái lộ trình thanh toán:</p>
                  {DEBT_STATUS[debt?.status] || debt?.status || '—'}
               </div>
             </div>
