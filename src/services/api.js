@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logout } from '../features/auth/authSlice';
 
-const baseUrl = import.meta.env.VITE_API_URL || 'https://qlns-production.up.railway.app/api' || 'http://localhost:3000/api';
-
+// const baseUrl = 'https://qlns-kwbh.onrender.com/api' || 'https://qlns-production.up.railway.app/api' || 'http://localhost:3000/api';
+const baseUrl =  'http://localhost:3000/api';
 // plain fetchBaseQuery that attaches current access token from state
 const baseFetch = fetchBaseQuery({
   baseUrl,
@@ -77,7 +77,8 @@ export const api = createApi({
     'Job', 
     'Team', 
     'Project',
-    'Role'
+    'Role',
+    'Referral'
   ],
   endpoints: () => ({}),
 });

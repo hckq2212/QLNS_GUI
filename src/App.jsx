@@ -34,6 +34,8 @@ import ReviewDetail from "./components/Review/ReviewDetail";
 import ReviewService from "./components/Review/ReviewService";
 import DebtDetail from "./components/Debt/DebtDetail";
 import UserDetail from "./components/User/UserDetail";
+import ReferalList from "./components/Referal/ReferalList";
+import ReferalDetail from "./components/Referal/ReferalDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -80,7 +82,8 @@ function AppContent() {
           <Route path="/review" element={<ReviewProject />} />
           <Route path="/debt/:id" element={<DebtDetail />} />
 
-
+          <Route path="/referral" element={<ReferalList />} />
+          <Route path="/referral/:id" element={<ReferalDetail />} />
           
         </Routes>
       </div>

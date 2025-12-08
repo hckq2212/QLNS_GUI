@@ -147,6 +147,7 @@ export default function SideMenu () {
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/partner" className="text-blue-600">Danh sách đối tác</a></li>
                             <li><a href="/partner/create" className="text-blue-600">Tạo đối tác</a></li>
+                            <li><a href="/referral" className="text-blue-600">Danh sách đối tác ngoài</a></li>
                         </ul>
                     )}
                 </li>
