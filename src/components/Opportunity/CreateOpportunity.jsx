@@ -5,11 +5,24 @@ import { useGetServiceJobsQuery } from '../../services/serviceJob.js';
 import { toast } from 'react-toastify';
 import { useGetServicesQuery } from '../../services/service.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS } from '../../utils/enums';
+import { formatPrice } from '../../utils/FormatValue';
 import { useCreateOpportunityMutation } from '../../services/opportunity.js';
 
 export default function CreateOpportunity() {
   const token = useSelector((state) => state.auth.accessToken);
   const [createOpportunity, { isLoading: creating }] = useCreateOpportunityMutation();
+
+  // Helper functions for price formatting
+  const formatPriceInput = (value) => {
+    if (!value) return '';
+    const numValue = String(value).replace(/[^0-9]/g, '');
+    return numValue ? formatPrice(numValue) : '';
+  };
+
+  const parsePriceInput = (value) => {
+    if (!value) return '';
+    return String(value).replace(/[^0-9]/g, '');
+  };
 
   // FORM STATE
   const [createdOpportunityId, setCreatedOpportunityId] = useState(null);
@@ -210,13 +223,16 @@ export default function CreateOpportunity() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 ">
               <label className="w-100 text-sm text-gray-700">Doanh thu kỳ vọng</label>
+              <div className="relative flex-1">
                 <input
-                type="number"
-                value={expectedRevenue}
-                onChange={(e) => setExpectedRevenue(e.target.value)}
-                className="border rounded p-2 flex-1"
-                placeholder="VNĐ"
-              />
+                  type="text"
+                  value={expectedRevenue ? formatPriceInput(expectedRevenue) : ''}
+                  onChange={(e) => setExpectedRevenue(parsePriceInput(e.target.value))}
+                  className="border rounded p-2 w-full pr-12"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">VNĐ</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -242,13 +258,16 @@ export default function CreateOpportunity() {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Ngân sách dự kiến</label>
-              <input
-                type="number"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="border rounded p-2 flex-1"
-                placeholder="VNĐ"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={budget ? formatPriceInput(budget) : ''}
+                  onChange={(e) => setBudget(parsePriceInput(e.target.value))}
+                  className="border rounded p-2 w-full pr-12"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">VNĐ</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -271,6 +290,7 @@ export default function CreateOpportunity() {
                 className="border rounded p-2 w-40"
                 placeholder="%"
               />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
             </div>
           </div>
         </div>

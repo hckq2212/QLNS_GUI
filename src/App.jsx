@@ -36,6 +36,7 @@ import DebtDetail from "./components/Debt/DebtDetail";
 import UserDetail from "./components/User/UserDetail";
 import ReferalList from "./components/Referal/ReferalList";
 import ReferalDetail from "./components/Referal/ReferalDetail";
+import CustomerList from "./components/Customer/CustomerList";
 
 function AppContent() {
   const location = useLocation();
@@ -52,7 +53,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/user/create" element={<CreateUser />} />
+          {/* <Route path="/user/create" element={<CreateUser />} /> */}
           <Route path="/user/:id" element={<UserDetail />} />
           <Route path="/user" element={<UserList />} />
 
@@ -85,6 +86,8 @@ function AppContent() {
           <Route path="/referral" element={<ReferalList />} />
           <Route path="/referral/:id" element={<ReferalDetail />} />
           
+          <Route path="/customer" element={<CustomerList />} />
+
         </Routes>
       </div>
     </>

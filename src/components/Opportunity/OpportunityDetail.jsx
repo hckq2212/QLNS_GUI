@@ -6,6 +6,7 @@ import { useUpdateOpportunityMutation } from '../../services/opportunity';
 import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
+import { useGetReferralsQuery, useGetReferralCustomersQuery, useGetReferralByIdQuery } from '../../services/referral';
 import { useParams } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
@@ -34,6 +35,19 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const { data: servicesList = [] } = useGetServicesQuery();
   const { data: customers } = useGetAllCustomerQuery(undefined, { skip: !token });
   const { data: users } = useGetAllUserQuery(undefined, { skip: !token });
+  const { data: referrals = [] } = useGetReferralsQuery(undefined, { skip: !token });
+  
+  // State for referral selection
+  const [selectedReferralId, setSelectedReferralId] = useState(null);
+  const { data: referralCustomers = [] } = useGetReferralCustomersQuery(selectedReferralId, { 
+    skip: !selectedReferralId 
+  });
+
+  // Get referral details for display
+  const referralId = opp?.referral_id || opp?.customer_temp?.referral_id;
+  const { data: referralDetail } = useGetReferralByIdQuery(referralId, { 
+    skip: !referralId 
+  });
 
   const customer = useMemo(() => {
     if (!opp) return null;
@@ -74,6 +88,13 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [customerDraft, setCustomerDraft] = useState(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [customerType, setCustomerType] = useState(() => {
+    // Initialize based on opp data on first render
+    const source = opp?.customer_source || opp?.customer_temp?.customer_source;
+    const refId = opp?.referral_id || opp?.customer_temp?.referral_id;
+    return source === 'partner' || refId ? 'referral' : 'direct';
+  });
+  const [customerTypeInitialized, setCustomerTypeInitialized] = useState(false);
   // price quote modal
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [viewQuoteOpen, setViewQuoteOpen] = useState(false);
@@ -84,11 +105,27 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
   // initialize draft when customer changes (but not while editing)
   useEffect(() => {
-    if (!editingCustomer) {
+    if (!editingCustomer && opp) {
       setCustomerDraft(customer);
       setSelectedCustomerId(customer?.id || null);
+      
+      // Only initialize customer type once on first load
+      if (!customerTypeInitialized) {
+        const source = opp?.customer_source || opp?.customer_temp?.customer_source;
+        const refId = opp?.referral_id || opp?.customer_temp?.referral_id;
+        
+        if (source === 'partner' || refId) {
+          setCustomerType('referral');
+          setSelectedReferralId(refId || null);
+        } else {
+          setCustomerType('direct');
+          setSelectedReferralId(null);
+        }
+
+        setCustomerTypeInitialized(true);
+      }
     }
-  }, [customer, editingCustomer]);
+  }, [customer, editingCustomer, opp, customerTypeInitialized]);
 
   if (!id) return <div className="p-6">No opportunity id provided</div>;
   if (isLoading) return <div className="p-6">Loading opportunity...</div>;
@@ -229,6 +266,39 @@ export default function OpportunityDetail({ id: propId } = {}) {
             {editingCustomer ? (
               <div>
                 <div className="mb-2">
+                  <p className='text-gray-500'>Loại khách hàng:</p>
+                  <select className="mt-1 w-full border rounded p-2" value={customerType} onChange={(e) => {
+                    setCustomerType(e.target.value);
+                    if (e.target.value === 'referral') {
+                      setSelectedReferralId(null);
+                    }
+                  }}>
+                    <option value="direct">Khách hàng trực tiếp</option>
+                    <option value="referral">Khách hàng liên kết</option>
+                  </select>
+                </div>
+
+                {customerType === 'referral' && (
+                  <div className="mb-2">
+                    <p className='text-gray-500'>Đối tác giới thiệu:</p>
+                    <select 
+                      className="mt-1 w-full border rounded p-2" 
+                      value={selectedReferralId || ''} 
+                      onChange={(e) => {
+                        setSelectedReferralId(e.target.value);
+                        // Reset customer selection when referral changes
+                        setSelectedCustomerId(null);
+                      }}
+                    >
+                      <option value="">-- Chọn đối tác giới thiệu --</option>
+                      {Array.isArray(referrals) && referrals.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name || r.partner_name || `#${r.id}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="mb-2">
                   <p className='text-gray-500'>Trạng thái khách hàng:</p>
                   <select className="mt-1 w-full border rounded p-2" value={customerDraft?.status || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, status: e.target.value }))}>
                     <option value="">-- Chọn trạng thái --</option>
@@ -267,15 +337,28 @@ export default function OpportunityDetail({ id: propId } = {}) {
                       <input type='text' className="mt-1 w-full border rounded p-2" value={customerDraft?.address || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, address: e.target.value }))} />
                     </div>
                   </>
+                ) : customerType === 'referral' && !selectedReferralId ? (
+                  /* If referral type but no referral selected, show message */
+                  <div className="mb-2 text-sm text-gray-500 italic">
+                    Vui lòng chọn đối tác giới thiệu trước
+                  </div>
                 ) : (
                   /* otherwise allow selecting an existing customer from dropdown */
                   <div className="mb-2">
                     <p className='text-gray-500'>Chọn khách hàng hiện có:</p>
                     <select className="mt-1 w-full border rounded p-2" value={selectedCustomerId || ''} onChange={(e) => setSelectedCustomerId(e.target.value)}>
                       <option value="">-- Chọn khách hàng --</option>
-                      {Array.isArray(customers) && customers.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`}</option>
-                      ))}
+                      {customerType === 'referral' && selectedReferralId ? (
+                        /* Show customers from selected referral partner */
+                        Array.isArray(referralCustomers) && referralCustomers.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`}</option>
+                        ))
+                      ) : (
+                        /* Show all customers for direct type */
+                        Array.isArray(customers) && customers.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`}</option>
+                        ))
+                      )}
                     </select>
                   </div>
                 )}
@@ -284,6 +367,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   <button className="bg-blue-600 text-white px-3 py-1 rounded" disabled={updatingOpportunity} onClick={async () => {
                     try {
                       const body = {};
+
                       if (customerDraft?.status === 'potential') {
                         body.customer_temp = {
                           name: customerDraft.name || '',
@@ -292,6 +376,8 @@ export default function OpportunityDetail({ id: propId } = {}) {
                           status: customerDraft.status || 'potential',
                           identity_code: customerDraft.identity_code || customerDraft.id_number || '',
                           address: customerDraft.address || '',
+                          customer_source: customerType === 'referral' ? 'partner' : 'direct',
+                          referral_id: customerType === 'referral' && selectedReferralId ? Number(selectedReferralId) : null,
                         };
                         body.customer_id = null;
                       } else {
@@ -299,11 +385,24 @@ export default function OpportunityDetail({ id: propId } = {}) {
                         const cid = selectedCustomerId || customerDraft?.id || null;
                         if (cid) body.customer_id = Number(cid);
                         body.customer_temp = null;
+                        
+                        // Set customer_source based on customerType for existing customers
+                        if (customerType === 'referral') {
+                          body.customer_source = 'partner';
+                          if (selectedReferralId) {
+                            body.referral_id = Number(selectedReferralId);
+                          }
+                        } else {
+                          body.customer_source = 'direct';
+                          body.referral_id = null;
+                        }
                       }
                       await updateOpportunity({ id: opp.id, body }).unwrap();
+                      toast.success('Cập nhật thông tin khách hàng thành công');
                       setEditingCustomer(false);
                     } catch (err) {
                       console.error('Update opportunity customer failed', err);
+                      toast.error('Cập nhật thất bại');
                     }
                   }}>{updatingOpportunity ? 'Đang lưu...' : 'Lưu'}</button>
                   <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => { setEditingCustomer(false); setCustomerDraft(customer); setSelectedCustomerId(customer?.id || null); }}>Hủy</button>
@@ -311,6 +410,23 @@ export default function OpportunityDetail({ id: propId } = {}) {
               </div>
             ) : (
               <>
+                <div className="mb-2 flex flex-col">
+                  <p className='text-gray-500'>Loại khách hàng:</p> 
+                  {(opp?.customer_source === 'partner' || opp?.customer_temp?.customer_source === 'partner') 
+                    ? 'Khách hàng liên kết' 
+                    : 'Khách hàng trực tiếp'}
+                </div>
+                {((opp?.customer_source === 'partner' || opp?.customer_temp?.customer_source === 'partner') && 
+                  (opp?.referral_id || opp?.customer_temp?.referral_id)) && (
+                  <div className="mb-2 flex flex-col">
+                    <p className='text-gray-500'>Đối tác giới thiệu:</p> 
+                    {(() => {
+                      const refId = opp?.referral_id || opp?.customer_temp?.referral_id;
+                      const ref = Array.isArray(referrals) ? referrals.find(r => r.id === refId) : null;
+                      return ref?.name || ref?.partner_name || `#${refId}`;
+                    })()}
+                  </div>
+                )}
                 <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name  || opp?.customer_temp?.name || 'Chưa có'}</div>
                 <div className="mb-2 flex flex-col"><p className='text-gray-500'>Điện thoại:</p> {customer?.phone || customer?.phone_number || opp?.customer_temp?.phone || 'Chưa có'}</div>
                 <div className="mb-2 flex flex-col"><p className='text-gray-500'>Email:</p> {customer?.email || opp?.customer_temp?.email || 'Chưa có'}</div>

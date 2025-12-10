@@ -81,7 +81,7 @@ const PARTNER_TYPE = {
 }
 
 const CUSTOMER_STATUS_OPTIONS = [
-  { value: 'active', label: 'Khách hàng hiện hữu' },
+  { value: 'existing', label: 'Khách hàng hiện hữu' },
   { value: 'inactive', label: 'Không hoạt động' },
   { value: 'potential', label: 'Khách hàng tiềm năng' },
 ];
