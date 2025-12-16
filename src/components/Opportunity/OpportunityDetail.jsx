@@ -420,11 +420,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   (opp?.referral_id || opp?.customer_temp?.referral_id)) && (
                   <div className="mb-2 flex flex-col">
                     <p className='text-gray-500'>Đối tác giới thiệu:</p> 
-                    {(() => {
-                      const refId = opp?.referral_id || opp?.customer_temp?.referral_id;
-                      const ref = Array.isArray(referrals) ? referrals.find(r => r.id === refId) : null;
-                      return ref?.name || ref?.partner_name || `#${refId}`;
-                    })()}
+                    {referralDetail?.name || `#${referralId}`}
                   </div>
                 )}
                 <div className="mb-2 flex flex-col"><p className='text-gray-500'>Khách hàng:</p> {customer?.name  || opp?.customer_temp?.name || 'Chưa có'}</div>

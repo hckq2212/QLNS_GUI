@@ -36,7 +36,7 @@ export default function MyOpportunity() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-xl font-semibold mb-4">Cơ hội đã tạo</h2>
+      <h2 className="text-xl font-semibold mb-4 text-blue-600">Cơ hội đã tạo</h2>
       {list.length === 0 ? (
         <div className="text-sm text-gray-600">Bạn chưa có cơ hội nào</div>
       ) : (

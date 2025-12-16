@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useGetServiceByIdQuery } from '../../services/service';
 import { useGetPartnersQuery } from '../../services/partner';
 import { useGetServiceJobsByServiceIdQuery, useGetServiceJobsQuery } from '../../services/serviceJob';
-import { useCreateServiceJobMappingMutation } from '../../services/serviceJobMapping';
+import { useCreateServiceJobMappingMutation, useRemoveServiceJobMappingMutation } from '../../services/serviceJobMapping';
 import { toast } from 'react-toastify';
 import { formatPrice } from '../../utils/FormatValue';
 import { SERVICE_JOB_LABELS } from '../../utils/enums';
@@ -22,6 +22,7 @@ export default function ServiceDetail({ id: propId } = {}) {
   const { data: jobsData, refetch: refetchJobs } = useGetServiceJobsByServiceIdQuery(id, { skip: !id });
   const { data: allJobs = [] } = useGetServiceJobsQuery();
   const [createMapping, { isLoading: creatingMapping }] = useCreateServiceJobMappingMutation();
+  const [removeMapping, { isLoading: removingMapping }] = useRemoveServiceJobMappingMutation();
   const [showAttach, setShowAttach] = useState(false);
   const [selectedAttachJobId, setSelectedAttachJobId] = useState('');
   const { data: partners = [] } = useGetPartnersQuery();
@@ -42,21 +43,21 @@ export default function ServiceDetail({ id: propId } = {}) {
         <div className="col-span-4 bg-white rounded shadow p-6">
           <div className="flex justify-between items-start mb-3">
             <h2 className="text-md font-semibold text-blue-700">Thông tin dịch vụ</h2>
-            <div className="flex gap-2">
+            {/* <div className="flex gap-2">
               <Link to={`/service/${service.id}`} className="text-sm bg-blue-600 border px-3 py-1 rounded text-white ">Chỉnh sửa</Link>
-            </div>
+            </div> */}
           </div>
           <hr className="my-4" />
 
           <div className="space-y-3 text-sm text-gray-700">
             <div>
               <div className="text-xs text-gray-500">Tên</div>
-              <div className="text-sm font-semibold">{service.name || service.title || '—'}</div>
+              <div className="text-sm font-semibold text-blue-500">{service.name || '—'}</div>
             </div>
 
             <div>
               <div className="text-xs text-gray-500">Giá vốn</div>
-              <div className="text-sm">{formatPrice(service.base_cost ?? service.price ?? 0)}</div>
+              <div className="text-sm">{formatPrice(service.base_cost ?? service.price ?? 0)} VNĐ</div>
             </div>
 
             {service.description && (
@@ -76,10 +77,10 @@ export default function ServiceDetail({ id: propId } = {}) {
         </div>
 
         <div className="col-span-8 bg-white rounded shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-md font-semibold text-blue-700">Hạng mục dịch vụ thuộc {service.name}</h2>
+          <div className="flex items-start justify-between mb-4 gap-3">
+            <h2 className="text-md text-left font-semibold text-blue-700">Hạng mục dịch vụ thuộc {service.name}</h2>
             <hr className='mb-4' />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-[60%]">
               <Link to={`/service-job/create?service_id=${service.id}`} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Tạo hạng mục dịch vụ</Link>
               <button onClick={() => setShowAttach((s) => !s)} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Thêm hạng mục có sẵn</button>
             </div>
@@ -91,7 +92,7 @@ export default function ServiceDetail({ id: propId } = {}) {
                 <select value={selectedAttachJobId} onChange={(e) => setSelectedAttachJobId(e.target.value)} className="border px-2 py-1 rounded text-sm">
                   <option value="">-- Chọn hạng mục có sẵn --</option>
                   {(Array.isArray(allJobs) ? allJobs : (allJobs.items || [])).filter((aj) => !jobs.some((j) => String(j.id) === String(aj.id))).map((aj) => (
-                    <option key={aj.id || aj._id} value={aj.id || aj._id}>{aj.name || aj.title || `#${aj.id || aj._id}`}</option>
+                    <option key={aj.id} value={aj.id}>{aj.name}</option>
                   ))}
                 </select>
                 <button
@@ -134,16 +135,49 @@ export default function ServiceDetail({ id: propId } = {}) {
                   {jobs.map((j) => {
                     const pid = j.partner_id || j.partner?.id || j.partnerId;
                     const partner = Array.isArray(partners) ? partners.find((p) => String(p.id) === String(pid)) : null;
+                    const jobId =  j.id ;
+                    const isOutputJob = service.output_job_id && String(service.output_job_id) === String(jobId);
                     return (
-                      <tr key={j.id || j._id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 align-top">{j.name || j.title || `#${j.id || j._id}`}</td>
+                      <tr key={jobId} className={`border-t hover:bg-gray-50 ${isOutputJob ? 'bg-yellow-50 border-l-4 border-l-yellow-500' : ''}`}>
+                        <td className="px-4 py-3 align-top">
+                          <div className="flex items-center gap-2">
+                            <span>{j.name }</span>
+                            {isOutputJob && (
+                              <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">Công việc đầu ra</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 align-top">
                           <div className="text-sm">{SERVICE_JOB_LABELS[j.owner_type] || 'Nội bộ'}</div>
                         </td>
                         <td className="px-4 py-3 align-top">{formatPrice(j.base_cost ?? j.price ?? 0)}</td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex gap-2">
-                            <Link to={`/service-job/${j.id || j._id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>
+                            <Link to={`/service-job/${jobId}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem</Link>
+                            {!isOutputJob && (
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm('Bạn có chắc muốn xóa hạng mục này khỏi dịch vụ?')) return;
+                                  try {
+                                    await removeMapping({ 
+                                      body: { 
+                                        service_job_id: jobId, 
+                                        service_id: service.id 
+                                      } 
+                                    }).unwrap();
+                                    toast.success('Đã xóa hạng mục khỏi dịch vụ');
+                                    try { refetchJobs && refetchJobs(); } catch (e) {}
+                                  } catch (err) {
+                                    console.error('remove mapping failed', err);
+                                    toast.error(err?.data?.message || err?.message || 'Xóa thất bại');
+                                  }
+                                }}
+                                disabled={removingMapping}
+                                className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700 disabled:opacity-50"
+                              >
+                                Xóa
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

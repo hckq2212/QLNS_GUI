@@ -78,7 +78,10 @@ export const api = createApi({
     'Team', 
     'Project',
     'Role',
-    'Referral'
+    'Referral',
+    'Review',
+    'ServiceJob',
+    'ServiceJobCriteria'
   ],
   endpoints: () => ({}),
 });

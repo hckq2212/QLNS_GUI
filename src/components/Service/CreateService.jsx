@@ -3,14 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreateServiceMutation } from '../../services/service';
 import { useCreateServiceCriteriaMutation } from '../../services/serviceCriteria';
+import { useGetServiceJobsQuery } from '../../services/serviceJob';
 
 export default function CreateService() {
   const navigate = useNavigate();
   const [createService, { isLoading }] = useCreateServiceMutation();
   const [createServiceCriteria, { isLoading: isCreatingCriteria }] = useCreateServiceCriteriaMutation();
+  const { data: serviceJobsData = [], isLoading: loadingServiceJobs } = useGetServiceJobsQuery();
+
+  const serviceJobs = Array.isArray(serviceJobsData) ? serviceJobsData : (serviceJobsData?.items || []);
 
   const [form, setForm] = useState({
     name: '',
+    code: '',
+    output_job_id: '',
     description: '',
   });
 
@@ -30,6 +36,8 @@ export default function CreateService() {
 
     const payload = {
       name: form.name.trim(),
+      code: form.code ? `SMGK-${form.code.trim()}` : undefined,
+      output_job_id: form.output_job_id || undefined,
       description: form.description || undefined,
     };
 
@@ -61,7 +69,7 @@ export default function CreateService() {
         }
       }
 
-      navigate('/service');
+      navigate(`/service/${serviceId}`);
     } catch (err) {
       console.error('Error creating service', err);
       const msg = err?.data?.error || err?.message || 'Tạo thất bại';
@@ -90,6 +98,35 @@ export default function CreateService() {
           />
         </div>
         <div>
+          <label className="text-sm text-gray-600">Mã dịch vụ</label>
+          <div className="mt-1 flex items-center">
+            <span className="px-3 py-2 bg-gray-100 border border-r-0 rounded-l text-gray-700">SMGK-</span>
+            <input
+              className="flex-1 border rounded-r p-2"
+              value={form.code}
+              onChange={(e) => update('code', e.target.value)}
+              placeholder="Nhập mã"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-sm text-gray-600">Hạng mục dịch vụ đầu ra</label>
+          <select
+            className="mt-1 w-full border rounded p-2"
+            value={form.output_job_id}
+            onChange={(e) => update('output_job_id', e.target.value)}
+          >
+            <option value="">-- Chọn hạng mục dịch vụ --</option>
+            {serviceJobs.map((sj) => {
+              const sjId =  sj.id ;
+              const sjName = sj.name ;
+              return (
+                <option key={sjId} value={sjId}>{sjName}</option>
+              );
+            })}
+          </select>
+        </div>
+        <div>
           <label className="text-sm text-gray-600">Tiêu chí đánh giá</label>
           <div className="mt-2 space-y-3">
             {criteria.map((c, idx) => (
@@ -102,7 +139,7 @@ export default function CreateService() {
                     onChange={(e) => updateCriterion(idx, 'name', e.target.value)}
                   />
                 </div>
-                <div className="mt-2">
+                {/* <div className="mt-2">
                   <textarea
                     className="w-full border rounded p-2"
                     placeholder="Mô tả (tuỳ chọn)"
@@ -110,7 +147,7 @@ export default function CreateService() {
                     onChange={(e) => updateCriterion(idx, 'description', e.target.value)}
                     rows={2}
                   />
-                </div>
+                </div> */}
                 <div className="mt-2 flex justify-end">
                   <button
                     type="button"
