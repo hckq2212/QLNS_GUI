@@ -52,7 +52,7 @@ export default function CustomerList() {
                 const statusOption = CUSTOMER_STATUS_OPTIONS.find(opt => opt.value === c.status);
                 const referral = c.referral_id ? referralsById[c.referral_id] : null;
                 const sourceDisplay = c.customer_source === 'partner' 
-                  ? (referral?.name || referral?.partner_name || `Đối tác #${c.referral_id}`)
+                  ? (referral?.name || referral?.partner_name || `Khách hàng của đối tác`)
                   : 'Khách hàng trực tiếp';
                 
                 return (

@@ -175,54 +175,58 @@ export default function ContractDetail({ id: propId } = {}) {
           )}
             <div className='mt-6'>
               <div className="text-xs text-gray-500">Tổng tiền</div>
-              <div className="text-sm text-gray-700">{formatPrice(contract.total_revenue ?? contract.totalRevenue ?? contract.expected_revenue ?? 0)} VND</div>
+              <div className="text-sm text-gray-700">{formatPrice(contract.total_revenue ?? 0)} VND</div>
             </div>
 
           {/* Proposal / Signed fields (show name + view when available, otherwise allow upload) */}
-          <div className="mt-6">
-            <div className="text-sm text-gray-500">Hợp đồng mẫu</div>
-            <div className="text-sm text-gray-700 mt-2">
-              {proposalInfo.name ? (
-                <div className="flex items-center gap-3">
-                  <span className="truncate max-w-xs">{proposalInfo.name}</span>
-                  <button
-                    className="bg-blue-600 text-white px-2 py-1 rounded text-sm"
-                    onClick={async () => {
-                      try {
-                        const res = await triggerGetProposalUrl(contract.id);
-                        const url = res?.data ?? res;
-                        const direct = typeof url === 'string' ? url : url?.url || null;
-                        if (direct) window.open(direct, '_blank');
-                        else toast.info('Không thể lấy link proposal');
-                      } catch (err) {
-                        console.error('open proposal failed', err);
-                        toast.error('Không thể mở proposal');
-                      }
-                    }}
-                  >Xem</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <input type="file" accept=".pdf,.docx,.doc" onChange={(e) => setLocalProposalFile(e.target.files?.[0] || null)} />
-                  <button
-                    disabled={uploadingProposal || !localProposalFile}
-                    className="px-2 py-1 bg-blue-600 text-white rounded"
-                    onClick={async () => {
-                      if (!localProposalFile) return;
-                      try {
-                        await uploadProposal({ id: contract.id, file: localProposalFile }).unwrap();
-                        toast.success('Upload proposal thành công');
-                        setLocalProposalFile(null);
-                        try { refetch && refetch(); } catch (e) {}
-                      } catch (err) {
-                        console.error('upload proposal failed', err);
-                        toast.error(err?.data?.message || err?.message || 'Upload thất bại');
-                      }
-                    }}
-                  >{uploadingProposal ? 'Đang tải...' : 'Tải lên'}</button>
-                </div>
-              )}
+
+          {contract?.status !== 'without_debt' && (
+            <div className="mt-6">
+              <div className="text-sm text-gray-500">Hợp đồng mẫu</div>
+              <div className="text-sm text-gray-700 mt-2">
+                {proposalInfo.name ? (
+                  <div className="flex items-center gap-3">
+                    <span className="truncate max-w-xs">{proposalInfo.name}</span>
+                    <button
+                      className="bg-blue-600 text-white px-2 py-1 rounded text-sm"
+                      onClick={async () => {
+                        try {
+                          const res = await triggerGetProposalUrl(contract.id);
+                          const url = res?.data ?? res;
+                          const direct = typeof url === 'string' ? url : url?.url || null;
+                          if (direct) window.open(direct, '_blank');
+                          else toast.info('Không thể lấy link proposal');
+                        } catch (err) {
+                          console.error('open proposal failed', err);
+                          toast.error('Không thể mở proposal');
+                        }
+                      }}
+                    >Xem</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input type="file" accept=".pdf,.docx,.doc" onChange={(e) => setLocalProposalFile(e.target.files?.[0] || null)} />
+                    <button
+                      disabled={uploadingProposal || !localProposalFile}
+                      className="px-2 py-1 bg-blue-600 text-white rounded"
+                      onClick={async () => {
+                        if (!localProposalFile) return;
+                        try {
+                          await uploadProposal({ id: contract.id, file: localProposalFile }).unwrap();
+                          toast.success('Upload proposal thành công');
+                          setLocalProposalFile(null);
+                          try { refetch && refetch(); } catch (e) {}
+                        } catch (err) {
+                          console.error('upload proposal failed', err);
+                          toast.error(err?.data?.message || err?.message || 'Upload thất bại');
+                        }
+                      }}
+                    >{uploadingProposal ? 'Đang tải...' : 'Tải lên'}</button>
+                  </div>
+                )}
+              </div>
             </div>
+          )}
 
             
             {contract?.status !== 'waiting_bod_approval' && contract?.status !== 'waiting_hr_confirm' && contract?.status !== 'without_debt' 
@@ -273,8 +277,6 @@ export default function ContractDetail({ id: propId } = {}) {
               </div>
             </div>
             )}
-            
-          </div>
 
           {contract.attachments && contract.attachments.length > 0 && (
             <div className="mt-6">
@@ -313,7 +315,7 @@ export default function ContractDetail({ id: propId } = {}) {
           </div>
  
 
-          <button
+          {/* <button
               className='bg-blue-600 px-2 py-1 text-white rounded'
               onClick={() => {
                 const oppId = contract?.opportunity_id || contract?.opportunity?.id;
@@ -325,7 +327,7 @@ export default function ContractDetail({ id: propId } = {}) {
               }}
             >
               Xem báo giá
-          </button>
+          </button> */}
         </div>
 
           {Array.isArray(debtRows) && debtRows.length > 0 ? (
@@ -415,11 +417,11 @@ export default function ContractDetail({ id: propId } = {}) {
         </div>
         )}
     </div>
-    <ViewQuoteModal
+    {/* <ViewQuoteModal
       isOpen={viewQuoteOpen}
       onClose={() => setViewQuoteOpen(false)}
       opportunity={{ id: contract?.opportunity_id || contract?.opportunity?.id, name: contract?.name || contract?.contract_name }}
-    />
+    /> */}
     </>
   );
 }

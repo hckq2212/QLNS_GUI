@@ -249,17 +249,20 @@ export default function JobDetail({ id: propId } = {}) {
               {evidenceFiles && evidenceFiles.length > 0 && (
                 <div className="mt-2 text-sm text-gray-600">
                   <div>Đã chọn {evidenceFiles.length} tệp:</div>
-                  <ul className="list-disc ml-5 mt-1">
+                  <ul className="list-disc ml-5 mt-1 overflow-hidden">
                     {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
                   </ul>
                 </div>
               )}
             </div>
               <button
-                className="px-3 py-2 bg-blue-600 text-white rounded"   
-                disabled={finishing}
+                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"   
+                disabled={finishing || !evidenceFiles || evidenceFiles.length === 0}
                 onClick={async () => {
                   if (!job?.id) return toast.error('Không xác định được công việc');
+                  if (!evidenceFiles || evidenceFiles.length === 0) {
+                    return toast.error('Vui lòng upload ít nhất một file bằng chứng');
+                  }
                   try {
                     const form = new FormData();
                     (evidenceFiles || []).forEach((f) => form.append('evidence', f));
@@ -286,24 +289,12 @@ export default function JobDetail({ id: propId } = {}) {
               <div className="mt-4">
                 <button
                   className="px-3 py-2 bg-blue-600 text-white rounded"
-                  disabled={updatingJob}
-                  onClick={async () => {
+                  onClick={() => {
                     if (!job?.id) return toast.error('Không xác định được công việc');
-                    if (!window.confirm('Xác nhận hoàn thành công việc này?')) return;
-                    try {
-                      await updateJob({ id: job.id, body: { status: 'done' } }).unwrap();
-                      toast.success('Đã xác nhận hoàn thành công việc');
-                      try {
-                        const fresh = await jobAPI.getById(job.id);
-                        setJob(fresh);
-                      } catch (e) { console.warn('Failed to refresh job after update', e); }
-                    } catch (err) {
-                      console.error('Update job failed', err);
-                      toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
-                    }
+                    window.location.href = `/job/${job.id}/review`;
                   }}
                 >
-                  {updatingJob ? 'Đang xử lý...' : 'Xác nhận hoàn thành công việc'}
+                  Đánh giá công việc
                 </button>
               </div>
             )}

@@ -29,6 +29,7 @@ import ServiceDetail from "./components/Service/ServiceDetail";
 import AssigningProject from "./components/Project/AssigningProject";
 import JobDetail from "./components/Job/JobDetail";
 import MyJob from "./components/Job/MyJob";
+import ReviewJob from "./components/Review/ReviewJob";
 import ReviewProject from "./components/Review/ReviewProject";
 import ReviewDetail from "./components/Review/ReviewDetail";
 import ReviewService from "./components/Review/ReviewService";
@@ -78,6 +79,7 @@ function AppContent() {
           <Route path="/partner/create" element={<CreatePartner />} />
           <Route path="/job/me" element={<MyJob />} />
           <Route path="/job/:id" element={<JobDetail />} />
+          <Route path="/job/:id/review" element={<ReviewJob />} />
           <Route path="/review/:id" element={<ReviewDetail />} />
           <Route path="/review/service/:id" element={<ReviewService />} />
           <Route path="/review" element={<ReviewProject />} />
