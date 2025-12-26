@@ -7,6 +7,9 @@ import { OPPPORTUNITY_STATUS_LABELS } from '../../utils/enums';
 
 export default function OpporunityList() {
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 15;
 
   const { data: allOpportunities = [], isLoading: loadingAll, isError: errorAll, error: allError } = useGetAllOpportunityQuery();
   const { data: statusOpportunities = [], isLoading: loadingStatus } = useGetOpportunityByStatusQuery(statusFilter, { skip: statusFilter === 'all' });
@@ -31,6 +34,29 @@ export default function OpporunityList() {
     return ['all', ...Array.from(set)];
   }, [allOpportunities]);
 
+  // Filter opportunities based on search term
+  const filteredOpportunities = useMemo(() => {
+    if (!searchTerm.trim()) return opportunities;
+    
+    const lowerSearch = searchTerm.toLowerCase().trim();
+    return opportunities.filter((o) => {
+      const name = (o.name || '').toLowerCase();
+      const customerName = (o.customer?.name || o.customer_name || o.customer_temp?.name || '').toLowerCase();
+      return name.includes(lowerSearch) || customerName.includes(lowerSearch);
+    });
+  }, [opportunities, searchTerm]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOpportunities.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentOpportunities = filteredOpportunities.slice(startIndex, endIndex);
+
+  // Reset to page 1 when opportunities or search term change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredOpportunities.length, statusFilter, searchTerm]);
+
   if (loadingAll) return <div className="p-6">Loading opportunities...</div>;
   if (errorAll) return <div className="p-6 text-red-600">Error loading opportunities: {allError?.message || 'Unknown'}</div>;
 
@@ -38,20 +64,30 @@ export default function OpporunityList() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-blue-600">Danh sách cơ hội</h2>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600">Lọc theo trạng thái</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded p-2 text-sm">
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{s === 'all' ? 'Tất cả' : (OPPPORTUNITY_STATUS_LABELS[s] || s)}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên cơ hội hoặc khách hàng..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="px-3 py-2 text-gray-500 hover:text-gray-700"
+              title="Xóa tìm kiếm"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
       <div className="overflow-x-auto bg-white rounded shadow">
         <table className="w-full table-auto text-sm text-left">
           <thead>
-            <tr className="bg-gray-50 text-blue-600">
+            <tr className="bg-[#e7f1fd] text-blue-600">
               <th className="px-4 py-2 text-left">Tên cơ hội</th>
               <th className="px-4 py-2 text-left">Khách hàng</th>
               <th className="px-4 py-2 text-left">Trạng thái</th>
@@ -62,10 +98,14 @@ export default function OpporunityList() {
           <tbody>
             {opportunities.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-gray-500">Không tìm thấy cơ hội nào</td>
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-500">Không có cơ hội nào</td>
+              </tr>
+            ) : filteredOpportunities.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-500">Không tìm thấy cơ hội phù hợp với "{searchTerm}"</td>
               </tr>
             ) : (
-              opportunities.map((o) => (
+              currentOpportunities.map((o) => (
                 <tr key={o.id} className="border-t">
                   <td className="px-4 py-2">{o.name || ('#' + o.id)}</td>
                   <td className="px-4 py-2">{o.customer?.name || o.customer_name || o.customer_temp?.name || '—'}</td>
@@ -81,6 +121,69 @@ export default function OpporunityList() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center px-4 py-3 border-t bg-[#e7f1fd]">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded text-sm ${
+                  currentPage === 1
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Trang trước
+              </button>
+              
+              <div className="flex gap-1">
+                {[...Array(totalPages)].map((_, index) => {
+                  const pageNum = index + 1;
+                  // Show first page, last page, current page, and pages around current
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1 rounded text-sm ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2
+                  ) {
+                    return <span key={pageNum} className="px-2 py-1 text-gray-500">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded text-sm ${
+                  currentPage === totalPages
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Trang sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

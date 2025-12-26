@@ -35,7 +35,7 @@ export default function ReferalList() {
         <div className="overflow-x-auto">
           <table className="w-full table-auto text-sm text-left">
             <thead>
-              <tr className="bg-gray-50 text-blue-600">
+              <tr className="bg-[#e7f1fd]  text-blue-600">
                 <th className="px-4 py-2">Tên đối tác</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Số điện thoại</th>

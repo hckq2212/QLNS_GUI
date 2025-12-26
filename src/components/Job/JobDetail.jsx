@@ -12,6 +12,7 @@ import { JOB_STATUS_LABELS } from '../../utils/enums';
 import { toast } from 'react-toastify';
 import { useFinishJobMutation, useUpdateJobMutation } from '../../services/job';
 import { useGetTeamByIdQuery } from '../../services/team';
+import { useGetReviewFormQuery } from '../../services/jobReview';
 
 export default function JobDetail({ id: propId } = {}) {
   let routeId = null;
@@ -33,6 +34,10 @@ export default function JobDetail({ id: propId } = {}) {
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [finishJob, { isLoading: finishing }] = useFinishJobMutation();
   const [updateJob, { isLoading: updatingJob }] = useUpdateJobMutation();
+  
+  // Lấy thông tin đánh giá (cả lead và sale)
+  const { data: leadReview } = useGetReviewFormQuery({ id, type: 'lead' }, { skip: !id || !job || (job.status !== 'approved' && job.status !== 'rejected' && job.status !== 'review') });
+  const { data: saleReview } = useGetReviewFormQuery({ id, type: 'sale' }, { skip: !id || !job || (job.status !== 'approved' && job.status !== 'rejected' && job.status !== 'review') });
 
   useEffect(() => {
     if (!id) return;
@@ -307,7 +312,173 @@ export default function JobDetail({ id: propId } = {}) {
           
           </div>
         </div>
+
+        {(job.status === 'approved' || job.status === 'rejected' || job.status === 'review' || leadReview || saleReview) && (
+          <div className="col-span-8 bg-white rounded shadow p-6  ">
+            <h2 className="text-md font-semibold text-blue-700">Đánh giá công việc</h2>
+            <hr className="my-4" />
+            <div className="grid grid-cols-2 gap-4">
+
+            {leadReview && (
+              <div className="mb-6">
+                <h3 className="text-md font-semibold text-blue-600 mb-3">Đánh giá của Lead</h3>
+                <div className="grid grid-cols-2 gap-4">
+
+                  {leadReview.review?.reviewed_by && (
+                    <div>
+                      <div className="text-xs text-gray-500">Người đánh giá</div>
+                      <div className="text-sm text-gray-700">
+                        <ReviewerName userId={leadReview.review.reviewed_by} />
+                      </div>
+                    </div>
+                  )}
+
+                  {leadReview.review?.reviewed_at && (
+                    <div>
+                      <div className="text-xs text-gray-500">Ngày đánh giá</div>
+                      <div className="text-sm text-gray-700">{formatDate(leadReview.review.reviewed_at)}</div>
+                    </div>
+                  )}
+
+                  {leadReview.review?.status && (
+                    <div>
+                      <div className="text-xs text-gray-500">Trạng thái</div>
+                      <div className={`text-sm font-medium ${
+                        leadReview.review.status === 'approved' ? 'text-green-600' : 
+                        leadReview.review.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {leadReview.review.status === 'approved' ? 'Đã duyệt' : 
+                         leadReview.review.status === 'rejected' ? 'Từ chối' : leadReview.review.status}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {leadReview.review?.comment && (
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500">Nhận xét</div>
+                    <div className="text-sm  mt-2 p-3">
+                      {leadReview.review.comment}
+                    </div>
+                  </div>
+                )}
+
+                {leadReview.criteria && Array.isArray(leadReview.criteria) && leadReview.criteria.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500 mb-2">Chi tiết tiêu chí đánh giá</div>
+                    <div className="space-y-2">
+                      {leadReview.criteria.map((criterion, idx) => (
+                        <div key={idx} className="p-3 bg-gray-50 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">
+                              {criterion.name || criterion.criterion_name || `Tiêu chí ${idx + 1}`}
+                            </span>
+                            <span className="text-sm font-semibold text-blue-600">
+                              {criterion.is_checked ? (
+                                <span className="text-green-600">Đã đạt</span>
+                              ) : criterion.score !== undefined ? (
+                                `${criterion.score}/${criterion.max_score || 100}`
+                              ) : (
+                                '—'
+                              )}
+                            </span>
+                          </div>
+                          {criterion.comment && (
+                            <div className="text-xs text-gray-600 mt-1">{criterion.comment}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {saleReview && (
+              <div className={leadReview }>
+                <h3 className="text-md font-semibold text-blue-600 mb-3">Đánh giá của Sale</h3>
+                <div className="grid grid-cols-2 gap-4">
+
+                  {saleReview.review?.reviewed_by && (
+                    <div>
+                      <div className="text-xs text-gray-500">Người đánh giá</div>
+                      <div className="text-sm text-gray-700">
+                        <ReviewerName userId={saleReview.review.reviewed_by} />
+                      </div>
+                    </div>
+                  )}
+
+                  {saleReview.review?.reviewed_at && (
+                    <div>
+                      <div className="text-xs text-gray-500">Ngày đánh giá</div>
+                      <div className="text-sm text-gray-700">{formatDate(saleReview.review.reviewed_at)}</div>
+                    </div>
+                  )}
+
+                  {saleReview.review?.status && (
+                    <div>
+                      <div className="text-xs text-gray-500">Trạng thái</div>
+                      <div className={`text-sm font-medium ${
+                        saleReview.review.status === 'approved' ? 'text-green-600' : 
+                        saleReview.review.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {saleReview.review.status === 'approved' ? 'Đã duyệt' : 
+                         saleReview.review.status === 'rejected' ? 'Từ chối' : saleReview.review.status}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {saleReview.review?.comment && (
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500">Nhận xét</div>
+                    <div className="text-sm  mt-2 p-3">
+                      {saleReview.review.comment}
+                    </div>
+                  </div>
+                )}
+
+                {saleReview.criteria && Array.isArray(saleReview.criteria) && saleReview.criteria.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500 mb-2">Chi tiết tiêu chí đánh giá</div>
+                    <div className="space-y-2">
+                      {saleReview.criteria.map((criterion, idx) => (
+                        <div key={idx} className="p-3 bg-gray-50 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">
+                              {criterion.name || criterion.criterion_name || `Tiêu chí ${idx + 1}`}
+                            </span>
+                            <span className="text-sm font-semibold text-blue-600">
+                              {criterion.is_checked == true ? (
+                                <span className="text-green-600">Đã đạt</span>
+                              ) : criterion.is_checked == false ? (
+                                <span className="text-red-600">Chưa đạt</span>
+                              ) : (
+                                'Chưa đánh giá'
+                              )}
+                            </span>
+                          </div>
+                          {criterion.comment && (
+                            <div className="text-xs text-gray-600 mt-1">{criterion.comment}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!leadReview && !saleReview && (
+              <div className="text-sm text-gray-500 text-center py-4">
+                Chưa có đánh giá
+              </div>
+            )}
+          </div>
+          </div>
+        )}
       </div>
+      
     </div>
   );
 }
@@ -328,4 +499,12 @@ function AssigneeName({ job }) {
 
   if (userLoading) return <span className="text-sm text-gray-500">#{assignedId} (đang tải...)</span>;
   return <span>{user?.full_name || user?.name || `#${assignedId}`}</span>;
+}
+
+function ReviewerName({ userId }) {
+  const { data: user, isLoading } = useGetUserByIdQuery(userId, { skip: !userId });
+  
+  if (!userId) return <span>—</span>;
+  if (isLoading) return <span className="text-sm text-gray-500">Đang tải...</span>;
+  return <span>{user?.full_name || user?.name || `#${userId}`}</span>;
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetReviewFormQuery, useCreateReviewMutation } from '../../services/jobReview';
+import { useGetJobByIdQuery } from '../../services/job';
 
 function ResultsList({ results } = {}) {
   if (!results || !Array.isArray(results) || results.length === 0) return <div className="text-gray-600">Không có kết quả</div>;
@@ -98,8 +99,26 @@ export default function ReviewJob() {
     { skip: !id }
   );
 
-  const job = data?.job ?? null;
-  const results = Array.isArray(data?.evidence) ? data.evidence : [];
+  // Get job details from job API
+  const { data: jobData, isLoading: jobLoading } = useGetJobByIdQuery(id, { skip: !id });
+
+  // Parse evidence from job data
+  let results = [];
+  if (jobData?.evidence) {
+    if (Array.isArray(jobData.evidence)) {
+      results = jobData.evidence;
+    } else if (typeof jobData.evidence === 'string') {
+      try {
+        const parsed = JSON.parse(jobData.evidence);
+        results = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Failed to parse evidence:', e);
+        results = [];
+      }
+    }
+  }
+
+  const job = jobData ?? null;
   const criteria = data?.criteria || [];
   const reviewObj = data?.review ?? null;
 
@@ -137,7 +156,7 @@ export default function ReviewJob() {
   }, [criteria, reviewObj, data]);
 
   if (!id) return <div className="p-6">No job id provided</div>;
-  if (isLoading) return <div className="p-6">Loading review form...</div>;
+  if (isLoading || jobLoading) return <div className="p-6">Loading review form...</div>;
   if (isError) return (
     <div className="p-6 text-red-600">
       Error loading review form: {error?.message || 'Unknown error'}
@@ -182,6 +201,7 @@ export default function ReviewJob() {
           <section className="bg-white rounded shadow p-4">
             <h3 className="font-medium mb-3 text-left text-blue-500">Kết quả</h3>
             <hr className='mb-4' />
+
             <ResultsList results={results} />
           </section>
 
