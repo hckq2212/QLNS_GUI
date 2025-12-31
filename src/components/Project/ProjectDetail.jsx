@@ -404,7 +404,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                           <tr key={j.id} className="border-t">
                             <td className="px-3 py-2 align-top">{j.name || j.title || `#${j.id}`}</td>
                             <td className="px-3 py-2 align-top">{formatDate(j.deadline) || '—'}</td>
-                            <td className="px-3 py-2 align-top">{JOB_STATUS_LABELS[j.status] || j.status || '—'}</td>
+                            <td className="px-3 py-2 align-top">{JOB_STATUS_LABELS[j.status] || j.status || 'Chưa có '}</td>
                             <td className="px-3 py-2 align-top"><AssigneeName job={j} /></td>
                             <td className="px-3 py-2 align-top">{JOB_TYPE_LABELS[j.assigned_type] || '—'}</td>
 

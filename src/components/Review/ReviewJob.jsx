@@ -124,7 +124,18 @@ export default function ReviewJob() {
 
   const [localReviewRows, setLocalReviewRows] = useState([]);
   const [overallComment, setOverallComment] = useState('');
+  const [isPassed, setIsPassed] = useState(false);
   const [createReview, { isLoading: isSaving, isError: saveError, error: saveErrorObj }] = useCreateReviewMutation();
+
+  // Check if all criteria are checked
+  const allCriteriaChecked = localReviewRows.length > 0 && localReviewRows.every(row => row.is_checked);
+
+  // Auto untick isPassed when not all criteria are checked
+  useEffect(() => {
+    if (!allCriteriaChecked && isPassed) {
+      setIsPassed(false);
+    }
+  }, [allCriteriaChecked, isPassed]);
 
   useEffect(() => {
     const reviewList = Array.isArray(reviewObj)
@@ -172,6 +183,7 @@ export default function ReviewJob() {
       job_id: job?.job_id ?? job?.id ?? id,
       review: localReviewRows,
       comment: overallComment,
+      is_passed: isPassed,
     };
     console.log('Saving review payload:', payload);
     try {
@@ -221,6 +233,24 @@ export default function ReviewJob() {
               className="w-full border rounded p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="Ghi chú chung cho kết quả đánh giá"
             />
+
+            <div className="mt-4 flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPassed}
+                  onChange={(e) => setIsPassed(e.target.checked)}
+                  disabled={!allCriteriaChecked}
+                  className="w-4 h-4"
+                />
+                <span className={`text-sm font-medium ${!allCriteriaChecked ? 'text-gray-400' : 'text-green-600'}`}>
+                  Duyệt 
+                </span>
+              </label>
+              {!allCriteriaChecked && (
+                <span className="text-xs text-gray-500">Phải chọn hết tất cả tiêu chí mới được duyệt</span>
+              )}
+            </div>
 
             <div className="flex justify-end mt-4 items-center space-x-3">
               {saveError && (
