@@ -1,21 +1,22 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetProjectByIdQuery, useAssignTeamMutation } from '../../services/project';
-import { useGetCustomerByIdQuery } from '../../services/customer';
-import { useGetServicesQuery } from '../../services/service';
-import { useGetContractServicesQuery } from '../../services/contract';
-import ResultUploadModal from '../ui/ResultUploadModal';
-import { useGetAllTeamsQuery } from '../../services/team';
-import { useGetUserByIdQuery } from '../../services/user';
-import { useGetPartnerByIdQuery } from '../../services/partner';
-import { formatPrice, formatDate } from '../../utils/FormatValue';
+import { useGetProjectByIdQuery, useAssignTeamMutation } from '../../../services/project';
+import { useGetCustomerByIdQuery } from '../../../services/customer';
+import { useGetServicesQuery } from '../../../services/service';
+import { useGetContractServicesQuery } from '../../../services/contract';
+import ResultUploadModal from '../../ui/ResultUploadModal';
+import { useGetAllTeamsQuery } from '../../../services/team';
+import { useGetUserByIdQuery } from '../../../services/user';
+import { useGetPartnerByIdQuery } from '../../../services/partner';
+import { formatPrice, formatDate } from '../../../utils/FormatValue';
 import { toast } from 'react-toastify';
-import { JOB_TYPE_LABELS, PROJECT_STATUS_LABELS } from '../../utils/enums';
-import jobAPI from '../../api/job';
-import { JOB_STATUS_LABELS } from '../../utils/enums';
-import AssignJobModal from '../ui/AssignJobModal';
-import AssignJobPartnerModal from '../ui/AssignJobPartnerModal';
-import { useCreateAcceptanceDraftMutation } from '../../services/acceptance';
+import { JOB_TYPE_LABELS, PROJECT_STATUS_LABELS } from '../../../utils/enums';
+import jobAPI from '../../../api/job';
+import { JOB_STATUS_LABELS } from '../../../utils/enums';
+import AssignJobModal from '../../ui/AssignJobModal';
+import AssignJobPartnerModal from '../../ui/AssignJobPartnerModal';
+import AcceptanceModal from './AcceptanceModal';
+import { useCreateAcceptanceDraftMutation } from '../../../services/acceptance';
 
 export default function ProjectDetail({ id: propId } = {}) {
   let routeId = null;
@@ -83,9 +84,8 @@ export default function ProjectDetail({ id: propId } = {}) {
       return res.map((it, idx) => {
         if (!it) return null;
         if (typeof it === 'string') return makeLink(it, 'Xem kết quả', idx);
-        const url = it.url || it.link || (it.value && String(it.value));
-        const labelFromSaved = it.saved_by ? `${it.saved_by}${it.saved_at ? ' · ' + formatDate(it.saved_at) : ''}` : null;
-        const label = it.description || it.name || it.title || labelFromSaved || 'Xem kết quả';
+        const url = it.url ;
+        const label = it.description || it.name || 'Xem kết quả';
         return url ? makeLink(url, label, idx) : (label || JSON.stringify(it));
       });
     }
@@ -121,9 +121,7 @@ export default function ProjectDetail({ id: propId } = {}) {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedJobForAssign, setSelectedJobForAssign] = useState(null);
   const [assignPartnerModalOpen, setAssignPartnerModalOpen] = useState(false);
-  const [createAcceptanceDraft, { isLoading: creatingAcceptance }] = useCreateAcceptanceDraftMutation();
   const [acceptanceModalOpen, setAcceptanceModalOpen] = useState(false);
-  const [selectedJobsForAcceptance, setSelectedJobsForAcceptance] = useState([]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -279,13 +277,11 @@ export default function ProjectDetail({ id: propId } = {}) {
                 className="px-3 py-2 rounded text-sm bg-green-600 text-white hover:bg-green-700"
                 onClick={() => {
                   if (!project?.id) return;
-                  // Get jobs with waiting_acceptance status
                   const waitingJobs = (jobs || []).filter(j => j.status === 'waiting_acceptance');
                   if (waitingJobs.length === 0) {
                     toast.warning('Không có công việc nào đang chờ nghiệm thu');
                     return;
                   }
-                  setSelectedJobsForAcceptance([]);
                   setAcceptanceModalOpen(true);
                 }}
               >
@@ -463,91 +459,17 @@ export default function ProjectDetail({ id: propId } = {}) {
               }}
             />
             
-            {/* Acceptance Modal */}
-            {acceptanceModalOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-blue-700 mb-4">Chọn công việc nghiệm thu</h3>
-                    <hr className="mb-4" />
-                    
-                    {(() => {
-                      const waitingJobs = (jobs || []).filter(j => j.status === 'waiting_acceptance');
-                      if (waitingJobs.length === 0) {
-                        return <div className="text-gray-600 p-4">Không có công việc nào đang chờ nghiệm thu</div>;
-                      }
-                      
-                      return (
-                        <div className="space-y-3 mb-6">
-                          {waitingJobs.map(job => (
-                            <label key={job.id} className="flex items-start gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={selectedJobsForAcceptance.includes(job.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedJobsForAcceptance([...selectedJobsForAcceptance, job.id]);
-                                  } else {
-                                    setSelectedJobsForAcceptance(selectedJobsForAcceptance.filter(id => id !== job.id));
-                                  }
-                                }}
-                                className="mt-1"
-                              />
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900">{job.name || job.title || `#${job.id}`}</div>
-                                <div className="text-sm text-gray-500">Deadline: {formatDate(job.deadline) || '—'}</div>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                    
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setAcceptanceModalOpen(false);
-                          setSelectedJobsForAcceptance([]);
-                        }}
-                        className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50"
-                        disabled={creatingAcceptance}
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (selectedJobsForAcceptance.length === 0) {
-                            toast.warning('Vui lòng chọn ít nhất một công việc');
-                            return;
-                          }
-                          
-                          try {
-                            const payload = {
-                              project_id: project.id,
-                              contract_id: project.contract_id,
-                              job_ids: selectedJobsForAcceptance,
-                            };
-                            await createAcceptanceDraft(payload).unwrap();
-                            toast.success('Đã tạo biên bản nghiệm thu');
-                            setAcceptanceModalOpen(false);
-                            setSelectedJobsForAcceptance([]);
-                            try { refetch && refetch(); } catch (e) {}
-                            try { reloadJobs && reloadJobs(); } catch (e) {}
-                          } catch (err) {
-                            console.error('Create acceptance failed', err);
-                            toast.error(err?.data?.message || err?.message || 'Tạo biên bản nghiệm thu thất bại');
-                          }
-                        }}
-                        className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                        disabled={creatingAcceptance || selectedJobsForAcceptance.length === 0}
-                      >
-                        {creatingAcceptance ? 'Đang tạo...' : 'Xác nhận nghiệm thu'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <AcceptanceModal
+              open={acceptanceModalOpen}
+              onClose={() => setAcceptanceModalOpen(false)}
+              jobs={jobs}
+              projectId={project?.id}
+              contractId={project?.contract_id}
+              onSuccess={async () => {
+                try { refetch && refetch(); } catch (e) {}
+                try { reloadJobs && reloadJobs(); } catch (e) {}
+              }}
+            />
       </div>
       
     </div>

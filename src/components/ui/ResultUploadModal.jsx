@@ -16,11 +16,23 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
     // initialize rows from service.result or initialUrls
     if (service && service.result) {
       if (Array.isArray(service.result)) {
-        // items may be strings or { description, url }
+        // items may be strings, { description, url }, or { name, job_id, evidence: [{url, filename}] }
         const parsed = service.result.slice(0, 3).map((it, origIdx) => {
           if (!it) return { description: '', url: '' };
           if (typeof it === 'string') return { description: '', url: String(it), _existing: true, _originalUrl: String(it), _existingIndex: origIdx };
-            return { description: it.description || it.name || it.title || '', url: it.url || it.link || '', _existing: true, _originalUrl: it.url || it.link || '', _existingIndex: origIdx };
+          
+          // New format: { name, job_id, evidence: [{url, filename}] }
+          if (it.name && it.evidence && Array.isArray(it.evidence) && it.evidence[0]?.url) {
+            return { 
+              description: it.name, 
+              url: it.evidence[0].url, 
+              _existing: true, 
+              _originalUrl: it.evidence[0].url, 
+              _existingIndex: origIdx 
+            };
+          }
+          
+          return { description: it.description || it.name || it.title || '', url: it.url || it.link || '', _existing: true, _originalUrl: it.url || it.link || '', _existingIndex: origIdx };
         });
         setRows(parsed.length ? parsed : [{ description: '', url: '' }]);
       } else if (typeof service.result === 'string') {
@@ -28,7 +40,7 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
       } else if (service.result && typeof service.result === 'object') {
         setRows([{ description: service.result.description || service.result.name || '', url: service.result.url || '', _existing: true, _originalUrl: service.result.url || '', _existingIndex: 0 }]);
       } else {
-        setRows([{ name: '', url: '' }]);
+        setRows([{ description: '', url: '' }]);
       }
     } else if (Array.isArray(initialUrls) && initialUrls.length > 0) {
       const parsed = initialUrls.slice(0, 3).map((it) => ({ description: '', url: it || '', _existing: false }));
@@ -65,7 +77,7 @@ export default function ResultUploadModal({ open, onClose, service, initialUrls 
     }))
   .filter(p => p.url.length > 0);   // đảm bảo cả 3 rows rỗng đều biến mất
 
-    if (payloads.length === 0) return toast.error('Vui lòng nhập ít nhất 1 URL');
+    // if (payloads.length === 0) return toast.error('Vui lòng nhập ít nhất 1 URL');
     console.log("PAYLOADS SEND:", payloads)
 
     try {

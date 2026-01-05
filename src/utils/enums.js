@@ -6,7 +6,8 @@ const JOB_STATUS_LABELS = {
   done: 'Hoàn thành',
   cancelled: 'Đã hủy',
   archived: 'Lưu trữ',
-  not_assigned:'Chưa phân công'
+  not_assigned:'Chưa phân công',
+  waiting_acceptance:'Đợi nghiệm thu'
 }
 const DEBT_STATUS = {
   pending: 'Đang trả',

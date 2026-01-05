@@ -12,8 +12,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [chosen, setChosen] = useState({});
+    const [customPrices, setCustomPrices] = useState({}); // Store custom prices separately
     const [reloadCounter, setReloadCounter] = useState(0);
-    const [globalMode, setGlobalMode] = useState(null); // 'min' | 'suggest' | null
+    const [globalMode, setGlobalMode] = useState('suggest'); // 'min' | 'suggest' | 'custom' | null - default to suggest
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -71,8 +72,14 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                 if (!mounted) return;
                 setRows(enriched);
                 const defaultChosen = {};
-                enriched.forEach((r, i) => defaultChosen[i] = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice));
+                const defaultCustom = {};
+                enriched.forEach((r, i) => {
+                    const defaultPrice = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice);
+                    defaultChosen[i] = defaultPrice;
+                    defaultCustom[i] = defaultPrice;
+                });
                 setChosen(defaultChosen);
+                setCustomPrices(defaultCustom);
             } catch (err) {
                 if (!mounted) return;
                 setError(err?.message || String(err));
@@ -93,7 +100,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
     // When globalMode changes, apply the chosen mode to all rows
     useEffect(() => {
-        if (!globalMode) return; // only apply when user picks a global mode
+        if (!globalMode || globalMode === 'custom') return; // only apply when user picks min or suggest mode
         if (!rows || rows.length === 0) return;
         const newChosen = {};
         rows.forEach((r, i) => {
@@ -108,7 +115,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         const totalRevenue = Object.keys(chosen).reduce((s, k) => {
             const idx = Number(k);
             const qty = rows[idx]?.quantity || 0;
-            const price = Number(chosen[k]) || 0;
+            const price = globalMode === 'custom' 
+                ? (customPrices[idx] || chosen[idx] || 0)
+                : (Number(chosen[k]) || 0);
             return s + (qty * price);
         }, 0);
 
@@ -123,7 +132,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
             // build per-service proposed prices payload
             const servicesPayload = rows.map((r, idx) => ({
                 opportunityService_id: r.id,
-                proposed_price: Number(chosen[idx]) || 0,
+                proposed_price: globalMode === 'custom' 
+                    ? (customPrices[idx] || chosen[idx] || 0)
+                    : (Number(chosen[idx]) || 0),
             }));
 
             const body = { ...payload, services: servicesPayload };
@@ -172,13 +183,15 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá vốn</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán tối thiểu</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán đề xuất</th>
+                                    <th className="text-right border-b px-3 py-2 text-sm">Giá bán tùy chỉnh</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Tỉ suất lợi nhuận</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rows.map((r, i) => {
                                     const sel = chosen[i] ?? r.suggestedPrice;
-                                    const profit = sel ? (((sel - r.baseCost) / sel) * 100) : 0;
+                                    const displayPrice = globalMode === 'custom' ? (customPrices[i] || sel) : sel;
+                                    const profit = displayPrice ? (((displayPrice - r.baseCost) / displayPrice) * 100) : 0;
                                     return (
                                         <tr key={r.id}>
                                             <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
@@ -189,6 +202,24 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">
                                                 <div>{formatPrice(r.suggestedPrice)}</div>
+                                            </td>
+                                            <td className="px-3 py-2 border-b text-sm text-right">
+                                                <input
+                                                    type="text"
+                                                    value={customPrices[i] ? formatPrice(customPrices[i]) : ''}
+                                                    onChange={(e) => {
+                                                        const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                                                        const val = rawValue ? Number(rawValue) : 0;
+                                                        setCustomPrices((prev) => ({ ...prev, [i]: val }));
+                                                        // Set to custom mode when user manually edits
+                                                        if (globalMode !== 'custom') {
+                                                            setGlobalMode('custom');
+                                                        }
+                                                    }}
+                                                    disabled={globalMode !== 'custom'}
+                                                    className={`w-32 border rounded px-2 py-1 text-right ${globalMode !== 'custom' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    placeholder="Nhập giá"
+                                                />
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{profit ? profit.toFixed(1) + '%' : '—'}</td>
                                         </tr>
@@ -206,7 +237,11 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
                                     <input type="radio" name="global-price-mode" checked={globalMode === 'suggest'} onChange={() => setGlobalMode('suggest')} />
-                                    <span>Chọn giá bán đề xuất </span>
+                                    <span>Chọn giá bán đề xuất</span>
+                                </label>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input type="radio" name="global-price-mode" checked={globalMode === 'custom' || globalMode === null} onChange={() => setGlobalMode('custom')} />
+                                    <span>Chọn giá bán tùy chỉnh</span>
                                 </label>
                             </div>
 
@@ -217,7 +252,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                         const totalRevenue = Object.keys(chosen).reduce((s, k) => {
                                             const idx = Number(k);
                                             const qty = rows[idx]?.quantity || 0;
-                                            const price = Number(chosen[k]) || 0;
+                                            const price = globalMode === 'custom' 
+                                                ? (customPrices[idx] || chosen[idx] || 0)
+                                                : (Number(chosen[k]) || 0);
                                             return s + (qty * price);
                                         }, 0);
                                         const totalCost = rows.reduce((s, r, idx) => s + (r.baseCost * (r.quantity || 0)), 0);

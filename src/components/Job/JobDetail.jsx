@@ -36,8 +36,14 @@ export default function JobDetail({ id: propId } = {}) {
   const [updateJob, { isLoading: updatingJob }] = useUpdateJobMutation();
   
   // Lấy thông tin đánh giá (cả lead và sale)
-  const { data: leadReview } = useGetReviewFormQuery({ id, type: 'lead' }, { skip: !id || !job || (job.status !== 'approved' && job.status !== 'rejected' && job.status !== 'review') });
-  const { data: saleReview } = useGetReviewFormQuery({ id, type: 'sale' }, { skip: !id || !job || (job.status !== 'approved' && job.status !== 'rejected' && job.status !== 'review') });
+  const { data: leadReview } = useGetReviewFormQuery({ id, type: 'lead' }, 
+    { 
+      skip: !id || !job 
+    });
+  const { data: saleReview } = useGetReviewFormQuery({ id, type: 'sale' },
+    { 
+      skip: !id || !job 
+    });
 
   useEffect(() => {
     if (!id) return;
@@ -302,18 +308,11 @@ export default function JobDetail({ id: propId } = {}) {
                   Đánh giá công việc
                 </button>
               </div>
-            )}
-
-
-            
-
-
-
-          
+            )}          
           </div>
         </div>
 
-        {(job.status === 'approved' || job.status === 'rejected' || job.status === 'review' || leadReview || saleReview) && (
+        {(leadReview?.review || saleReview?.review) && (
           <div className="col-span-8 bg-white rounded shadow p-6  ">
             <h2 className="text-md font-semibold text-blue-700">Đánh giá công việc</h2>
             <hr className="my-4" />
@@ -374,12 +373,12 @@ export default function JobDetail({ id: propId } = {}) {
                               {criterion.name || criterion.criterion_name || `Tiêu chí ${idx + 1}`}
                             </span>
                             <span className="text-sm font-semibold text-blue-600">
-                              {criterion.is_checked ? (
+                              {criterion.is_checked == true ? (
                                 <span className="text-green-600">Đã đạt</span>
-                              ) : criterion.score !== undefined ? (
-                                `${criterion.score}/${criterion.max_score || 100}`
+                              ) : criterion.is_checked == false ? (
+                                <span className="text-red-600">Chưa đạt</span>
                               ) : (
-                                '—'
+                                'Chưa đánh giá'
                               )}
                             </span>
                           </div>

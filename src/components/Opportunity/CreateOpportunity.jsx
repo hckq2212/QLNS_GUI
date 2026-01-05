@@ -35,6 +35,7 @@ export default function CreateOpportunity() {
   const [expectedEndDate, setExpectedEndDate] = useState('');
   const [priority, setPriority] = useState(PRIORITY_OPTIONS[1]?.value || 'medium');
   const [region, setRegion] = useState(REGION_OPTIONS[0]?.value || 'all');
+  const [implementationMonths, setImplementationMonths] = useState('');
   const [services, setServices] = useState([{ service_id: '', quantity: 1, proposed_price: '' }]);
   const [createProject, setCreateProject] = useState('Không');
   const [approver, setApprover] = useState('');
@@ -113,6 +114,7 @@ export default function CreateOpportunity() {
   if (expectedEndDate) payload.expected_end_date = expectedEndDate;
   if (priority) payload.priority = priority;
   if (region) payload.region = region;
+  if (implementationMonths) payload.implementation_months = Number(implementationMonths);
       payload.services = services
         .filter((s) => s.service_id)
         .map((s) => ({
@@ -137,6 +139,7 @@ export default function CreateOpportunity() {
         if (payload.expected_end_date) fd.append('expected_end_date', payload.expected_end_date);
         if (payload.priority) fd.append('priority', payload.priority);
         if (payload.region) fd.append('region', payload.region);
+        if (payload.implementation_months !== undefined) fd.append('implementation_months', String(payload.implementation_months));
         // services as JSON string
         fd.append('services', JSON.stringify(payload.services || []));
         // append files under field name 'attachments' (server uses upload.array('attachments', 5))
@@ -160,6 +163,7 @@ export default function CreateOpportunity() {
   setPriority(PRIORITY_OPTIONS[1]?.value || 'medium');
   setCreateProject('Không');
   setRegion(REGION_OPTIONS[0]?.value || 'all');
+  setImplementationMonths('');
   setApprover('');
   setServices([{ service_id: '', quantity: 1, proposed_price: '' }]);
   setAvailableCustomers([]);
@@ -252,6 +256,18 @@ export default function CreateOpportunity() {
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Số tháng triển khai</label>
+              <input
+                type="number"
+                min="1"
+                value={implementationMonths}
+                onChange={(e) => setImplementationMonths(e.target.value)}
+                className="border rounded p-2 w-40"
+                placeholder="Tháng"
+              />
             </div>
           </div>
 

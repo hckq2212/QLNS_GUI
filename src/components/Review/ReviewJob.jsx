@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useGetReviewFormQuery, useCreateReviewMutation } from '../../services/jobReview';
 import { useGetJobByIdQuery } from '../../services/job';
 
@@ -92,7 +92,10 @@ function CriteriaReview({ criteria = [], initialReview = [], onChange } = {}) {
 export default function ReviewJob() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [reviewType, setReviewType] = useState('lead');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Read initial reviewType from URL query params, default to 'lead'
+  const [reviewType, setReviewType] = useState(() => searchParams.get('type') || 'lead');
   
   const { data, isLoading, isError, error, refetch } = useGetReviewFormQuery(
     { id, type: reviewType },
@@ -128,7 +131,7 @@ export default function ReviewJob() {
   const [createReview, { isLoading: isSaving, isError: saveError, error: saveErrorObj }] = useCreateReviewMutation();
 
   // Check if all criteria are checked
-  const allCriteriaChecked = localReviewRows.length > 0 && localReviewRows.every(row => row.is_checked);
+  const allCriteriaChecked = localReviewRows.length >= 0 && localReviewRows.every(row => row.is_checked);
 
   // Auto untick isPassed when not all criteria are checked
   useEffect(() => {
@@ -176,6 +179,12 @@ export default function ReviewJob() {
 
   function handleRowsChange(rows) {
     setLocalReviewRows(rows);
+  }
+
+  function handleReviewTypeChange(newType) {
+    setReviewType(newType);
+    // Update URL query params
+    setSearchParams({ type: newType });
   }
 
   async function handleSave() {
@@ -277,7 +286,7 @@ export default function ReviewJob() {
                   name="reviewType"
                   value="lead"
                   checked={reviewType === 'lead'}
-                  onChange={(e) => setReviewType(e.target.value)}
+                  onChange={(e) => handleReviewTypeChange(e.target.value)}
                   className="w-4 h-4"
                 />
                 <span className="text-sm">Lead</span>
@@ -288,7 +297,7 @@ export default function ReviewJob() {
                   name="reviewType"
                   value="sale"
                   checked={reviewType === 'sale'}
-                  onChange={(e) => setReviewType(e.target.value)}
+                  onChange={(e) => handleReviewTypeChange(e.target.value)}
                   className="w-4 h-4"
                 />
                 <span className="text-sm">Sale</span>

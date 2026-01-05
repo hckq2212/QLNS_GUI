@@ -210,6 +210,11 @@ export default function OpportunityDetail({ id: propId } = {}) {
                 <div className="text-xs text-gray-500">Doanh thu kỳ vọng</div>
                 <div className="text-sm text-gray-700">{formatPrice(opp.expected_revenue )} VND</div>
               </div>
+              
+              <div>
+                <div className="text-xs text-gray-500">Số tháng triển khai</div>
+                <div className="text-sm text-gray-700">{opp.implementation_months} tháng</div>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -333,6 +338,15 @@ export default function OpportunityDetail({ id: propId } = {}) {
                       />
                     </div>
                     <div className="mb-2">
+                      <p className='text-gray-500'>Mã số thuế:</p>
+                      <input
+                        type='number'
+                        className="mt-1 w-full border rounded p-2"
+                        value={customerDraft?.tax_code || ''}
+                        onChange={(e) => setCustomerDraft((d) => ({ ...d, tax_code: e.target.value }))}
+                      />
+                    </div>
+                    <div className="mb-2">
                       <p className='text-gray-500'>Địa chỉ:</p>
                       <input type='text' className="mt-1 w-full border rounded p-2" value={customerDraft?.address || ''} onChange={(e) => setCustomerDraft((d) => ({ ...d, address: e.target.value }))} />
                     </div>
@@ -375,6 +389,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                           email: customerDraft.email || '',
                           status: customerDraft.status || 'potential',
                           identity_code: customerDraft.identity_code || customerDraft.id_number || '',
+                          tax_code: customerDraft.tax_code,
                           address: customerDraft.address || '',
                           customer_source: customerType === 'referral' ? 'partner' : 'direct',
                           referral_id: customerType === 'referral' && selectedReferralId ? Number(selectedReferralId) : null,
@@ -433,6 +448,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   || 'Chưa có'
                 )}</div>
                 <div className="mb-2 flex flex-col"><p className='text-gray-500'>CMNND/Hộ chiếu:</p> {customer?.identity_code || customer?.identify_code || customer?.id_number || opp?.customer_temp?.identity_code || opp?.customer_temp?.identify_code || 'Chưa có'}</div>
+                <div className="mb-2 flex flex-col"><p className='text-gray-500'>Mã số thuế:</p> {customer?.tax_code || opp?.customer_temp?.tax_code || 'Chưa có'}</div>
                 {(customer?.address || opp?.customer_temp?.address) && <div className="mb-2"><p>Địa chỉ:</p> {customer?.address || opp?.customer_temp?.address}</div>}
               </>
             )}
@@ -500,7 +516,15 @@ export default function OpportunityDetail({ id: propId } = {}) {
         </div>
       )}
 
-      <PriceQuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} opportunity={opp} />
+      <PriceQuoteModal 
+        isOpen={quoteOpen} 
+        onClose={() => {
+          setQuoteOpen(false);
+          // Refetch opportunity data to update status
+          try { refetch && refetch(); } catch (e) { /* ignore */ }
+        }} 
+        opportunity={opp} 
+      />
       <ViewQuoteModal isOpen={viewQuoteOpen} onClose={() => setViewQuoteOpen(false)} opportunity={opp} />
 
       {createConOpen && (
