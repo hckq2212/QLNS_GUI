@@ -16,7 +16,7 @@ import OpporunityList from "./components/Opportunity/OpporunityList";
 import ContractList from "./components/Contract/ContractList";
 import ContractDetail from "./components/Contract/ContractDetail";
 import ProjectList from "./components/Project/ProjectList";
-import ProjectDetail from "./components/Project/ProjectDetail";
+import ProjectDetail from "./components/Project/ProjectDetail/ProjectDetail";
 import ServiceJobList from "./components/Service Job/ServiceJobList";
 import ServiceList from "./components/Service/ServiceList";
 import ServiceJobDetail from "./components/Service Job/ServiceJobDetail";
@@ -29,15 +29,16 @@ import ServiceDetail from "./components/Service/ServiceDetail";
 import AssigningProject from "./components/Project/AssigningProject";
 import JobDetail from "./components/Job/JobDetail";
 import MyJob from "./components/Job/MyJob";
-import ReviewJob from "./components/Review/ReviewJob";
-import ReviewProject from "./components/Review/ReviewProject";
-import ReviewDetail from "./components/Review/ReviewDetail";
-import ReviewService from "./components/Review/ReviewService";
+import ReviewJob from "./components/Acceptance/ReviewJob";
+import ReviewProject from "./components/Acceptance/ReviewProject";
+import ReviewDetail from "./components/Acceptance/ReviewDetail";
+import ReviewService from "./components/Acceptance/ReviewService";
 import DebtDetail from "./components/Debt/DebtDetail";
 import UserDetail from "./components/User/UserDetail";
 import ReferalList from "./components/Referal/ReferalList";
 import ReferalDetail from "./components/Referal/ReferalDetail";
 import CustomerList from "./components/Customer/CustomerList";
+import AcceptanceDetail from "./components/Acceptance/AcceptanceDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -83,6 +84,8 @@ function AppContent() {
           <Route path="/review/:id" element={<ReviewDetail />} />
           <Route path="/review/service/:id" element={<ReviewService />} />
           <Route path="/review" element={<ReviewProject />} />
+          <Route path="/acceptance/:id" element={<AcceptanceDetail />} />
+
           <Route path="/debt/:id" element={<DebtDetail />} />
 
           <Route path="/referral" element={<ReferalList />} />

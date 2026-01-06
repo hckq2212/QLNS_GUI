@@ -35,12 +35,6 @@ export default function ProjectDetail({ id: propId } = {}) {
 
   const { data: fetchedCustomer } = useGetCustomerByIdQuery(project?.customer_id, { skip: !project?.customer_id });
 
-  const customer = useMemo(() => {
-    if (fetchedCustomer) return fetchedCustomer;
-    if (!project) return null;
-    if (project.customer) return project.customer;
-    return null;
-  }, [project, fetchedCustomer]);
 
   const projectServices = useMemo(() => {
     if (!project) return [];
@@ -61,11 +55,6 @@ export default function ProjectDetail({ id: propId } = {}) {
     return projectServices;
   }, [project, contractServicesData, projectServices]);
 
-  const teamById = useMemo(() => {
-    const m = {};
-    (teams || []).forEach((t) => { if (t && (t.id || t.team_id)) m[t.id ?? t.team_id] = t; });
-    return m;
-  }, [teams]);
 
   const renderResult = (res) => {
     if (!res) return 'Chưa upload kết quả';
@@ -84,8 +73,14 @@ export default function ProjectDetail({ id: propId } = {}) {
       return res.map((it, idx) => {
         if (!it) return null;
         if (typeof it === 'string') return makeLink(it, 'Xem kết quả', idx);
-        const url = it.url ;
-        const label = it.description || it.name || 'Xem kết quả';
+        
+        // New format: { name, job_id, evidence: [{url, filename}] }
+        let url = it.url;
+        if (!url && it.evidence && Array.isArray(it.evidence) && it.evidence[0]?.url) {
+          url = it.evidence[0].url;
+        }
+        
+        const label = it.name || it.description || 'Xem kết quả';
         return url ? makeLink(url, label, idx) : (label || JSON.stringify(it));
       });
     }
@@ -465,6 +460,7 @@ export default function ProjectDetail({ id: propId } = {}) {
               jobs={jobs}
               projectId={project?.id}
               contractId={project?.contract_id}
+              contractServices={displayedServices}
               onSuccess={async () => {
                 try { refetch && refetch(); } catch (e) {}
                 try { reloadJobs && reloadJobs(); } catch (e) {}

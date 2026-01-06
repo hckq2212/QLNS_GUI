@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGetProjectByStatusQuery } from '../../services/project';
+import { useGetAllProjectsQuery, useGetProjectByStatusQuery } from '../../services/project';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
 
 export default function ReviewProject() {
   const navigate = useNavigate();
-  const { data: projects = [], isLoading, isError, error, refetch } = useGetProjectByStatusQuery('review');
+  const { data: projects = [], isLoading, isError, error, refetch } = useGetAllProjectsQuery();
 
   if (isLoading) return <div className="p-6">Đang tải danh sách dự án cần xem xét...</div>;
   if (isError) return <div className="p-6 text-red-600">Lỗi: {error?.message || 'Không thể tải danh sách'}</div>;
@@ -21,7 +21,6 @@ export default function ReviewProject() {
               <thead>
                 <tr className="bg-[#e7f1fd]">
                   <th className="px-3 py-2 text-left text-blue-700">Tên dự án</th>
-                  <th className="px-3 py-2 text-left text-blue-700">Trạng thái</th>
                   <th className="px-3 py-2 text-left text-blue-700">Hành động</th>
                 </tr>
               </thead>
@@ -29,7 +28,6 @@ export default function ReviewProject() {
                 {projects.map((p) => (
                   <tr key={p.id} className="border-t">
                     <td className="px-3 py-2 align-top">{p.name || p.project_name || `#${p.id}`}</td>
-                    <td className="px-3 py-2 align-top">{PROJECT_STATUS_LABELS[p.status] || '—'}</td>
                     <td className="px-3 py-2 align-top">
                       <button className="px-3 py-1 rounded bg-blue-600 text-white text-xs" onClick={() => navigate(`/review/${p.id}`)}>
                         Đánh giá

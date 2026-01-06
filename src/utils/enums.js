@@ -86,6 +86,13 @@ const CUSTOMER_STATUS_OPTIONS = [
   { value: 'inactive', label: 'Không hoạt động' },
   { value: 'potential', label: 'Khách hàng tiềm năng' },
 ];
+const ACCEPTANCE_STATUS_LABELS = {
+  draft: 'Nháp',
+  submitted: 'Đã gửi',
+  approved: 'Đã duyệt',
+  rejected: 'Từ chối',
+  approved_partial:'Duyệt 1 phần'
+};
 
 export {
     JOB_TYPE_LABELS,
@@ -99,5 +106,6 @@ export {
     SERVICE_JOB_LABELS,
     PARTNER_TYPE,
     JOB_PRIORITY_OPTIONS,
-    DEBT_STATUS
+    DEBT_STATUS,
+    ACCEPTANCE_STATUS_LABELS
   }

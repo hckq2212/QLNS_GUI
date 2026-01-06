@@ -4,6 +4,21 @@ import { api } from './api';
 export const acceptanceApi = api.injectEndpoints({
   endpoints: (build) => ({
     
+    // GET /acceptance/:id - Get acceptance by ID
+    getAcceptanceById: build.query({
+      query: (id) => `/acceptance/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Acceptance', id }],
+    }),
+    
+    // GET /acceptance/project/:project_id - Get acceptances by project
+    getAcceptancesByProject: build.query({
+      query: (projectId) => `/acceptance/project/${projectId}`,
+      providesTags: (result, error, projectId) => [
+        { type: 'Acceptance', id: 'LIST' },
+        { type: 'Acceptance', id: `PROJECT_${projectId}` },
+      ],
+    }),
+    
     // POST /acceptance/draft - Create draft acceptance
     createAcceptanceDraft: build.mutation({
       query: (body) => ({
@@ -26,13 +41,14 @@ export const acceptanceApi = api.injectEndpoints({
       ],
     }),
 
-    // PUT /acceptance/:id/approve - Approve by BOD
+    // PATCH /acceptance/:id/approve/:jobId - Approve single job in acceptance by BOD
     approveAcceptanceByBOD: build.mutation({
-      query: (id) => ({
-        url: `/acceptance/${id}/approve`,
-        method: 'PUT',
+      // params: { id, jobId }
+      query: ({ id, jobId }) => ({
+        url: `/acceptance/${id}/approve/${jobId}`,
+        method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (result, error, { id } = {}) => [
         { type: 'Acceptance', id },
         { type: 'Acceptance', id: 'LIST' },
       ],
@@ -55,6 +71,8 @@ export const acceptanceApi = api.injectEndpoints({
 });
 
 export const {
+  useGetAcceptanceByIdQuery,
+  useGetAcceptancesByProjectQuery,
   useCreateAcceptanceDraftMutation,
   useSubmitAcceptanceToBODMutation,
   useApproveAcceptanceByBODMutation,

@@ -360,7 +360,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   /* otherwise allow selecting an existing customer from dropdown */
                   <div className="mb-2">
                     <p className='text-gray-500'>Chọn khách hàng hiện có:</p>
-                    <select className="mt-1 w-full border rounded p-2" value={selectedCustomerId || ''} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                    <select className="mt-1 w-full border rounded p-2" value={ selectedCustomerId  || ''} onChange={(e) => setSelectedCustomerId(e.target.value)}>
                       <option value="">-- Chọn khách hàng --</option>
                       {customerType === 'referral' && selectedReferralId ? (
                         /* Show customers from selected referral partner */
@@ -370,7 +370,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
                       ) : (
                         /* Show all customers for direct type */
                         Array.isArray(customers) && customers.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`}</option>
+                          <option key={c.id} value={c.id}>{c.name || c.customer_name || `#${c.id}`} - {c?.tax_code}</option>
                         ))
                       )}
                     </select>
