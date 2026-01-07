@@ -7,7 +7,8 @@ const JOB_STATUS_LABELS = {
   cancelled: 'Đã hủy',
   archived: 'Lưu trữ',
   not_assigned:'Chưa phân công',
-  waiting_acceptance:'Đợi nghiệm thu'
+  waiting_acceptance:'Đợi nghiệm thu',
+  rework:'Đang sửa'
 }
 const DEBT_STATUS = {
   pending: 'Đang trả',
@@ -91,7 +92,8 @@ const ACCEPTANCE_STATUS_LABELS = {
   submitted: 'Đã gửi',
   approved: 'Đã duyệt',
   rejected: 'Từ chối',
-  approved_partial:'Duyệt 1 phần'
+  approved_partial:'Duyệt 1 phần',
+  need_rework:'Cần sửa lại'
 };
 
 export {

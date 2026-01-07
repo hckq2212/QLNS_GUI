@@ -54,13 +54,14 @@ export const acceptanceApi = api.injectEndpoints({
       ],
     }),
 
-    // PUT /acceptance/:id/reject - Reject by BOD
+    // PATCH /acceptance/:id/reject/:jobId - Reject single job in acceptance by BOD
     rejectAcceptanceByBOD: build.mutation({
-      query: (id) => ({
-        url: `/acceptance/${id}/reject`,
-        method: 'PUT',
+      // params: { id, jobId }
+      query: ({ id, jobId }) => ({
+        url: `/acceptance/${id}/reject/${jobId}`,
+        method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (result, error, { id } = {}) => [
         { type: 'Acceptance', id },
         { type: 'Acceptance', id: 'LIST' },
       ],

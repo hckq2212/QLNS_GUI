@@ -20,10 +20,9 @@ export default function AcceptanceModal({
   // Extract result items from contract services where is_accepted is false
   const resultItems = [];
   (contractServices || []).forEach(service => {
-      if (service.result && Array.isArray(service.result)) {
+    if (service.result && Array.isArray(service.result)) {
       service.result.forEach(item => {
-        const status = item?.status;
-        if (item && item.job_id && status && String(status).toLowerCase() === 'waiting_acceptance') {
+        if (item  && item.job_id && item.status === 'waiting_acceptance') {
           resultItems.push({
             ...item,
             serviceName: service.name || service.service_name,
@@ -90,7 +89,6 @@ export default function AcceptanceModal({
                     checked={selectedJobsForAcceptance.includes(item.job_id)}
                     onChange={() => toggleJobSelection(item.job_id)}
                     className="mt-1"
-                    disabled={String(item.status).toLowerCase() !== 'waiting_acceptance'}
                   />
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">

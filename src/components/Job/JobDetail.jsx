@@ -10,7 +10,7 @@ import { useGetPartnerByIdQuery } from '../../services/partner';
 import { formatDate } from '../../utils/FormatValue';
 import { JOB_STATUS_LABELS } from '../../utils/enums';
 import { toast } from 'react-toastify';
-import { useFinishJobMutation, useUpdateJobMutation } from '../../services/job';
+import { useFinishJobMutation, useUpdateJobMutation, useReworkJobMutation } from '../../services/job';
 import { useGetTeamByIdQuery } from '../../services/team';
 import { useGetReviewFormQuery } from '../../services/jobReview';
 
@@ -34,6 +34,7 @@ export default function JobDetail({ id: propId } = {}) {
   const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [finishJob, { isLoading: finishing }] = useFinishJobMutation();
   const [updateJob, { isLoading: updatingJob }] = useUpdateJobMutation();
+  const [reworkJob, { isLoading: reworking }] = useReworkJobMutation();
   
   // Lấy thông tin đánh giá (cả lead và sale)
   const { data: leadReview } = useGetReviewFormQuery({ id, type: 'lead' }, 
@@ -294,6 +295,55 @@ export default function JobDetail({ id: propId } = {}) {
                 {finishing ? 'Đang xử lý...' : 'Hoàn thành công việc'}
               </button>
             </div>
+            )}
+
+            {(job.status === "rework") && (
+                <div className="mt-4">
+                  <div className="mb-3">
+                    <label className="text-sm text-gray-500">Sửa kết quả (Upload bằng chứng mới)</label>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
+                      className="block mt-2"
+                    />
+                    {evidenceFiles && evidenceFiles.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        <div>Đã chọn {evidenceFiles.length} tệp:</div>
+                        <ul className="list-disc ml-5 mt-1 overflow-hidden">
+                          {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="px-3 py-2 bg-orange-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={reworking || !evidenceFiles || evidenceFiles.length === 0}
+                    onClick={async () => {
+                      if (!job?.id) return toast.error('Không xác định được công việc');
+                      if (!evidenceFiles || evidenceFiles.length === 0) {
+                        return toast.error('Vui lòng upload ít nhất một file bằng chứng');
+                      }
+                      try {
+                        const form = new FormData();
+                        (evidenceFiles || []).forEach((f) => form.append('evidence', f));
+                        await reworkJob({ id: job.id, formData: form }).unwrap();
+                        toast.success('Cập nhật kết quả thành công');
+                        // refresh job data
+                        try {
+                          const fresh = await jobAPI.getById(job.id);
+                          setJob(fresh);
+                        } catch (e) { console.warn('Failed to refresh job after rework', e); }
+                        setEvidenceFiles([]);
+                      } catch (err) {
+                        console.error('Rework job failed', err);
+                        toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
+                      }
+                    }}
+                  >
+                    {reworking ? 'Đang xử lý...' : 'Cập nhật kết quả'}
+                  </button>
+                </div>
             )}
 
             {job.status === 'review' && team && (String(team.lead_user_id) === String(currentUserId)) && (

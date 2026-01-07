@@ -34,6 +34,15 @@ export const jobAPI = api.injectEndpoints({
       // expects { id, body }
       query: ({ id, body }) => ({ url: `/job/${id}`, method: 'PATCH', body }),
       invalidatesTags: (result, error, { id } = {}) => [{ type: 'Job', id }, { type: 'Job', id: 'ME' }],
+    }),
+    reworkJob: build.mutation({
+      // expects { id, formData } where formData contains 'evidence' files for rework
+      query: ({ id, formData }) => ({
+        url: `/job/${id}/rework`,
+        method: 'PATCH',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { id } = {}) => [{ type: 'Job', id }, { type: 'Job', id: 'ME' }],
     })
   }),
 });
@@ -45,6 +54,7 @@ export const {
   useGetJobByIdQuery,
   useGetMyJobQuery,
   useFinishJobMutation,
-  useUpdateJobMutation
+  useUpdateJobMutation,
+  useReworkJobMutation
  } = jobAPI;
 

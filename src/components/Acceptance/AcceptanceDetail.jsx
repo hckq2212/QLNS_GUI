@@ -106,6 +106,22 @@ export default function AcceptanceDetail({ id: propId } = {}) {
     }
   };
 
+  const handleRejectSelected = async () => {
+    if (!window.confirm(`Xác nhận từ chối ${selectedForApprove.length} mục?`)) return;
+    try {
+      console.debug('rejecting selected', { acceptanceId: acc.id, jobIds: selectedForApprove });
+      await Promise.all(selectedForApprove.map(jobId => reject({ id: acc.id, jobId }).unwrap()));
+      toast.success(`Đã từ chối ${selectedForApprove.length} mục`);
+      setSelectedForApprove([]);
+      setSelectAllForApprove(false);
+      refetch && refetch();
+    } catch (err) {
+      console.error('reject error', err);
+      const msg = err?.data?.message || err?.error || err?.message || JSON.stringify(err);
+      toast.error('Không thể từ chối: ' + msg);
+    }
+  };
+
   const handleReject = async () => {
     try {
       await reject(id).unwrap();
@@ -143,11 +159,8 @@ export default function AcceptanceDetail({ id: propId } = {}) {
               <h3 className="font-medium text-blue-500">Danh sách nghiệm thu</h3>
               {  (
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={selectAllForApprove} onChange={toggleSelectAllForApprove} />
-                    <span>Chọn tất cả</span>
-                  </label>
-                  <button onClick={handleApproveSelected} className="px-3 py-1 rounded bg-blue-600 text-white text-sm " type="button">Duyệt đã chọn</button>
+                  <button onClick={handleApproveSelected} className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700" type="button" disabled={selectedForApprove.length === 0 || approving}>Duyệt đã chọn</button>
+                  <button onClick={handleRejectSelected} className="px-3 py-1 rounded bg-red-600 text-white text-sm hover:bg-red-700" type="button" disabled={selectedForApprove.length === 0 || rejecting}>Không duyệt đã chọn</button>
                 </div>
               )}
             </div>
@@ -159,7 +172,7 @@ export default function AcceptanceDetail({ id: propId } = {}) {
 
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">{item.name || `Job #${item.job_id}`}</div>
+                      <div className="text-sm font-medium text-blue-600">{item.name || `Job #${item.job_id}`}</div>
                       <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={selectedForApprove.includes(item.job_id)} onChange={() => toggleSelectForApprove(item.job_id)} disabled={item.status !== 'submitted'} />
                         <span className="text-xs">Chọn</span>
@@ -180,13 +193,6 @@ export default function AcceptanceDetail({ id: propId } = {}) {
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-
-          <section className="bg-white rounded shadow p-4 text-left">
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-sm text-gray-600">Đã nghiệm thu: <span className="font-semibold">{localResults.filter(r => r.status && r.status !== 'waiting_acceptance').length}</span> / {localResults.length}</span>
-              {allAccepted && <span className="text-xs text-green-600 font-medium">✓ Tất cả đã được nghiệm thu</span>}
             </div>
           </section>
         </div>
