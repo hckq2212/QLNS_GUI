@@ -117,6 +117,7 @@ export default function SideMenu () {
                     {customerList && (
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/customer" className="text-blue-600">Danh sách khách hàng</a></li>
+                            <li><a href="/customer/debt" className="text-blue-600">Lộ trình thanh toán</a></li>
                         </ul>
                     )}
                 </li>
