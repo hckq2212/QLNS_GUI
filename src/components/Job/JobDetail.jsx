@@ -32,6 +32,8 @@ export default function JobDetail({ id: propId } = {}) {
   const [project, setProject] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState([]);
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'url'
+  const [evidenceUrls, setEvidenceUrls] = useState('');
   const [finishJob, { isLoading: finishing }] = useFinishJobMutation();
   const [updateJob, { isLoading: updatingJob }] = useUpdateJobMutation();
   const [reworkJob, { isLoading: reworking }] = useReworkJobMutation();
@@ -232,17 +234,34 @@ export default function JobDetail({ id: propId } = {}) {
               <div className="mt-4">
                 <div className="text-sm text-gray-500">Bằng chứng đã upload</div>
                 <div className="mt-2 text-sm text-gray-700 space-y-2">
-                  {evidenceList.map((f, i) => (
-                    <div key={f.url || f.name || i}>
-                      {f.url ? (
-                        <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {f.name || f.filename || `File ${i + 1}`}
-                        </a>
-                      ) : (
-                        <span>{f.name || f.filename || `File ${i + 1}`}</span>
-                      )}
-                    </div>
-                  ))}
+                  {evidenceList.map((f, i) => {
+                    // Xử lý trường hợp f là string (URL thuần túy)
+                    if (typeof f === 'string') {
+                      return (
+                        <div key={f || i}>
+                          <a href={f} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                            {f}
+                          </a>
+                        </div>
+                      );
+                    }
+                    
+                    // Xử lý trường hợp f là object
+                    const url = f.url || f.file_url || f.link || (typeof f === 'string' ? f : null);
+                    const displayName = f.name || f.filename || f.file_name;
+                    
+                    return (
+                      <div key={url || displayName || i}>
+                        {url ? (
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                            {displayName || url}
+                          </a>
+                        ) : (
+                          <span>{displayName || `Bằng chứng ${i + 1}`}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -251,44 +270,123 @@ export default function JobDetail({ id: propId } = {}) {
 
                 <div className="mt-4">
                      <div className="mb-3">
-              <label className="text-sm text-gray-500">Upload bằng chứng </label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
-                className="block mt-2"
-              />
-              {evidenceFiles && evidenceFiles.length > 0 && (
-                <div className="mt-2 text-sm text-gray-600">
-                  <div>Đã chọn {evidenceFiles.length} tệp:</div>
-                  <ul className="list-disc ml-5 mt-1 overflow-hidden">
-                    {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
-                  </ul>
-                </div>
+              <label className="text-sm text-gray-500">Upload bằng chứng</label>
+              
+              {/* Checkbox chọn phương thức upload */}
+              <div className="mt-2 space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="uploadMethod"
+                    value="file"
+                    checked={uploadMethod === 'file'}
+                    onChange={(e) => {
+                      setUploadMethod(e.target.value);
+                      setEvidenceUrls('');
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Upload bằng file</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="uploadMethod"
+                    value="url"
+                    checked={uploadMethod === 'url'}
+                    onChange={(e) => {
+                      setUploadMethod(e.target.value);
+                      setEvidenceFiles([]);
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Upload bằng URL</span>
+                </label>
+              </div>
+
+              {/* Input tương ứng với phương thức đã chọn */}
+              {uploadMethod === 'file' ? (
+                <>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
+                    className="block mt-2"
+                  />
+                  {evidenceFiles && evidenceFiles.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <div>Đã chọn {evidenceFiles.length} tệp:</div>
+                      <ul className="list-disc ml-5 mt-1 overflow-hidden">
+                        {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <textarea
+                    placeholder="Nhập URL bằng chứng (mỗi URL một dòng)"
+                    value={evidenceUrls}
+                    onChange={(e) => setEvidenceUrls(e.target.value)}
+                    className="block mt-2 w-full border border-gray-300 rounded p-2 text-sm"
+                    rows={4}
+                  />
+                  {evidenceUrls && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      Đã nhập {evidenceUrls.split('\n').filter(url => url.trim()).length} URL
+                    </div>
+                  )}
+                </>
               )}
             </div>
               <button
                 className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"   
-                disabled={finishing || !evidenceFiles || evidenceFiles.length === 0}
+                disabled={finishing || (uploadMethod === 'file' ? (!evidenceFiles || evidenceFiles.length === 0) : !evidenceUrls.trim())}
                 onClick={async () => {
                   if (!job?.id) return toast.error('Không xác định được công việc');
-                  if (!evidenceFiles || evidenceFiles.length === 0) {
-                    return toast.error('Vui lòng upload ít nhất một file bằng chứng');
-                  }
-                  try {
-                    const form = new FormData();
-                    (evidenceFiles || []).forEach((f) => form.append('evidence', f));
-                    await finishJob({ id: job.id, formData: form }).unwrap();
-                    toast.success('Hoàn thành công việc thành công');
-                    // refresh job data
+                  
+                  if (uploadMethod === 'file') {
+                    if (!evidenceFiles || evidenceFiles.length === 0) {
+                      return toast.error('Vui lòng upload ít nhất một file bằng chứng');
+                    }
                     try {
-                      const fresh = await jobAPI.getById(job.id);
-                      setJob(fresh);
-                    } catch (e) { console.warn('Failed to refresh job after finish', e); }
-                    setEvidenceFiles([]);
-                  } catch (err) {
-                    console.error('Finish job failed', err);
-                    toast.error(err?.data?.error || err?.message || 'Hoàn thành thất bại');
+                      const form = new FormData();
+                      (evidenceFiles || []).forEach((f) => form.append('evidence', f));
+                      await finishJob({ id: job.id, formData: form }).unwrap();
+                      toast.success('Hoàn thành công việc thành công');
+                      // refresh job data
+                      try {
+                        const fresh = await jobAPI.getById(job.id);
+                        setJob(fresh);
+                      } catch (e) { console.warn('Failed to refresh job after finish', e); }
+                      setEvidenceFiles([]);
+                    } catch (err) {
+                      console.error('Finish job failed', err);
+                      toast.error(err?.data?.error || err?.message || 'Hoàn thành thất bại');
+                    }
+                  } else {
+                    // Upload bằng URL
+                    if (!evidenceUrls.trim()) {
+                      return toast.error('Vui lòng nhập ít nhất một URL bằng chứng');
+                    }
+                    try {
+                      const urls = evidenceUrls.split('\n').filter(url => url.trim());
+                      const form = new FormData();
+                      // Backend expects evidenceUrls as JSON string: [{ url: "..." }]
+                      const evidenceUrlsArray = urls.map(url => ({ url: url.trim() }));
+                      form.append('evidenceUrls', JSON.stringify(evidenceUrlsArray));
+                      await finishJob({ id: job.id, formData: form }).unwrap();
+                      toast.success('Hoàn thành công việc thành công');
+                      // refresh job data
+                      try {
+                        const fresh = await jobAPI.getById(job.id);
+                        setJob(fresh);
+                      } catch (e) { console.warn('Failed to refresh job after finish', e); }
+                      setEvidenceUrls('');
+                    } catch (err) {
+                      console.error('Finish job failed', err);
+                      toast.error(err?.data?.error || err?.message || 'Hoàn thành thất bại');
+                    }
                   }
                 }}
               >
@@ -301,43 +399,122 @@ export default function JobDetail({ id: propId } = {}) {
                 <div className="mt-4">
                   <div className="mb-3">
                     <label className="text-sm text-gray-500">Sửa kết quả (Upload bằng chứng mới)</label>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
-                      className="block mt-2"
-                    />
-                    {evidenceFiles && evidenceFiles.length > 0 && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        <div>Đã chọn {evidenceFiles.length} tệp:</div>
-                        <ul className="list-disc ml-5 mt-1 overflow-hidden">
-                          {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
-                        </ul>
-                      </div>
+                    
+                    {/* Checkbox chọn phương thức upload */}
+                    <div className="mt-2 space-y-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name="reworkUploadMethod"
+                          value="file"
+                          checked={uploadMethod === 'file'}
+                          onChange={(e) => {
+                            setUploadMethod(e.target.value);
+                            setEvidenceUrls('');
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Upload bằng file</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name="reworkUploadMethod"
+                          value="url"
+                          checked={uploadMethod === 'url'}
+                          onChange={(e) => {
+                            setUploadMethod(e.target.value);
+                            setEvidenceFiles([]);
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Upload bằng URL</span>
+                      </label>
+                    </div>
+
+                    {/* Input tương ứng với phương thức đã chọn */}
+                    {uploadMethod === 'file' ? (
+                      <>
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(e) => setEvidenceFiles(e.target.files ? Array.from(e.target.files) : [])}
+                          className="block mt-2"
+                        />
+                        {evidenceFiles && evidenceFiles.length > 0 && (
+                          <div className="mt-2 text-sm text-gray-600">
+                            <div>Đã chọn {evidenceFiles.length} tệp:</div>
+                            <ul className="list-disc ml-5 mt-1 overflow-hidden">
+                              {evidenceFiles.map((f, i) => <li key={i}>{f.name}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <textarea
+                          placeholder="Nhập URL bằng chứng (mỗi URL một dòng)"
+                          value={evidenceUrls}
+                          onChange={(e) => setEvidenceUrls(e.target.value)}
+                          className="block mt-2 w-full border border-gray-300 rounded p-2 text-sm"
+                          rows={4}
+                        />
+                        {evidenceUrls && (
+                          <div className="mt-2 text-sm text-gray-600">
+                            Đã nhập {evidenceUrls.split('\n').filter(url => url.trim()).length} URL
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   <button
                     className="px-3 py-2 bg-orange-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={reworking || !evidenceFiles || evidenceFiles.length === 0}
+                    disabled={reworking || (uploadMethod === 'file' ? (!evidenceFiles || evidenceFiles.length === 0) : !evidenceUrls.trim())}
                     onClick={async () => {
                       if (!job?.id) return toast.error('Không xác định được công việc');
-                      if (!evidenceFiles || evidenceFiles.length === 0) {
-                        return toast.error('Vui lòng upload ít nhất một file bằng chứng');
-                      }
-                      try {
-                        const form = new FormData();
-                        (evidenceFiles || []).forEach((f) => form.append('evidence', f));
-                        await reworkJob({ id: job.id, formData: form }).unwrap();
-                        toast.success('Cập nhật kết quả thành công');
-                        // refresh job data
+                      
+                      if (uploadMethod === 'file') {
+                        if (!evidenceFiles || evidenceFiles.length === 0) {
+                          return toast.error('Vui lòng upload ít nhất một file bằng chứng');
+                        }
                         try {
-                          const fresh = await jobAPI.getById(job.id);
-                          setJob(fresh);
-                        } catch (e) { console.warn('Failed to refresh job after rework', e); }
-                        setEvidenceFiles([]);
-                      } catch (err) {
-                        console.error('Rework job failed', err);
-                        toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
+                          const form = new FormData();
+                          (evidenceFiles || []).forEach((f) => form.append('evidence', f));
+                          await reworkJob({ id: job.id, formData: form }).unwrap();
+                          toast.success('Cập nhật kết quả thành công');
+                          // refresh job data
+                          try {
+                            const fresh = await jobAPI.getById(job.id);
+                            setJob(fresh);
+                          } catch (e) { console.warn('Failed to refresh job after rework', e); }
+                          setEvidenceFiles([]);
+                        } catch (err) {
+                          console.error('Rework job failed', err);
+                          toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
+                        }
+                      } else {
+                        // Upload bằng URL
+                        if (!evidenceUrls.trim()) {
+                          return toast.error('Vui lòng nhập ít nhất một URL bằng chứng');
+                        }
+                        try {
+                          const urls = evidenceUrls.split('\n').filter(url => url.trim());
+                          const form = new FormData();
+                          // Backend expects evidenceUrls as JSON string: [{ url: "..." }]
+                          const evidenceUrlsArray = urls.map(url => ({ url: url.trim() }));
+                          form.append('evidenceUrls', JSON.stringify(evidenceUrlsArray));
+                          await reworkJob({ id: job.id, formData: form }).unwrap();
+                          toast.success('Cập nhật kết quả thành công');
+                          // refresh job data
+                          try {
+                            const fresh = await jobAPI.getById(job.id);
+                            setJob(fresh);
+                          } catch (e) { console.warn('Failed to refresh job after rework', e); }
+                          setEvidenceUrls('');
+                        } catch (err) {
+                          console.error('Rework job failed', err);
+                          toast.error(err?.data?.error || err?.message || 'Cập nhật thất bại');
+                        }
                       }
                     }}
                   >
