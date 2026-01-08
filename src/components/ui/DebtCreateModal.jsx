@@ -3,7 +3,7 @@ import { useCreateDebtForContractMutation } from '../../services/debt.js';
 import { formatPrice } from '../../utils/FormatValue.js';
 import { toast } from 'react-toastify';
 
-export default function DebtCreateModal({ activeContract, onClose, onSuccess }) {
+export default function DebtCreateModal({ activeContract, onClose, onSuccess, refetch }) {
   const [installments, setInstallments] = useState([{ amount: Math.round(Number(activeContract?.total_revenue || 0)), due_date: '', percent: '' }]);
   const [debtSubmitting, setDebtSubmitting] = useState(false);
   const [debtError, setDebtError] = useState(null);
@@ -149,6 +149,14 @@ export default function DebtCreateModal({ activeContract, onClose, onSuccess }) 
                   toast.error('Tạo lộ trình thanh toán thất bại');
                 } else {
                   toast.success('Tạo lộ trình thanh toán thành công');
+                  // Refetch data if refetch function is provided
+                  if (refetch) {
+                    try {
+                      await refetch();
+                    } catch (e) {
+                      console.error('Refetch failed:', e);
+                    }
+                  }
                   onClose();
                   if (onSuccess) onSuccess();
                 }

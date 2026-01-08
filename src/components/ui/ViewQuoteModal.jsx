@@ -76,19 +76,27 @@ export default function ViewQuoteModal({ isOpen = false, onClose = () => {}, opp
                                     <tr>
                                         <th className="text-left border-b px-3 py-2 text-sm">Hạng mục</th>
                                         <th className="text-right border-b px-3 py-2 text-sm">Số lượng</th>
+                                        <th className="text-right border-b px-3 py-2 text-sm">Giá vốn</th>
                                         <th className="text-right border-b px-3 py-2 text-sm">Giá</th>
+                                        <th className="text-right border-b px-3 py-2 text-sm">Lợi nhuận</th>
                                         <th className="text-right border-b px-3 py-2 text-sm">Tổng</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {rows.map((r) => (
-                                        <tr key={r.id}>
-                                            <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(r.proposedPrice)}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{formatPrice((Number(r.proposedPrice)||0) * (Number(r.quantity)||0))}</td>
-                                        </tr>
-                                    ))}
+                                    {rows.map((r) => {
+                                        const profitPerUnit = (Number(r.proposedPrice) || 0) - (Number(r.baseCost) || 0);
+                                        const totalProfit = profitPerUnit * (Number(r.quantity) || 0);
+                                        return (
+                                            <tr key={r.id}>
+                                                <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
+                                                <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
+                                                <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(r.baseCost)}</td>
+                                                <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(r.proposedPrice)}</td>
+                                                <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(totalProfit)}</td>
+                                                <td className="px-3 py-2 border-b text-sm text-right">{formatPrice((Number(r.proposedPrice)||0) * (Number(r.quantity)||0))}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
 
