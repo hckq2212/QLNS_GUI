@@ -3,6 +3,9 @@ import { useGetServicesQuery } from '../../services/service';
 import {
     useGetOpportunityServicesQuery,
     useQuoteOpportunityMutation,
+    useAddOpportunityServiceMutation,
+    useUpdateOpportunityServiceMutation,
+    useDeleteOpportunityServiceMutation,
 } from '../../services/opportunity';
 import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
@@ -18,6 +21,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editedQuantities, setEditedQuantities] = useState({});
+    const [deletedServices, setDeletedServices] = useState([]);
 
     useEffect(() => {
         function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -34,6 +40,9 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         refetch,
     } = useGetOpportunityServicesQuery(opportunity?.id, { skip: !isOpen || !opportunity?.id });
     const [quoteOpportunity, { isLoading: quoteLoading, error: quoteError }] = useQuoteOpportunityMutation();
+    const [addService] = useAddOpportunityServiceMutation();
+    const [updateService] = useUpdateOpportunityServiceMutation();
+    const [deleteService] = useDeleteOpportunityServiceMutation();
 
     // fetch cached services list via RTK Query and lookup by id instead of calling serviceAPI.getById
     const { data: allServices } = useGetServicesQuery(undefined, { skip: !isOpen || !opportunity?.id });
@@ -73,13 +82,16 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                 setRows(enriched);
                 const defaultChosen = {};
                 const defaultCustom = {};
+                const defaultQty = {};
                 enriched.forEach((r, i) => {
                     const defaultPrice = (r.proposedPrice != null ? r.proposedPrice : r.suggestedPrice);
                     defaultChosen[i] = defaultPrice;
                     defaultCustom[i] = defaultPrice;
+                    defaultQty[i] = r.quantity;
                 });
                 setChosen(defaultChosen);
                 setCustomPrices(defaultCustom);
+                setEditedQuantities(defaultQty);
             } catch (err) {
                 if (!mounted) return;
                 setError(err?.message || String(err));
@@ -111,6 +123,28 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
     async function handleSubmitQuote() {
         if (!opportunity || !opportunity.id) return setSubmitError('Không có cơ hội để báo giá');
+        
+        // Validate profit margin based on selected mode
+        const requiredMargin = globalMode === 'min' ? 20 : globalMode === 'suggest' ? 30 : 0;
+        
+        if (requiredMargin > 0) {
+            for (let idx = 0; idx < rows.length; idx++) {
+                const r = rows[idx];
+                const price = globalMode === 'custom' 
+                    ? (customPrices[idx] || chosen[idx] || 0)
+                    : (Number(chosen[idx]) || 0);
+                
+                const profit = price ? (((price - r.baseCost) / price) * 100) : 0;
+                
+                if (profit < requiredMargin) {
+                    const modeName = globalMode === 'min' ? 'giá tối thiểu' : 'giá đề xuất';
+                    toast.error(`Dịch vụ "${r.name}" có tỉ suất lợi nhuận ${profit.toFixed(1)}% không đạt yêu cầu tối thiểu ${requiredMargin}% khi chọn ${modeName}`);
+                    setSubmitError(`Tỉ suất lợi nhuận không đạt yêu cầu`);
+                    return;
+                }
+            }
+        }
+        
         // compute total revenue from chosen
         const totalRevenue = Object.keys(chosen).reduce((s, k) => {
             const idx = Number(k);
@@ -152,13 +186,175 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         }
     }
 
+    function handleAddService() {
+        const newRow = {
+            id: `new-${Date.now()}`,
+            serviceId: null,
+            name: '',
+            quantity: 1,
+            baseCost: 0,
+            minPrice: 0,
+            suggestedPrice: 0,
+            proposedPrice: null,
+            isNew: true,
+        };
+        const newRows = [...rows, newRow];
+        setRows(newRows);
+        const idx = newRows.length - 1;
+        setChosen({ ...chosen, [idx]: 0 });
+        setCustomPrices({ ...customPrices, [idx]: 0 });
+        setEditedQuantities({ ...editedQuantities, [idx]: 1 });
+    }
+
+    function handleRemoveService(idx, serviceId) {
+        const newRows = rows.filter((_, i) => i !== idx);
+        setRows(newRows);
+        
+        // Track deleted services that exist on backend
+        if (serviceId && !String(serviceId).startsWith('new-')) {
+            setDeletedServices([...deletedServices, serviceId]);
+        }
+        
+        // Rebuild indices
+        const newChosen = {};
+        const newCustom = {};
+        const newQty = {};
+        newRows.forEach((r, i) => {
+            const oldIdx = i < idx ? i : i + 1;
+            newChosen[i] = chosen[oldIdx] || r.suggestedPrice;
+            newCustom[i] = customPrices[oldIdx] || r.suggestedPrice;
+            newQty[i] = editedQuantities[oldIdx] || r.quantity;
+        });
+        setChosen(newChosen);
+        setCustomPrices(newCustom);
+        setEditedQuantities(newQty);
+    }
+
+    function handleServiceSelect(idx, serviceId) {
+        if (!serviceId) return;
+        const svc = allServices?.find(s => String(s.id) === String(serviceId));
+        if (!svc) return;
+        
+        const base = svc?.base_cost ?? svc?.baseCost ?? svc?.price ?? svc?.cost ?? 0;
+        const baseNum = Number(base) || 0;
+        const minPrice = +(baseNum * 1.2);
+        const suggestedPrice = +(baseNum * 1.4);
+        
+        const newRows = [...rows];
+        newRows[idx] = {
+            ...newRows[idx],
+            serviceId: Number(serviceId),
+            name: svc.name,
+            baseCost: baseNum,
+            minPrice,
+            suggestedPrice,
+        };
+        setRows(newRows);
+        setChosen({ ...chosen, [idx]: suggestedPrice });
+        setCustomPrices({ ...customPrices, [idx]: suggestedPrice });
+    }
+
+    async function handleSaveChanges() {
+        if (!opportunity || !opportunity.id) {
+            toast.error('Không có cơ hội để cập nhật');
+            return;
+        }
+
+        // Validate: must have at least 1 valid service
+        const validServices = rows.filter(r => 
+            (r.isNew && r.serviceId) || // New service with selected serviceId
+            (!r.isNew && r.serviceId)   // Existing service
+        );
+        
+        if (validServices.length === 0) {
+            toast.error('Phải có ít nhất 1 dịch vụ');
+            return;
+        }
+
+        try {
+            // Delete removed services
+            for (const serviceId of deletedServices) {
+                await deleteService({ 
+                    opportunityId: opportunity.id, 
+                    serviceId 
+                }).unwrap();
+            }
+
+            // Add new services
+            const newServices = rows.filter(r => r.isNew && r.serviceId);
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                if (r.isNew && r.serviceId) {
+                    await addService({
+                        opportunityId: opportunity.id,
+                        body: {
+                            service_id: r.serviceId,
+                            quantity: editedQuantities[i] || r.quantity || 1,
+                        }
+                    }).unwrap();
+                }
+            }
+
+            // Update existing services with changed quantities
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r.isNew && editedQuantities[i] !== r.quantity) {
+                    await updateService({
+                        opportunityId: opportunity.id,
+                        serviceId: r.id,
+                        body: { quantity: editedQuantities[i] || r.quantity }
+                    }).unwrap();
+                }
+            }
+
+            toast.success('Cập nhật dịch vụ thành công');
+            setIsEditMode(false);
+            setDeletedServices([]);
+            
+            // Refetch to get updated data
+            if (refetch) {
+                await refetch();
+            }
+            setReloadCounter(c => c + 1);
+        } catch (err) {
+            console.error('Update failed:', err);
+            toast.error('Cập nhật thất bại: ' + (err?.data?.message || err?.message || 'Lỗi không xác định'));
+        }
+    }
+
 
     return (!isOpen) ? null : (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
             <div className="bg-white p-6 rounded-lg w-11/12 max-w-3xl shadow-lg" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 gap-4 text-left">
                     <h3 className="text-lg font-medium">Báo giá {opportunity ? `${opportunity.name || opportunity.title || ('#'+opportunity.id)}${opportunity.customerName ? ` — ${opportunity.customerName}` : ''}` : ''}</h3>
-                    <button onClick={onClose} className="text-sm px-3 py-1 bg-gray-100 rounded">Đóng</button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => {
+                                if (isEditMode) {
+                                    handleSaveChanges();
+                                } else {
+                                    setIsEditMode(true);
+                                }
+                            }} 
+                            className={`text-xs px-3 py-1 rounded ${isEditMode ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                        >
+                            {isEditMode ? 'Lưu' : 'Chỉnh sửa'}
+                        </button>
+                        {isEditMode && (
+                            <button 
+                                onClick={() => {
+                                    setIsEditMode(false);
+                                    setDeletedServices([]);
+                                    setReloadCounter(c => c + 1);
+                                }} 
+                                className="text-sm px-3 py-1 bg-gray-100 rounded"
+                            >
+                                Hủy
+                            </button>
+                        )}
+                        <button onClick={onClose} className="text-xs px-3 py-1 bg-gray-100 rounded">Đóng</button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -175,6 +371,16 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                         <div className="text-sm text-gray-600">Không có hạng mục nào.</div>
                     ) : (
                         <>
+                        {isEditMode && (
+                            <div className="mb-3">
+                                <button 
+                                    onClick={handleAddService}
+                                    className="px-3 py-1 bg-green-600 text-white rounded text-sm"
+                                >
+                                    + Thêm dịch vụ
+                                </button>
+                            </div>
+                        )}
                         <table className="w-full table-auto border-collapse">
                             <thead>
                                 <tr>
@@ -185,17 +391,42 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán đề xuất</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Giá bán tùy chỉnh</th>
                                     <th className="text-right border-b px-3 py-2 text-sm">Tỉ suất lợi nhuận</th>
+                                    {isEditMode && <th className="text-center border-b px-3 py-2 text-sm">Thao tác</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {rows.map((r, i) => {
                                     const sel = chosen[i] ?? r.suggestedPrice;
                                     const displayPrice = globalMode === 'custom' ? (customPrices[i] || sel) : sel;
+                                    const qty = editedQuantities[i] !== undefined ? editedQuantities[i] : r.quantity;
                                     const profit = displayPrice ? (((displayPrice - r.baseCost) / displayPrice) * 100) : 0;
                                     return (
                                         <tr key={r.id}>
-                                            <td className="px-3 py-2 border-b text-sm text-left">{r.name}</td>
-                                            <td className="px-3 py-2 border-b text-sm text-right">{r.quantity}</td>
+                                            <td className="px-3 py-2 border-b text-sm text-left">
+                                                {isEditMode && r.isNew ? (
+                                                    <select
+                                                        value={r.serviceId || ''}
+                                                        onChange={(e) => handleServiceSelect(i, e.target.value)}
+                                                        className="w-full border rounded px-2 py-1"
+                                                    >
+                                                        <option value="">-- Chọn dịch vụ --</option>
+                                                        {allServices?.map(svc => (
+                                                            <option key={svc.id} value={svc.id}>{svc.name}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : r.name}
+                                            </td>
+                                            <td className="px-3 py-2 border-b text-sm text-right">
+                                                {isEditMode ? (
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={qty}
+                                                        onChange={(e) => setEditedQuantities({ ...editedQuantities, [i]: Number(e.target.value) || 1 })}
+                                                        className="w-20 border rounded px-2 py-1 text-right"
+                                                    />
+                                                ) : qty}
+                                            </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{formatPrice(r.baseCost)}</td>
                                             <td className="px-3 py-2 border-b text-sm text-right">
                                                 <div>{formatPrice(r.minPrice)}</div>
@@ -222,6 +453,16 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                                 />
                                             </td>
                                             <td className="px-3 py-2 border-b text-sm text-right">{profit ? profit.toFixed(1) + '%' : '—'}</td>
+                                            {isEditMode && (
+                                                <td className="px-3 py-2 border-b text-sm text-center">
+                                                    <button
+                                                        onClick={() => handleRemoveService(i, r.id)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        Xóa
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
@@ -251,13 +492,16 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                                     (() => {
                                         const totalRevenue = Object.keys(chosen).reduce((s, k) => {
                                             const idx = Number(k);
-                                            const qty = rows[idx]?.quantity || 0;
+                                            const qty = editedQuantities[idx] !== undefined ? editedQuantities[idx] : (rows[idx]?.quantity || 0);
                                             const price = globalMode === 'custom' 
                                                 ? (customPrices[idx] || chosen[idx] || 0)
                                                 : (Number(chosen[k]) || 0);
                                             return s + (qty * price);
                                         }, 0);
-                                        const totalCost = rows.reduce((s, r, idx) => s + (r.baseCost * (r.quantity || 0)), 0);
+                                        const totalCost = rows.reduce((s, r, idx) => {
+                                            const qty = editedQuantities[idx] !== undefined ? editedQuantities[idx] : (r.quantity || 0);
+                                            return s + (r.baseCost * qty);
+                                        }, 0);
                                         const overallMargin = totalRevenue ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0;
                                         return (
                                             <div>

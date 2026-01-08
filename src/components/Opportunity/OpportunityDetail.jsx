@@ -7,7 +7,7 @@ import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetReferralsQuery, useGetReferralCustomersQuery, useGetReferralByIdQuery } from '../../services/referral';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
 import PriceQuoteModal from '../ui/PriceQuoteModal';
@@ -101,6 +101,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const [createConOpen, setCreateConOpen] = useState(false);
   const [updateOpportunity, { isLoading: updatingOpportunity }] = useUpdateOpportunityMutation();
   const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
+  const navigate = useNavigate();
   const role = useSelector((s) => s.auth.role);
 
   // initialize draft when customer changes (but not while editing)
@@ -462,8 +463,8 @@ export default function OpportunityDetail({ id: propId } = {}) {
         {(opp.status == 'approved') && (
           <button onClick={() => setQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Làm báo giá</button>
         )}
-        {/* BOD / Admin actions: Duyệt / Không duyệt */}
-        {(role === 'bod' || role === 'admin' && opp.status == 'waiting_bod_approval') && (
+        {/* BOD / Admin actions: Duyệt / Không duyệt - Only show if customer info exists */}
+        {(role === 'bod' || role === 'admin' && opp.status == 'waiting_bod_approval') && (opp.customer_id || opp.customer_temp) ? (
           <div className="ml-4 flex items-center gap-2">
             <button
               disabled={approving}
@@ -503,7 +504,11 @@ export default function OpportunityDetail({ id: propId } = {}) {
               Không duyệt
             </button>
           </div>
-        )}
+        ) : (role === 'bod' || role === 'admin') && opp.status == 'waiting_bod_approval' && !opp.customer_id && !opp.customer_temp ? (
+          <div className="ml-4 text-orange-600 font-medium">
+            Vui lòng thêm thông tin khách hàng trước khi duyệt
+          </div>
+        ) : null}
       </div>
       {(opp.status == 'quoted' || opp.status == 'contract_created' ) && (
         <div className="flex gap-2 mt-6">
@@ -531,7 +536,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
         <CreateConFromOppoModal
           selectedOpportunity={opp}
           onClose={() => setCreateConOpen(false)}
-          onCreated={() => {
+          onCreated={(contract) => {
+            // Navigate to contract detail page
+            const contractId = contract?.id || contract?.contract?.id;
+            if (contractId) {
+              navigate(`/contract/${contractId}`);
+            }
             // refresh opportunity and close modal
             try { refetch && refetch(); } catch (e) {}
             setCreateConOpen(false);

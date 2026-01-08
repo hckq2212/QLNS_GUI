@@ -67,6 +67,38 @@ export const opportunityAPI = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id } = {}) => [{ type: 'Opportunity', id }],
     }),
+    addOpportunityService: build.mutation({
+      query: ({ opportunityId, body } = {}) => ({
+        url: `/opportunity/${opportunityId}/services`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (result, error, { opportunityId } = {}) => [
+        { type: 'OpportunityServices', id: opportunityId },
+        { type: 'Opportunity', id: opportunityId }
+      ],
+    }),
+    updateOpportunityService: build.mutation({
+      query: ({ opportunityId, serviceId, body } = {}) => ({
+        url: `/opportunity/${opportunityId}/services/${serviceId}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { opportunityId } = {}) => [
+        { type: 'OpportunityServices', id: opportunityId },
+        { type: 'Opportunity', id: opportunityId }
+      ],
+    }),
+    deleteOpportunityService: build.mutation({
+      query: ({ opportunityId, serviceId } = {}) => ({
+        url: `/opportunity/${opportunityId}/services/${serviceId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { opportunityId } = {}) => [
+        { type: 'OpportunityServices', id: opportunityId },
+        { type: 'Opportunity', id: opportunityId }
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -80,6 +112,9 @@ export const {
   useQuoteOpportunityMutation,
   useUpdateOpportunityMutation,
   useGetOpportunityByStatusQuery,
-  useGetMyOpportunitiesQuery
+  useGetMyOpportunitiesQuery,
+  useAddOpportunityServiceMutation,
+  useUpdateOpportunityServiceMutation,
+  useDeleteOpportunityServiceMutation,
 } = opportunityAPI;
 export default opportunityAPI;

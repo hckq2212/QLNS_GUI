@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import customerAPI from '../../api/customer.js';
 import { useGetServiceJobsQuery } from '../../services/serviceJob.js';
 import { toast } from 'react-toastify';
@@ -10,6 +11,7 @@ import { useCreateOpportunityMutation } from '../../services/opportunity.js';
 
 export default function CreateOpportunity() {
   const token = useSelector((state) => state.auth.accessToken);
+  const navigate = useNavigate();
   const [createOpportunity, { isLoading: creating }] = useCreateOpportunityMutation();
 
   // Helper functions for price formatting
@@ -123,7 +125,6 @@ export default function CreateOpportunity() {
           proposed_price: s.proposed_price ? Number(s.proposed_price) : undefined,
         }));
 
-        console.log('payload (pre-files):', payload);
 
       // If attachments are selected, build FormData and append fields/files
       let toSend = payload;
@@ -148,30 +149,21 @@ export default function CreateOpportunity() {
       }
 
   const res = await createOpportunity(toSend).unwrap();
+  
   toast.success('Tạo cơ hội thành công');
-  // move to step 2 for customer info
-  setCreatedOpportunityId(res?.id || null);
-  // keep form state (we'll fill customer in step 2)
-  // reset form inputs after successful creation
-  setOpportunityName('');
-  setDescription('');
-  setExpectedPrice('');
-  setExpectedRevenue('');
-  setBudget('');
-  setSuccessProbability('');
-  setExpectedEndDate('');
-  setPriority(PRIORITY_OPTIONS[1]?.value || 'medium');
-  setCreateProject('Không');
-  setRegion(REGION_OPTIONS[0]?.value || 'all');
-  setImplementationMonths('');
-  setApprover('');
-  setServices([{ service_id: '', quantity: 1, proposed_price: '' }]);
-  setAvailableCustomers([]);
-  // clear file input and attachments
-  setAttachments([]);
-  if (fileInputRef && fileInputRef.current) fileInputRef.current.value = null;
+  
+  // Navigate to the newly created opportunity detail page
+  const opportunityId = res?.id || res?.data?.id || res?.opportunity?.id || res?.opportunity_id;
+  
+  if (opportunityId) {
+    // Use setTimeout to ensure toast doesn't interfere with navigation
+    setTimeout(() => {
+      navigate(`/opportunity/${opportunityId}`, { replace: true });
+    }, 100);
+  } else {
+    console.error('No opportunity ID in response. Full response:', JSON.stringify(res, null, 2));
+  }
     } catch (err) {
-      console.error('Tạo cơ hội thất bại:', err);
       toast.error('Tạo cơ hội thất bại');
     }
   }

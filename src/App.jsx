@@ -60,11 +60,10 @@ function AppContent() {
           <Route path="/user/:id" element={<UserDetail />} />
           <Route path="/user" element={<UserList />} />
 
+          <Route path="/opportunity/create" element={<CreateOpportunity />} />
           <Route path="/opportunity/me" element={<MyOpportunity />} />
           <Route path="/opportunity/:id" element={<OpportunityDetail />} />
           <Route path="/opportunity" element={<OpporunityList />} />
-
-          <Route path="/opportunity/create" element={<CreateOpportunity />} />
           <Route path="/contract/:id" element={<ContractDetail />} />
           <Route path="/contract" element={<ContractList />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
