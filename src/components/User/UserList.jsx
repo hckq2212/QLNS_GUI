@@ -33,7 +33,7 @@ export default function UserList() {
                     <td className="px-3 py-2 align-top">{u.full_name ?? u.fullName ?? u.name ?? '-'}</td>
                     <td className="px-3 py-2 align-top">{u.email ?? '-'}</td>
                     <td className="px-3 py-2 align-top">{u.phone ?? '-'}</td>
-                    <td className="px-3 py-2 align-top"><RoleCell roleId={u.role_id} /></td>
+                    <td className="px-3 py-2 align-top">{u.role} </td>
                     <td className="px-3 py-2 align-top">
                       <Link
                         to={`/user/${u.id}`}
@@ -56,10 +56,4 @@ export default function UserList() {
 }
 
 
-function RoleCell({ roleId }) {
-  const { data: role, isLoading } = useGetRoleByIdQuery(roleId, { skip: !roleId });
-  if (!roleId) return '—';
-  if (isLoading) return 'Đang tải...';
-  console.log(role)
-  return role?.code || role?.name || roleId;
-}
+

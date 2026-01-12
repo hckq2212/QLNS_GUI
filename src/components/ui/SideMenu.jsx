@@ -178,7 +178,7 @@ export default function SideMenu () {
                     {userList && (
                         <ul className="p-2 flex flex-col gap-2">
                             <li><a href="/user" className="text-blue-600">Danh sách nhân viên</a></li>
-                            <li><a href="/user/create" className="text-blue-600">Tạo tài khoản cho nhân viên</a></li>
+                            {/* <li><a href="/user/create" className="text-blue-600">Tạo tài khoản cho nhân viên</a></li> */}
                         </ul>
                     )}
                 </li>

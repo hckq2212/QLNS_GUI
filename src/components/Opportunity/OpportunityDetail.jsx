@@ -7,11 +7,13 @@ import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
 import { useGetReferralsQuery, useGetReferralCustomersQuery, useGetReferralByIdQuery } from '../../services/referral';
+import { useGetQuoteByOpportunityIdQuery } from '../../services/quote';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
 import PriceQuoteModal from '../ui/PriceQuoteModal';
 import ViewQuoteModal from '../ui/ViewQuoteModal';
+import UpdateQuoteModal from '../ui/UpdateQuoteModal';
 import opportunityAPI from '../../api/opportunity.js';
 import { toast } from 'react-toastify';
 import CreateConFromOppoModal from '../ui/CreateConFromOppoModal.jsx';
@@ -36,6 +38,9 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const { data: customers } = useGetAllCustomerQuery(undefined, { skip: !token });
   const { data: users } = useGetAllUserQuery(undefined, { skip: !token });
   const { data: referrals = [] } = useGetReferralsQuery(undefined, { skip: !token });
+  
+  // Fetch quote data to check status
+  const { data: quoteData } = useGetQuoteByOpportunityIdQuery(id, { skip: !id });
   
   // State for referral selection
   const [selectedReferralId, setSelectedReferralId] = useState(null);
@@ -98,6 +103,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
   // price quote modal
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [viewQuoteOpen, setViewQuoteOpen] = useState(false);
+  const [updateQuoteOpen, setUpdateQuoteOpen] = useState(false);
   const [createConOpen, setCreateConOpen] = useState(false);
   const [updateOpportunity, { isLoading: updatingOpportunity }] = useUpdateOpportunityMutation();
   const [approveOpportunity, { isLoading: approving }] = useApproveMutation();
@@ -515,7 +521,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
           <button onClick={() => setViewQuoteOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Xem báo giá</button>
         </div>
       )}
-      {(opp.status == 'quoted') && (
+      {(opp.status == 'quote_rejected') && (
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => setUpdateQuoteOpen(true)} className="bg-orange-600 text-white px-4 py-2 rounded">Sửa báo giá</button>
+        </div>
+      )}
+      {(opp.status == 'quoted' && (quoteData?.status === 'approved' || (Array.isArray(quoteData) && quoteData[0]?.status === 'approved'))) && (
         <div className="flex gap-2 mt-6">
           <button onClick={() => setCreateConOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded">Tạo hợp đồng</button>
         </div>
@@ -531,6 +542,14 @@ export default function OpportunityDetail({ id: propId } = {}) {
         opportunity={opp} 
       />
       <ViewQuoteModal isOpen={viewQuoteOpen} onClose={() => setViewQuoteOpen(false)} opportunity={opp} />
+      <UpdateQuoteModal 
+        isOpen={updateQuoteOpen} 
+        onClose={() => {
+          setUpdateQuoteOpen(false);
+          try { refetch && refetch(); } catch (e) { /* ignore */ }
+        }} 
+        opportunity={opp} 
+      />
 
       {createConOpen && (
         <CreateConFromOppoModal
