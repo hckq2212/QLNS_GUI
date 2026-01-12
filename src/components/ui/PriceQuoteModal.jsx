@@ -7,6 +7,7 @@ import {
     useUpdateOpportunityServiceMutation,
     useDeleteOpportunityServiceMutation,
 } from '../../services/opportunity';
+import { useGetQuoteByOpportunityIdQuery, useUpdateQuoteMutation, useCreateQuoteMutation } from '../../services/quote';
 import { formatPrice } from '../../utils/FormatValue';
 import { toast } from 'react-toastify';
 
@@ -24,6 +25,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [isEditMode, setIsEditMode] = useState(false);
     const [editedQuantities, setEditedQuantities] = useState({});
     const [deletedServices, setDeletedServices] = useState([]);
+    const [note, setNote] = useState('');
 
     useEffect(() => {
         function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -43,6 +45,14 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
     const [addService] = useAddOpportunityServiceMutation();
     const [updateService] = useUpdateOpportunityServiceMutation();
     const [deleteService] = useDeleteOpportunityServiceMutation();
+    const [updateQuote] = useUpdateQuoteMutation();
+    const [createQuote] = useCreateQuoteMutation();
+
+    // Fetch quote data for this opportunity
+    const { data: quoteData, refetch: refetchQuote } = useGetQuoteByOpportunityIdQuery(
+        opportunity?.id,
+        { skip: !isOpen || !opportunity?.id }
+    );
 
     // fetch cached services list via RTK Query and lookup by id instead of calling serviceAPI.getById
     const { data: allServices } = useGetServicesQuery(undefined, { skip: !isOpen || !opportunity?.id });
@@ -92,6 +102,8 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                 setChosen(defaultChosen);
                 setCustomPrices(defaultCustom);
                 setEditedQuantities(defaultQty);
+                
+                // Note is now synced via separate useEffect watching quoteData
             } catch (err) {
                 if (!mounted) return;
                 setError(err?.message || String(err));
@@ -108,7 +120,13 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         if (reloadCounter > 0 && refetch) refetch();
     }, [reloadCounter, isOpen, opportunity, refetch]);
 
-
+    // Sync note from quoteData
+    useEffect(() => {
+        if (quoteData) {
+            const noteValue = quoteData.note || (Array.isArray(quoteData) && quoteData.length > 0 ? quoteData[0].note : '');
+            setNote(noteValue || '');
+        }
+    }, [quoteData]);
 
     // When globalMode changes, apply the chosen mode to all rows
     useEffect(() => {
@@ -125,7 +143,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         if (!opportunity || !opportunity.id) return setSubmitError('Không có cơ hội để báo giá');
         
         // Validate profit margin based on selected mode
-        const requiredMargin = globalMode === 'min' ? 20 : globalMode === 'suggest' ? 30 : 0;
+        const requiredMargin = globalMode === 'min' ? 0 : globalMode === 'suggest' ? 0 : 0;
         
         if (requiredMargin > 0) {
             for (let idx = 0; idx < rows.length; idx++) {
@@ -157,7 +175,8 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
         const payload = {
             expected_price: totalRevenue.toFixed(2),
-            status: 'quoted'
+            status: 'quoted',
+            note: note || ''
         };
 
         setSubmitting(true);
@@ -173,10 +192,23 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
 
             const body = { ...payload, services: servicesPayload };
 
-            // use RTK Query mutation
+            // Call both APIs: opportunity quote and create quote
             await quoteOpportunity({ id: opportunity.id, body }).unwrap();
+            
+            // Create quote record with simple payload
+            await createQuote({
+                opportunity_id: opportunity.id,
+                note: note || ''
+            }).unwrap();
+            
             setSubmitSuccess(true);
             toast.success('Báo giá thành công');
+            
+            // Refetch quote data to update UI
+            if (refetchQuote) {
+                refetchQuote();
+            }
+            
             setTimeout(() => { setSubmitting(false); onClose(); }, 700);
         } catch (err) {
             const message = err?.data?.message || err?.message || String(err);
@@ -327,7 +359,27 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
             <div className="bg-white p-6 rounded-lg w-11/12 max-w-3xl shadow-lg" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4 gap-4 text-left">
-                    <h3 className="text-lg font-medium">Báo giá {opportunity ? `${opportunity.name || opportunity.title || ('#'+opportunity.id)}${opportunity.customerName ? ` — ${opportunity.customerName}` : ''}` : ''}</h3>
+                    <div>
+                        <h3 className="text-lg font-medium">Báo giá {opportunity ? `${opportunity.name || opportunity.title || ('#'+opportunity.id)}${opportunity.customerName ? ` — ${opportunity.customerName}` : ''}` : ''}</h3>
+                        {quoteData && (
+                            <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Trạng thái:</span> 
+                                <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                                    quoteData.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                                    quoteData.status === 'quoted' ? 'bg-blue-100 text-blue-700' :
+                                    quoteData.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                    quoteData.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-700'
+                                }`}>
+                                    {quoteData.status === 'draft' ? 'Nháp' :
+                                     quoteData.status === 'quoted' ? 'Đã báo giá' :
+                                     quoteData.status === 'approved' ? 'Đã phê duyệt' :
+                                     quoteData.status === 'rejected' ? 'Từ chối' :
+                                     quoteData.status}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                     <div className="flex gap-2">
                         <button 
                             onClick={() => {
@@ -356,6 +408,7 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                         <button onClick={onClose} className="text-xs px-3 py-1 bg-gray-100 rounded">Đóng</button>
                     </div>
                 </div>
+
 
                 <div className="overflow-x-auto">
                     {loading ? (
@@ -522,6 +575,18 @@ export default function PriceQuoteModal({ isOpen = false, onClose = () => {}, op
                         </div>
                         </>
                     )}
+                    
+                {/* Note field */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                    <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                        rows="3"
+                        placeholder="Nhập ghi chú cho báo giá..."
+                    />
+                </div>
                 </div>
             </div>
         </div>

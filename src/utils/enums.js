@@ -15,6 +15,12 @@ const DEBT_STATUS = {
   paid: 'Đã trả',
   overdue:'Quá hạn'
 }
+const QUOTE_STATUS = {
+  pending: 'Đang đợi duyệt',
+  approved: 'Đã duyệt',
+  rejected:'Cần sửa lại'
+}
+
 
 const JOB_TYPE_LABELS = {
   user: 'Nội bộ',
@@ -53,9 +59,7 @@ const SERVICE_JOB_LABELS ={
 
 const OPPPORTUNITY_STATUS_LABELS = {
   waiting_bod_approval:'Đang chờ BOD duyệt',
-  approved:'Đã được duyệt',
-  not_assigned:'Chưa phân công công việc',
-  assigned:'Đã phân công công việc',
+  approved:'Chưa có báo giá',
   contract_created:'Cơ hội đã được tạo hợp đồng',
   quoted:'Đã tạo báo giá'
 }
@@ -109,5 +113,6 @@ export {
     PARTNER_TYPE,
     JOB_PRIORITY_OPTIONS,
     DEBT_STATUS,
-    ACCEPTANCE_STATUS_LABELS
+    ACCEPTANCE_STATUS_LABELS,
+    QUOTE_STATUS
   }

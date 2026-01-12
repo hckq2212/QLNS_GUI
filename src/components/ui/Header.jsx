@@ -2,9 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { useMemo, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
+
 import user from '../../assets/default_avatar.jpg';
 import { useGetPersonalInfoQuery } from '../../services/user';
 import { setCredentials, logout as logoutAction } from '../../features/auth/authSlice';
+import notiIcon from '../../assets/bell.png'
+
 
 function Header(){
     const navigate = useNavigate();
@@ -68,6 +71,7 @@ function Header(){
                     <button onClick={handleLogout} className="ml-3 px-3 py-1 rounded bg-red-50 text-red-600 text-sm border border-red-100">Đăng xuất</button>
                 </div>
             )}
+
         </div>
     )
 }
