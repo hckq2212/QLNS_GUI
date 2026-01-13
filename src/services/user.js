@@ -13,6 +13,13 @@ export const userApi = api.injectEndpoints({
       query: (id) => `/user/${id}`,
       providesTags: (result, error, id) => [{ type: 'User', id }],
     }),
+    getUserJobs: build.query({
+      query: (userId) => `/user/${userId}/jobs`,
+      providesTags: (result, error, userId) => [
+        { type: 'Job', id: `USER-${userId}` },
+        { type: 'User', id: userId }
+      ],
+    }),
     getPersonalInfo: build.query({
       query: () => `/user/me`,
       providesTags: (result) => [{ type: 'User', id: 'ME' }],
@@ -21,5 +28,5 @@ export const userApi = api.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useGetAllUserQuery, useGetUserByIdQuery, useGetPersonalInfoQuery } = userApi;
+export const { useGetAllUserQuery, useGetUserByIdQuery, useGetUserJobsQuery, useGetPersonalInfoQuery } = userApi;
 export default userApi;

@@ -335,6 +335,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                           <td className="px-3 py-2 align-top">{s.quantity ?? s.qty ?? 1}</td>
                           <td className="px-3 py-2 align-top">{renderResult(s.result)}</td>
                           <td className="px-3 py-2 align-top">
+                            {project.status != 'not_assigned' || project.status != 'assigned' && (
                             <button
                               className="px-2 py-1 rounded bg-blue-600 text-white text-xs"
                               
@@ -348,6 +349,7 @@ export default function ProjectDetail({ id: propId } = {}) {
                             >
                               {savingResultId === (s.id ?? s.contract_service_id) ? 'Đang gửi...' : (s.result ? 'Cập nhật kết quả' : 'Upload kết quả')}
                             </button>
+                            )}
                           </td>
                         </tr>
                       ))}
