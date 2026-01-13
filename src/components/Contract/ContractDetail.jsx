@@ -368,7 +368,11 @@ export default function ContractDetail({ id: propId } = {}) {
             <DebtCreateModal
               activeContract={contract}
               onClose={() => setDebtModalOpen(false)}
-              onSuccess={() => { setDebtModalOpen(false); try { refetchDebts && refetchDebts(); } catch (e) {} }}
+              onSuccess={() => { 
+                setDebtModalOpen(false); 
+                try { refetchDebts && refetchDebts(); } catch (e) {} 
+                try { refetch && refetch(); } catch (e) {}
+              }}
             />
           )}
         
