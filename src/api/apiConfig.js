@@ -1,8 +1,6 @@
 import axios from 'axios';
-import 'dotenv/config'
 
-
- const API_URL = process.env.API
+const API_URL = import.meta.env.VITE_API_URL 
 // timeout configurable via Vite env VITE_API_TIMEOUT (milliseconds), default to 15000ms
 const DEFAULT_TIMEOUT = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_TIMEOUT)
   ? Number(import.meta.env.VITE_API_TIMEOUT)

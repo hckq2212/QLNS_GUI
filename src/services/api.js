@@ -1,9 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logout } from '../features/auth/authSlice';
-import 'dotenv/config'
 
-
-const baseUrl = process.env.API_URL
+const baseUrl = import.meta.env.VITE_API + '/api'
 // plain fetchBaseQuery that attaches current access token from state
 const baseFetch = fetchBaseQuery({
   baseUrl,
