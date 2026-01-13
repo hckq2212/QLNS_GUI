@@ -1,7 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { setCredentials, logout } from '../features/auth/authSlice';
+import 'dotenv/config'
 
-const baseUrl = import.meta.env.VITE_API + '/api'
+// const baseUrl = 'https://qlns-kwbh.onrender.com/api' || 'https://qlns-production.up.railway.app/api' || 'http://localhost:3000/api';
+// const baseUrl = 'http://192.168.130.239:3000/api';
+// const baseUrl = 'http://192.168.1.5:3000/api';
+// const baseUrl = 'https://qlns-kwbh.onrender.com/api'
+const baseUrl = 'https://qlns-kwbh.onrender.com/api'
 // plain fetchBaseQuery that attaches current access token from state
 const baseFetch = fetchBaseQuery({
   baseUrl,
