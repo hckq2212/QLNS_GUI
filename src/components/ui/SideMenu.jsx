@@ -1,8 +1,16 @@
 import React, { useState } from "react";
+import { useSelector } from 'react-redux';
 import ChevronUp from '../../assets/chevron-up.png'
 import ChevronDown from '../../assets/chevron-down.png'
 
 export default function SideMenu () {
+    const userRole = useSelector((state) => state.auth?.role);
+    
+    // Check if user has access to opportunity and contract features
+    const hasOpportunityAccess = ['admin', 'bod', 'sale'].includes(userRole?.toLowerCase());
+    // Check if user has admin access (for service, partner, user management)
+    const hasAdminAccess = ['admin', 'bod'].includes(userRole?.toLowerCase());
+    
     const [opportunityList, setOpportunityList] = useState(false);
     const [contractList, setContractList] = useState(false);
     const [jobList, setJobList] = useState(false);
@@ -54,20 +62,22 @@ export default function SideMenu () {
                     <a href="/" className="text-blue-600 text-lg font-semibold">Bảng điều khiển</a>
                 </li>
                 
-                {/* Cơ hội */}
-                <li className="p-4 cursor-pointer">
-                    <div onClick={toggleOpportunityList} className="flex justify-between items-center">
-                        <span className="text-blue-600 text-md font-semibold">Cơ hội</span>
-                        {opportunityList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
-                    </div>
-                    {opportunityList && (
-                        <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/opportunity/create" className="text-blue-600">Tạo cơ hội</a></li>
-                            <li><a href="/opportunity/me" className="text-blue-600">Cơ hội đã tạo</a></li>
-                            <li><a href="/opportunity" className="text-blue-600">Danh sách cơ hội</a></li>
-                        </ul>
-                    )}
-                </li>
+                {/* Cơ hội - Only visible to admin, bod, sale */}
+                {hasOpportunityAccess && (
+                    <li className="p-4 cursor-pointer">
+                        <div onClick={toggleOpportunityList} className="flex justify-between items-center">
+                            <span className="text-blue-600 text-md font-semibold">Cơ hội</span>
+                            {opportunityList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                        </div>
+                        {opportunityList && (
+                            <ul className="p-2 flex flex-col gap-2">
+                                <li><a href="/opportunity/create" className="text-blue-600">Tạo cơ hội</a></li>
+                                <li><a href="/opportunity/me" className="text-blue-600">Cơ hội đã tạo</a></li>
+                                <li><a href="/opportunity" className="text-blue-600">Danh sách cơ hội</a></li>
+                            </ul>
+                        )}
+                    </li>
+                )}
                  {/* Đánh giá */}
                 <li className="p-4 cursor-pointer">
                     <div onClick={toggleReviewList} className="flex justify-between items-center">
@@ -81,18 +91,20 @@ export default function SideMenu () {
                     )}
                 </li>
 
-                {/* Hợp đồng */}
-                <li className="p-4 cursor-pointer">
-                    <div onClick={toggleContractList} className="flex justify-between items-center">
-                        <span className="text-blue-600 text-md font-semibold">Hợp đồng</span>
-                        {contractList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
-                    </div>
-                    {contractList && (
-                        <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/contract" className="text-blue-600">Danh sách hợp đồng</a></li>
-                        </ul>
-                    )}
-                </li>
+                {/* Hợp đồng - Only visible to admin, bod, sale */}
+                {hasOpportunityAccess && (
+                    <li className="p-4 cursor-pointer">
+                        <div onClick={toggleContractList} className="flex justify-between items-center">
+                            <span className="text-blue-600 text-md font-semibold">Hợp đồng</span>
+                            {contractList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                        </div>
+                        {contractList && (
+                            <ul className="p-2 flex flex-col gap-2">
+                                <li><a href="/contract" className="text-blue-600">Danh sách hợp đồng</a></li>
+                            </ul>
+                        )}
+                    </li>
+                )}
 
                 {/* Công việc */}
                 <li className="p-4 cursor-pointer">
@@ -123,36 +135,40 @@ export default function SideMenu () {
                     )}
                 </li>
                 
-                {/* Dịch vụ */}
-                <li className="p-4 cursor-pointer">
-                    <div onClick={toggleServiceList} className="flex justify-between items-center">
-                        <span className="text-blue-600 text-md font-semibold">Dịch vụ</span>
-                        {serviceList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
-                    </div>
-                    {serviceList && (
-                        <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/service" className="text-blue-600">Danh sách dịch vụ</a></li>
-                            <li><a href="/service/create" className="text-blue-600">Tạo dịch vụ</a></li>
-                             <li><a href="/service-job" className="text-blue-600">Danh sách công việc của dịch vụ</a></li>
-                            <li><a href="/service-job/create" className="text-blue-600">Tạo công việc của dịch vụ</a></li>
-                        </ul>
-                    )}
-                </li>
+                {/* Dịch vụ - Only visible to admin, bod */}
+                {hasAdminAccess && (
+                    <li className="p-4 cursor-pointer">
+                        <div onClick={toggleServiceList} className="flex justify-between items-center">
+                            <span className="text-blue-600 text-md font-semibold">Dịch vụ</span>
+                            {serviceList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                        </div>
+                        {serviceList && (
+                            <ul className="p-2 flex flex-col gap-2">
+                                <li><a href="/service" className="text-blue-600">Danh sách dịch vụ</a></li>
+                                <li><a href="/service/create" className="text-blue-600">Tạo dịch vụ</a></li>
+                                 <li><a href="/service-job" className="text-blue-600">Danh sách công việc của dịch vụ</a></li>
+                                <li><a href="/service-job/create" className="text-blue-600">Tạo công việc của dịch vụ</a></li>
+                            </ul>
+                        )}
+                    </li>
+                )}
 
-                {/* Đối tác */}
-                <li className="p-4 cursor-pointer">
-                    <div onClick={togglePartnerList} className="flex justify-between items-center">
-                        <span className="text-blue-600 text-md font-semibold">Đối tác</span>
-                        {partnerList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
-                    </div>
-                    {partnerList && (
-                        <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/partner" className="text-blue-600">Danh sách đối tác</a></li>
-                            <li><a href="/partner/create" className="text-blue-600">Tạo đối tác</a></li>
-                            <li><a href="/referral" className="text-blue-600">Danh sách đối tác ngoài</a></li>
-                        </ul>
-                    )}
-                </li>
+                {/* Đối tác - Only visible to admin, bod */}
+                {hasAdminAccess && (
+                    <li className="p-4 cursor-pointer">
+                        <div onClick={togglePartnerList} className="flex justify-between items-center">
+                            <span className="text-blue-600 text-md font-semibold">Đối tác</span>
+                            {partnerList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                        </div>
+                        {partnerList && (
+                            <ul className="p-2 flex flex-col gap-2">
+                                <li><a href="/partner" className="text-blue-600">Danh sách đối tác</a></li>
+                                <li><a href="/partner/create" className="text-blue-600">Tạo đối tác</a></li>
+                                <li><a href="/referral" className="text-blue-600">Danh sách đối tác ngoài</a></li>
+                            </ul>
+                        )}
+                    </li>
+                )}
 
                 {/* Chương trình */}
                 <li className="p-4 cursor-pointer">
@@ -169,19 +185,21 @@ export default function SideMenu () {
                 </li>
 
 
-                {/* Nhân viên */}
-                <li className="p-4 cursor-pointer">
-                    <div onClick={toggleUserList} className="flex justify-between items-center">
-                        <span className="text-blue-600 text-md font-semibold">Nhân viên</span>
-                        {userList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
-                    </div>
-                    {userList && (
-                        <ul className="p-2 flex flex-col gap-2">
-                            <li><a href="/user" className="text-blue-600">Danh sách nhân viên</a></li>
-                            {/* <li><a href="/user/create" className="text-blue-600">Tạo tài khoản cho nhân viên</a></li> */}
-                        </ul>
-                    )}
-                </li>
+                {/* Nhân viên - Only visible to admin, bod */}
+                {hasAdminAccess && (
+                    <li className="p-4 cursor-pointer">
+                        <div onClick={toggleUserList} className="flex justify-between items-center">
+                            <span className="text-blue-600 text-md font-semibold">Nhân viên</span>
+                            {userList ? <img src = {ChevronUp} /> : <img src = {ChevronDown } />}
+                        </div>
+                        {userList && (
+                            <ul className="p-2 flex flex-col gap-2">
+                                <li><a href="/user" className="text-blue-600">Danh sách nhân viên</a></li>
+                                {/* <li><a href="/user/create" className="text-blue-600">Tạo tài khoản cho nhân viên</a></li> */}
+                            </ul>
+                        )}
+                    </li>
+                )}
             </ul>
         </div>
     );

@@ -79,9 +79,9 @@ export default function CustomerList() {
                       </span>
                     </td>
                     <td className="px-4 py-3 align-top">
-                      <div className="flex gap-2">
+                      {/* <div className="flex gap-2">
                         <Link to={`/customer/${c.id || c._id}`} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Xem chi tiết</Link>
-                      </div>
+                      </div> */}
                     </td>
                   </tr>
                 );
