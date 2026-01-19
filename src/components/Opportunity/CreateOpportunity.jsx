@@ -5,6 +5,7 @@ import customerAPI from '../../api/customer.js';
 import { useGetServiceJobsQuery } from '../../services/serviceJob.js';
 import { toast } from 'react-toastify';
 import { useGetServicesQuery } from '../../services/service.js';
+import { useGetAllBusinessFieldsQuery } from '../../services/businessField.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS } from '../../utils/enums';
 import { formatPrice } from '../../utils/FormatValue';
 import { useCreateOpportunityMutation } from '../../services/opportunity.js';
@@ -38,6 +39,7 @@ export default function CreateOpportunity() {
   const [expectedStartDate, setExpectedStartDate] = useState('');
   const [priority, setPriority] = useState(PRIORITY_OPTIONS[1]?.value || 'medium');
   const [region, setRegion] = useState(REGION_OPTIONS[0]?.value || 'all');
+  const [businessField, setBusinessField] = useState('');
   const [implementationMonths, setImplementationMonths] = useState('');
   const [services, setServices] = useState([{ service_id: '', quantity: 1, proposed_price: '' }]);
   const [createProject, setCreateProject] = useState('Không');
@@ -46,6 +48,10 @@ export default function CreateOpportunity() {
   const [attachments, setAttachments] = useState([]);
   const [links, setLinks] = useState(['']);
   const fileInputRef = useRef(null);
+
+  // Error states
+  const [errors, setErrors] = useState({});
+  const [showErrors, setShowErrors] = useState(false);
 
   // LẤY SERVICE BẰNG RTK QUERY (có token mới gọi)
   const {
@@ -60,6 +66,19 @@ export default function CreateOpportunity() {
     ? servicesData
     : Array.isArray(servicesData?.items)
       ? servicesData.items
+      : [];
+
+  // LẤY BUSINESS FIELDS bằng RTK Query
+  const {
+    data: businessFieldsData,
+    isLoading: loadingBusinessFields,
+    isError: businessFieldsError,
+  } = useGetAllBusinessFieldsQuery(undefined, { skip: !token });
+
+  const availableBusinessFields = Array.isArray(businessFieldsData)
+    ? businessFieldsData
+    : Array.isArray(businessFieldsData?.items)
+      ? businessFieldsData.items
       : [];
 
 
@@ -105,6 +124,20 @@ export default function CreateOpportunity() {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setShowErrors(true);
+      toast.error('Vui lòng điền đầy đủ thông tin');
+      // Scroll to first error
+      const firstErrorKey = Object.keys(validationErrors)[0];
+      const errorElement = document.querySelector(`[data-field="${firstErrorKey}"]`);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     try {
       const payload = {};
 
@@ -119,6 +152,7 @@ export default function CreateOpportunity() {
       if (expectedStartDate) payload.estimated_start_date = expectedStartDate;
       if (priority) payload.priority = priority;
       if (region) payload.region = region;
+      if (businessField) payload.business_field = businessField;
       if (implementationMonths) payload.implementation_months = Number(implementationMonths);
       payload.services = services
         .filter((s) => s.service_id)
@@ -146,6 +180,7 @@ export default function CreateOpportunity() {
         if (payload.estimated_start_date) fd.append('estimated_start_date', payload.estimated_start_date);
         if (payload.priority) fd.append('priority', payload.priority);
         if (payload.region) fd.append('region', payload.region);
+        if (payload.business_field) fd.append('business_field', payload.business_field);
         if (payload.implementation_months !== undefined) fd.append('implementation_months', String(payload.implementation_months));
         // services as JSON string
         fd.append('services', JSON.stringify(payload.services || []));
@@ -181,6 +216,28 @@ export default function CreateOpportunity() {
   // DANH SÁCH ID ĐÃ CHỌN (để chặn chọn trùng)
   const selectedIds = services.map((x) => String(x.service_id || '')).filter(Boolean);
 
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    if (!opportunityName?.trim()) newErrors.opportunityName = 'Vui lòng nhập tên cơ hội';
+    if (!description?.trim()) newErrors.description = 'Vui lòng nhập mô tả';
+    if (!businessField) newErrors.businessField = 'Vui lòng chọn lĩnh vực';
+    if (!expectedRevenue) newErrors.expectedRevenue = 'Vui lòng nhập doanh thu kỳ vọng';
+    if (!expectedStartDate) newErrors.expectedStartDate = 'Vui lòng chọn ngày dự kiến khởi công';
+    if (!expectedEndDate) newErrors.expectedEndDate = 'Vui lòng chọn ngày dự kiến kết thúc';
+    if (!implementationMonths) newErrors.implementationMonths = 'Vui lòng nhập số tháng triển khai';
+    if (!budget) newErrors.budget = 'Vui lòng nhập ngân sách dự kiến';
+    if (!successProbability) newErrors.successProbability = 'Vui lòng nhập khả năng thành công';
+    const hasService = services.some(s => s.service_id);
+    if (!hasService) newErrors.services = 'Vui lòng chọn ít nhất một dịch vụ';
+    return newErrors;
+  };
+
+  const isFormValid = () => {
+    const newErrors = validateForm();
+    return Object.keys(newErrors).length === 0;
+  };
+
   function handleFilesChange(e) {
     const files = Array.from(e.target.files || []);
     // validation: max 5 files and total <= 25MB
@@ -207,21 +264,24 @@ export default function CreateOpportunity() {
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow flex flex-col max-w-7xl mx-auto">
         <h2 className="text-2xl font-semibold mb-2 text-blue-600">Tạo cơ hội</h2>
         <hr />
-        <div className="mb-2">
+        <div className="mb-2" data-field="opportunityName">
           <input
             type="text"
             value={opportunityName}
             onChange={(e) => setOpportunityName(e.target.value)}
-            className="mt-1 w-full border rounded p-2"
-            placeholder="Nhập tên cơ hội"
+            className={`mt-1 w-full border rounded p-2 ${showErrors && errors.opportunityName ? 'border-red-500' : ''}`}
+            placeholder="Nhập tên doanh nghiệp. VD: GETVINI"
           />
+          {showErrors && errors.opportunityName && (
+            <div className="text-red-500 text-sm mt-1">{errors.opportunityName}</div>
+          )}
         </div>
         {/* mô tả */}
-        <div className="relative">
+        <div className="relative" data-field="description">
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-2 w-full border rounded p-2"
+            className={`mt-2 w-full border rounded p-2 ${showErrors && errors.description ? 'border-red-500' : ''}`}
             rows={4}
             placeholder="Mô tả"
             maxLength={200}
@@ -229,41 +289,77 @@ export default function CreateOpportunity() {
           <div className="text-right text-xs text-gray-400 mt-1">
             {description.length}/200
           </div>
+          {showErrors && errors.description && (
+            <div className="text-red-500 text-sm mt-1">{errors.description}</div>
+          )}
+        </div>
+
+        <div className="mb-2" data-field="businessField">
+          <label className="block text-sm text-gray-700 mb-1">Lĩnh vực</label>
+          <select
+            value={businessField}
+            onChange={(e) => setBusinessField(e.target.value)}
+            className={`w-full border rounded p-2 ${showErrors && errors.businessField ? 'border-red-500' : ''}`}
+            disabled={loadingBusinessFields || businessFieldsError}
+          >
+            <option value="">-- Chọn lĩnh vực --</option>
+            {availableBusinessFields.map((bf) => (
+              <option key={bf.code} value={bf.code}>
+                {bf.name}
+              </option>
+            ))}
+          </select>
+          {showErrors && errors.businessField && (
+            <div className="text-red-500 text-sm mt-1">{errors.businessField}</div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-left">
           <div className="space-y-3">
-            <div className="flex items-center gap-3 ">
+            <div className="flex items-center gap-3" data-field="expectedRevenue">
               <label className="w-100 text-sm text-gray-700">Doanh thu kỳ vọng</label>
               <div className="relative flex-1">
                 <input
                   type="text"
                   value={expectedRevenue ? formatPriceInput(expectedRevenue) : ''}
                   onChange={(e) => setExpectedRevenue(parsePriceInput(e.target.value))}
-                  className="border rounded p-2 w-full pr-12"
+                  className={`border rounded p-2 w-full pr-12 ${showErrors && errors.expectedRevenue ? 'border-red-500' : ''}`}
                   placeholder="0"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">VNĐ</span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            {showErrors && errors.expectedRevenue && (
+              <div className="text-red-500 text-sm ml-24">{errors.expectedRevenue}</div>
+            )}
+            <div className="flex items-center gap-3" data-field="expectedStartDate">
               <label className="w-40 text-sm text-gray-700">Dự kiến khởi công</label>
-              <input
-                type="date"
-                value={expectedStartDate}
-                onChange={(e) => setExpectedStartDate(e.target.value)}
-                className="border rounded p-2"
-              />
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={expectedStartDate}
+                  onChange={(e) => setExpectedStartDate(e.target.value)}
+                  className={`border rounded p-2 ${showErrors && errors.expectedStartDate ? 'border-red-500' : ''}`}
+                />
+                {showErrors && errors.expectedStartDate && (
+                  <div className="text-red-500 text-sm mt-1">{errors.expectedStartDate}</div>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" data-field="expectedEndDate">
               <label className="w-40 text-sm text-gray-700">Dự kiến kết thúc</label>
-              <input
-                type="date"
-                value={expectedEndDate}
-                onChange={(e) => setExpectedEndDate(e.target.value)}
-                className="border rounded p-2"
-              />
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={expectedEndDate}
+                  onChange={(e) => setExpectedEndDate(e.target.value)}
+                  className={`border rounded p-2 ${showErrors && errors.expectedEndDate ? 'border-red-500' : ''}`}
+                />
+                {showErrors && errors.expectedEndDate && (
+                  <div className="text-red-500 text-sm mt-1">{errors.expectedEndDate}</div>
+                )}
+              </div>
             </div>
 
 
@@ -277,36 +373,44 @@ export default function CreateOpportunity() {
               </select>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" data-field="implementationMonths">
               <label className="w-40 text-sm text-gray-700">Số tháng triển khai</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  value={implementationMonths}
-                  onChange={(e) => setImplementationMonths(e.target.value)}
-                  className="border rounded p-2 w-20 pr-5  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">Tháng</span>
+              <div className="flex-1">
+                <div className="relative w-20">
+                  <input
+                    type="number"
+                    min="1"
+                    value={implementationMonths}
+                    onChange={(e) => setImplementationMonths(e.target.value)}
+                    className={`border rounded p-2 w-20  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${showErrors && errors.implementationMonths ? 'border-red-500' : ''}`}
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">Tháng</span>
+                </div>
+                {showErrors && errors.implementationMonths && (
+                  <div className="text-red-500 text-sm mt-1">{errors.implementationMonths}</div>
+                )}
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" data-field="budget">
               <label className="w-40 text-sm text-gray-700">Ngân sách dự kiến</label>
               <div className="relative flex-1">
                 <input
                   type="text"
                   value={budget ? formatPriceInput(budget) : ''}
                   onChange={(e) => setBudget(parsePriceInput(e.target.value))}
-                  className="border rounded p-2 w-full pr-12"
+                  className={`border rounded p-2 w-full pr-12 ${showErrors && errors.budget ? 'border-red-500' : ''}`}
                   placeholder="0"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">VNĐ</span>
               </div>
             </div>
+            {showErrors && errors.budget && (
+              <div className="text-red-500 text-sm ml-44">{errors.budget}</div>
+            )}
 
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Độ ưu tiên</label>
@@ -317,31 +421,36 @@ export default function CreateOpportunity() {
               </select>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" data-field="successProbability">
               <label className="w-40 text-sm text-gray-700">Khả năng thành công</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={successProbability}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) {
-                      setSuccessProbability(val);
-                    }
-                  }}
-                  className="border rounded p-2 pr-0 w-15  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+              <div className="flex-1">
+                <div className="relative w-20">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={successProbability}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) {
+                        setSuccessProbability(val);
+                      }
+                    }}
+                    className={`border rounded p-2  w-15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${showErrors && errors.successProbability ? 'border-red-500' : ''}`}
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+                </div>
+                {showErrors && errors.successProbability && (
+                  <div className="text-red-500 text-sm mt-1">{errors.successProbability}</div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* chọn dịch vụ */}
-        <div>
+        <div data-field="services">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold">Chọn dịch vụ</h3>
             <button type="button" onClick={addServiceRow} className="text-blue-600">
@@ -386,14 +495,15 @@ export default function CreateOpportunity() {
                 </button>
               </div>
             </div>
-          ))}
-
-          <input
+))}          <input
             disabled
-            value={formatPrice(expectedPrice)} 
+            value={formatPrice(expectedPrice)}
             className="mt-3 w-full border rounded p-2 bg-gray-100"
             placeholder="Giá dự kiến (tự tính)"
           />
+          {showErrors && errors.services && (
+            <div className="text-red-500 text-sm mt-2">{errors.services}</div>
+          )}
         </div>
 
         <div className="mt-4">
@@ -453,7 +563,15 @@ export default function CreateOpportunity() {
           </div>
 
         </div>
-        <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button 
+          disabled={creating} 
+          type="submit" 
+          className={`px-4 py-2 rounded text-white transition-colors ${
+            isFormValid() 
+              ? 'bg-blue-600 hover:bg-blue-700' 
+              : 'bg-red-500 hover:bg-red-600'
+          }`}
+        >
           {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
         </button>
       </form>

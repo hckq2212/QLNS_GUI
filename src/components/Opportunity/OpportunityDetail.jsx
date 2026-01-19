@@ -6,6 +6,7 @@ import { useUpdateOpportunityMutation } from '../../services/opportunity';
 import { useGetAllUserQuery } from '../../services/user';
 import { useGetOpportunityServicesQuery } from '../../services/opportunity.js';
 import { useGetServicesQuery } from '../../services/service';
+import { useGetAllBusinessFieldsQuery } from '../../services/businessField.js';
 import { useGetReferralsQuery, useGetReferralCustomersQuery, useGetReferralByIdQuery } from '../../services/referral';
 import { useGetQuoteByOpportunityIdQuery } from '../../services/quote';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -35,6 +36,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
   const { data: opp, isLoading, isError, error, refetch } = useGetOpportunityByIdQuery(id, { skip: !id });
   const { data: servicesData } = useGetOpportunityServicesQuery(id, { skip: !id });
   const { data: servicesList = [] } = useGetServicesQuery();
+  const { data: businessFieldsData } = useGetAllBusinessFieldsQuery(undefined, { skip: !token });
   const { data: customers } = useGetAllCustomerQuery(undefined, { skip: !token });
   const { data: users } = useGetAllUserQuery(undefined, { skip: !token });
   const { data: referrals = [] } = useGetReferralsQuery(undefined, { skip: !token });
@@ -68,6 +70,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
     if (opp.created_by && Array.isArray(users)) return users.find((u) => u.id === opp.created_by) || null;
     return null;
   }, [opp, users]);
+
+  const businessField = useMemo(() => {
+    if (!opp?.business_field) return null;
+    const fields = Array.isArray(businessFieldsData) ? businessFieldsData : (Array.isArray(businessFieldsData?.items) ? businessFieldsData.items : []);
+    return fields.find((bf) => bf.code === opp.business_field) || null;
+  }, [opp, businessFieldsData]);
 
   const attachments = useMemo(() => {
     if (!opp) return [];
@@ -159,7 +167,7 @@ export default function OpportunityDetail({ id: propId } = {}) {
 
           <div className="mb-4">
             <div className="text-sm text-gray-500">Tên cơ hội</div>
-            <div className="text-lg font-medium text-blue-600">{opp.name  || '—'}</div>
+            <div className="text-lg font-medium text-blue-600">{opp.code} - {opp.name}</div>
           </div>
 
           {opp.description && (
@@ -168,6 +176,11 @@ export default function OpportunityDetail({ id: propId } = {}) {
               <div className="text-sm text-gray-700">{opp.description}</div>
             </div>
           )}
+
+          <div className="mb-4">
+            <div className="text-sm text-gray-500">Lĩnh vực</div>
+            <div className="text-sm text-gray-700">{businessField?.code || opp.business_field || '—'}</div>
+          </div>
 
           
           <div className="grid grid-cols-2 gap-4">

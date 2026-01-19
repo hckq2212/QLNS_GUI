@@ -107,7 +107,7 @@ export default function OpporunityList() {
             ) : (
               currentOpportunities.map((o) => (
                 <tr key={o.id} className="border-t">
-                  <td className="px-4 py-2">{o.name || ('#' + o.id)}</td>
+                  <td className="px-4 py-2">{o.code}-{o.name}</td>
                   <td className="px-4 py-2">{o.customer?.name || o.customer_name || o.customer_temp?.name || '—'}</td>
                   <td className="px-4 py-2">{OPPPORTUNITY_STATUS_LABELS[o.status] || o.status || '—'}</td>
                   <td className="px-4 py-2">{getCreatorName(o.created_by)}</td>
