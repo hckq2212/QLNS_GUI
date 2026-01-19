@@ -44,6 +44,7 @@ export default function CreateOpportunity() {
   const [approver, setApprover] = useState('');
   const [availableCustomers, setAvailableCustomers] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [links, setLinks] = useState(['']);
   const fileInputRef = useRef(null);
 
   // LẤY SERVICE BẰNG RTK QUERY (có token mới gọi)
@@ -127,10 +128,12 @@ export default function CreateOpportunity() {
           proposed_price: s.proposed_price ? Number(s.proposed_price) : undefined,
         }));
 
+      // Prepare valid links
+      const validLinks = links.filter(link => link.trim() !== '');
 
-      // If attachments are selected, build FormData and append fields/files
+      // If attachments (files) are selected or links provided, build FormData and append fields/files
       let toSend = payload;
-      if (attachments && attachments.length > 0) {
+      if ((attachments && attachments.length > 0) || validLinks.length > 0) {
         const fd = new FormData();
         // append scalar fields
         if (payload.name) fd.append('name', payload.name);
@@ -148,6 +151,10 @@ export default function CreateOpportunity() {
         fd.append('services', JSON.stringify(payload.services || []));
         // append files under field name 'attachments' (server uses upload.array('attachments', 5))
         attachments.forEach((f) => fd.append('attachments', f));
+        // append links as JSON to be merged into attachments array by backend
+        if (validLinks.length > 0) {
+          fd.append('attachments', JSON.stringify(validLinks.map(link => ({ type: 'link', url: link }))));
+        }
         toSend = fd;
       }
 
@@ -272,14 +279,17 @@ export default function CreateOpportunity() {
 
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Số tháng triển khai</label>
-              <input
-                type="number"
-                min="1"
-                value={implementationMonths}
-                onChange={(e) => setImplementationMonths(e.target.value)}
-                className="border rounded p-2 w-40"
-                placeholder="Tháng"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  value={implementationMonths}
+                  onChange={(e) => setImplementationMonths(e.target.value)}
+                  className="border rounded p-2 w-20 pr-5  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">Tháng</span>
+              </div>
             </div>
           </div>
 
@@ -309,16 +319,23 @@ export default function CreateOpportunity() {
 
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Khả năng thành công</label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={successProbability}
-                onChange={(e) => setSuccessProbability(e.target.value)}
-                className="border rounded p-2 w-40"
-                placeholder="%"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={successProbability}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) {
+                      setSuccessProbability(val);
+                    }
+                  }}
+                  className="border rounded p-2 pr-0 w-15  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -373,28 +390,67 @@ export default function CreateOpportunity() {
 
           <input
             disabled
-            value={expectedPrice}
+            value={formatPrice(expectedPrice)} 
             className="mt-3 w-full border rounded p-2 bg-gray-100"
             placeholder="Giá dự kiến (tự tính)"
           />
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm (tối đa 5 file, tổng 25MB)</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            onChange={handleFilesChange}
-            className="mb-2"
-          />
-          {attachments && attachments.length > 0 && (
-            <div className="text-sm text-gray-600 mb-2">
-              {attachments.map((f) => (
-                <div key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(2)} MB</div>
-              ))}
-            </div>
-          )}
+          <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả yêu cầu khách hàng</label>
+          
+          <div className="mb-4">
+            <label className="block text-sm text-gray-500 mb-2">Link tài liệu</label>
+            {links.map((link, idx) => (
+              <div key={idx} className="flex gap-2 mb-2">
+                <input
+                  type="url"
+                  value={link}
+                  onChange={(e) => {
+                    const newLinks = [...links];
+                    newLinks[idx] = e.target.value;
+                    setLinks(newLinks);
+                  }}
+                  className="flex-1 border rounded p-2"
+                  placeholder="https://"
+                />
+                {links.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setLinks(links.filter((_, i) => i !== idx))}
+                    className="text-red-600 px-3"
+                  >
+                    Xóa
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setLinks([...links, ''])}
+              className="text-blue-600 text-sm"
+            >
+              + Thêm link
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-500 mb-2">Tệp đính kèm (tối đa 5 file, tổng 25MB)</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFilesChange}
+              className="mb-2"
+            />
+            {attachments && attachments.length > 0 && (
+              <div className="text-sm text-gray-600 mb-2">
+                {attachments.map((f) => (
+                  <div key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                ))}
+              </div>
+            )}
+          </div>
 
         </div>
         <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
