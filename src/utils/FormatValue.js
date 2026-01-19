@@ -5,8 +5,15 @@ const formatDate = (v) => {
   if (!v && v !== 0) return '';
   const s = String(v);
   // handle ISO datetimes and space-separated datetimes
-  if (s.includes('T') || s.includes(' ')) return s.split(/[T ]/)[0];
-  return s;
+  let dateStr = s.includes('T') || s.includes(' ') ? s.split(/[T ]/)[0] : s;
+  
+  // Parse and reformat to dd-mm-yyyy
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}-${month}-${year}`;
+  }
+  return dateStr;
 };
 
 const formatRate = (v) =>{

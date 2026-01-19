@@ -35,6 +35,7 @@ export default function CreateOpportunity() {
   const [budget, setBudget] = useState('');
   const [successProbability, setSuccessProbability] = useState('');
   const [expectedEndDate, setExpectedEndDate] = useState('');
+  const [expectedStartDate, setExpectedStartDate] = useState('');
   const [priority, setPriority] = useState(PRIORITY_OPTIONS[1]?.value || 'medium');
   const [region, setRegion] = useState(REGION_OPTIONS[0]?.value || 'all');
   const [implementationMonths, setImplementationMonths] = useState('');
@@ -50,15 +51,15 @@ export default function CreateOpportunity() {
     data: servicesData,
     isLoading: loadingServices,
     isError: servicesError,
-    error: servicesErrorObj,   
+    error: servicesErrorObj,
   } = useGetServicesQuery(undefined, { skip: !token });
 
   // chuẩn hoá dữ liệu service
   const availableServices = Array.isArray(servicesData)
     ? servicesData
     : Array.isArray(servicesData?.items)
-    ? servicesData.items
-    : [];
+      ? servicesData.items
+      : [];
 
 
 
@@ -74,8 +75,8 @@ export default function CreateOpportunity() {
   const availableServiceJobs = Array.isArray(serviceJobsData)
     ? serviceJobsData
     : Array.isArray(serviceJobsData?.items)
-    ? serviceJobsData.items
-    : [];
+      ? serviceJobsData.items
+      : [];
 
   // THÊM / XOÁ / SỬA DÒNG DỊCH VỤ
   function addServiceRow() {
@@ -107,16 +108,17 @@ export default function CreateOpportunity() {
       const payload = {};
 
       // customer info is collected in step 2 after opportunity is created
-  if (opportunityName) payload.name = opportunityName;
-  payload.description = description;
-  payload.expected_price = Number(expectedPrice);
-  payload.expected_revenue = Number(expectedRevenue);
-  if (budget) payload.expected_budget = Number(budget);
-  if (successProbability) payload.success_rate = Number(successProbability);
-  if (expectedEndDate) payload.expected_end_date = expectedEndDate;
-  if (priority) payload.priority = priority;
-  if (region) payload.region = region;
-  if (implementationMonths) payload.implementation_months = Number(implementationMonths);
+      if (opportunityName) payload.name = opportunityName;
+      payload.description = description;
+      payload.expected_price = Number(expectedPrice);
+      payload.expected_revenue = Number(expectedRevenue);
+      if (budget) payload.expected_budget = Number(budget);
+      if (successProbability) payload.success_rate = Number(successProbability);
+      if (expectedEndDate) payload.expected_end_date = expectedEndDate;
+      if (expectedStartDate) payload.estimated_start_date = expectedStartDate;
+      if (priority) payload.priority = priority;
+      if (region) payload.region = region;
+      if (implementationMonths) payload.implementation_months = Number(implementationMonths);
       payload.services = services
         .filter((s) => s.service_id)
         .map((s) => ({
@@ -134,10 +136,11 @@ export default function CreateOpportunity() {
         if (payload.name) fd.append('name', payload.name);
         if (payload.description) fd.append('description', payload.description);
         if (payload.expected_price !== undefined) fd.append('expected_price', String(payload.expected_price));
-  if (payload.expected_revenue !== undefined) fd.append('expected_revenue', String(payload.expected_revenue));
-  if (payload.expected_budget !== undefined) fd.append('expected_budget', String(payload.expected_budget));
+        if (payload.expected_revenue !== undefined) fd.append('expected_revenue', String(payload.expected_revenue));
+        if (payload.expected_budget !== undefined) fd.append('expected_budget', String(payload.expected_budget));
         if (payload.success_rate !== undefined) fd.append('success_rate', String(payload.success_rate));
         if (payload.expected_end_date) fd.append('expected_end_date', payload.expected_end_date);
+        if (payload.estimated_start_date) fd.append('estimated_start_date', payload.estimated_start_date);
         if (payload.priority) fd.append('priority', payload.priority);
         if (payload.region) fd.append('region', payload.region);
         if (payload.implementation_months !== undefined) fd.append('implementation_months', String(payload.implementation_months));
@@ -148,21 +151,21 @@ export default function CreateOpportunity() {
         toSend = fd;
       }
 
-  const res = await createOpportunity(toSend).unwrap();
-  
-  toast.success('Tạo cơ hội thành công');
-  
-  // Navigate to the newly created opportunity detail page
-  const opportunityId = res?.id || res?.data?.id || res?.opportunity?.id || res?.opportunity_id;
-  
-  if (opportunityId) {
-    // Use setTimeout to ensure toast doesn't interfere with navigation
-    setTimeout(() => {
-      navigate(`/opportunity/${opportunityId}`, { replace: true });
-    }, 100);
-  } else {
-    console.error('No opportunity ID in response. Full response:', JSON.stringify(res, null, 2));
-  }
+      const res = await createOpportunity(toSend).unwrap();
+
+      toast.success('Tạo cơ hội thành công');
+
+      // Navigate to the newly created opportunity detail page
+      const opportunityId = res?.id || res?.data?.id || res?.opportunity?.id
+
+      if (opportunityId) {
+        // Use setTimeout to ensure toast doesn't interfere with navigation
+        setTimeout(() => {
+          navigate(`/opportunity/${opportunityId}`, { replace: true });
+        }, 100);
+      } else {
+        console.error('No opportunity ID in response. Full response:', JSON.stringify(res, null, 2));
+      }
     } catch (err) {
       toast.error('Tạo cơ hội thất bại');
     }
@@ -207,13 +210,19 @@ export default function CreateOpportunity() {
           />
         </div>
         {/* mô tả */}
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-2 w-full border rounded p-2"
-          rows={4}
-          placeholder="Mô tả"
-        />
+        <div className="relative">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="mt-2 w-full border rounded p-2"
+            rows={4}
+            placeholder="Mô tả"
+            maxLength={200}
+          />
+          <div className="text-right text-xs text-gray-400 mt-1">
+            {description.length}/200
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-4 text-left">
           <div className="space-y-3">
@@ -230,6 +239,15 @@ export default function CreateOpportunity() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">VNĐ</span>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <label className="w-40 text-sm text-gray-700">Dự kiến khởi công</label>
+              <input
+                type="date"
+                value={expectedStartDate}
+                onChange={(e) => setExpectedStartDate(e.target.value)}
+                className="border rounded p-2"
+              />
+            </div>
 
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Dự kiến kết thúc</label>
@@ -240,6 +258,8 @@ export default function CreateOpportunity() {
                 className="border rounded p-2"
               />
             </div>
+
+
 
             <div className="flex items-center gap-3">
               <label className="w-40 text-sm text-gray-700">Vùng miền triển khai</label>
@@ -298,7 +318,7 @@ export default function CreateOpportunity() {
                 className="border rounded p-2 w-40"
                 placeholder="%"
               />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
             </div>
           </div>
         </div>
@@ -359,27 +379,27 @@ export default function CreateOpportunity() {
           />
         </div>
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm (tối đa 5 file, tổng 25MB)</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFilesChange}
-              className="mb-2"
-            />
-            {attachments && attachments.length > 0 && (
-              <div className="text-sm text-gray-600 mb-2">
-                {attachments.map((f) => (
-                  <div key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                ))}
-              </div>
-            )}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm (tối đa 5 file, tổng 25MB)</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFilesChange}
+            className="mb-2"
+          />
+          {attachments && attachments.length > 0 && (
+            <div className="text-sm text-gray-600 mb-2">
+              {attachments.map((f) => (
+                <div key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(2)} MB</div>
+              ))}
+            </div>
+          )}
 
-          </div>
-            <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-              {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
-            </button>
+        </div>
+        <button disabled={creating} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+          {creating ? 'Đang gửi...' : 'Tạo cơ hội'}
+        </button>
       </form>
     </div>
   );

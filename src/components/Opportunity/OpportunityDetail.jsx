@@ -9,7 +9,7 @@ import { useGetServicesQuery } from '../../services/service';
 import { useGetReferralsQuery, useGetReferralCustomersQuery, useGetReferralByIdQuery } from '../../services/referral';
 import { useGetQuoteByOpportunityIdQuery } from '../../services/quote';
 import { useParams, useNavigate } from 'react-router-dom';
-import { formatPrice, formatRate } from '../../utils/FormatValue.js';
+import { formatDate, formatPrice, formatRate } from '../../utils/FormatValue.js';
 import { PRIORITY_OPTIONS, REGION_OPTIONS, CUSTOMER_STATUS_OPTIONS } from '../../utils/enums.js';
 import PriceQuoteModal from '../ui/PriceQuoteModal';
 import ViewQuoteModal from '../ui/ViewQuoteModal';
@@ -212,12 +212,19 @@ export default function OpportunityDetail({ id: propId } = {}) {
                   {PRIORITY_OPTIONS.find((p) => p.value === opp.priority)?.label || '—'}
                 </div>
               </div>
-
+                    
               <div>
                 <div className="text-xs text-gray-500">Doanh thu kỳ vọng</div>
                 <div className="text-sm text-gray-700">{formatPrice(opp.expected_revenue )} VND</div>
               </div>
-              
+
+              <div>
+                <div className="text-xs text-gray-500">Dự kiến bắt đầu</div>
+                <div className="text-sm text-gray-700">{formatDate(opp.estimated_start_date) || '—'}</div>
+              </div>
+
+
+
               <div>
                 <div className="text-xs text-gray-500">Số tháng triển khai</div>
                 <div className="text-sm text-gray-700">{opp.implementation_months} tháng</div>
@@ -239,6 +246,12 @@ export default function OpportunityDetail({ id: propId } = {}) {
                 <div className="text-xs text-gray-500">Vùng miền</div>
                 <div className="text-sm text-gray-700">{REGION_OPTIONS.find((r) => r.value === opp.region)?.label || '—'}</div>
               </div>
+
+              <div>
+                <div className="text-xs text-gray-500">Dự kiến kết thúc</div>
+                <div className="text-sm text-gray-700">{formatDate(opp.expected_end_date) || '—'}</div>
+              </div>
+            
             </div>
           </div>
 
