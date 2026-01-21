@@ -1,7 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useGetUserByIdQuery, useGetUserJobsQuery } from '../../services/user';
+import { useGetUserByIdQuery } from '../../services/user';
 import { useGetRoleByIdQuery } from '../../services/role';
+import { useGetJobByUserIdQuery } from '../../services/job';
 
 export default function UserDetail() {
   const { id } = useParams();
@@ -12,7 +13,7 @@ export default function UserDetail() {
   const { data: role } = useGetRoleByIdQuery(roleId, { skip: !roleId });
 
   // Fetch jobs for this specific user
-  const { data: userJobs = [], isLoading: jobsLoading } = useGetUserJobsQuery(id, { skip: !id });
+  const { data: userJobs = [], isLoading: jobsLoading } = useGetJobByUserIdQuery(id, { skip: !id });
 
   if (isLoading) return <div className="p-6">Đang tải thông tin người dùng...</div>;
   if (isError) return <div className="p-6 text-red-600">Lỗi khi tải người dùng: {String(error)}</div>;
@@ -28,7 +29,7 @@ export default function UserDetail() {
   return (
     <div className="p-6 max-w-7xl mx-auto text-justify">
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-7 bg-white rounded shadow p-6">
+        <div className="col-span-7 bg-white rounded shadow p-6 h-fit">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-md font-medium text-blue-600">Thông tin nhân viên</div>

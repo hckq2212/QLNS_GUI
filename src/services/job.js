@@ -20,6 +20,11 @@ export const jobAPI = api.injectEndpoints({
           : [{ type: 'Job', id: 'ME' }],
     })
     ,
+    getJobByUserId: build.query({
+      query: (userId) => `/job/user/${userId}`,
+      providesTags: (result, error, userId) => [{ type: 'Job', id: `USER_${userId}` }],
+    })
+    ,
     finishJob: build.mutation({
       // expects an object: { id, formData } where formData is a FormData instance containing 'evidence' files
       query: ({ id, formData }) => ({
@@ -53,6 +58,7 @@ export const {
   useGetAllJobQuery,
   useGetJobByIdQuery,
   useGetMyJobQuery,
+  useGetJobByUserIdQuery,
   useFinishJobMutation,
   useUpdateJobMutation,
   useReworkJobMutation
