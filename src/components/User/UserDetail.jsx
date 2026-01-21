@@ -46,7 +46,7 @@ export default function UserDetail() {
             </div>
             <div>
               <div className="text-sm text-gray-500">Vai trò</div>
-              <div className="text-sm mt-1">{role?.code || role?.name || roleId || '-'}</div>
+              <div className="text-sm mt-1">{role?.code}</div>
             </div>
 
             <div>

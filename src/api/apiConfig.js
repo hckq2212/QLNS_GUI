@@ -2,8 +2,10 @@ import axios from 'axios';
 
 // prefer environment-configured base URL (Vite: import.meta.env.VITE_API_URL) falling back to hardcoded local address
 // const API_URL =  'https://qlns-kwbh.onrender.com'|| 'https://qlns-production.up.railway.app'|| 'http://192.168.130.239:3000'  ;
-const API_URL =   
-'http://192.168.130.239:3000'
+
+const API_URL = import.meta.env.VITE_API_URL
+// const API_URL =   
+// 'http://192.168.130.239:3000'
 // 'http://192.168.1.5:3000'
 ;
 // timeout configurable via Vite env VITE_API_TIMEOUT (milliseconds), default to 15000ms

@@ -41,6 +41,7 @@ import CustomerList from "./components/Customer/CustomerList";
 import AcceptanceDetail from "./components/Acceptance/AcceptanceDetail";
 import DebtList from "./components/Debt/DebtList";
 import DebtCalendar from "./components/Debt/DebtCalendar";
+import CustomerDetail from "./components/Customer/CustomerDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -95,7 +96,7 @@ function AppContent() {
           <Route path="/referral/:id" element={<ReferalDetail />} />
           
           <Route path="/customer" element={<CustomerList />} />
-
+          <Route path="/customer/:id" element={<CustomerDetail />} />
         </Routes>
       </div>
     </>
