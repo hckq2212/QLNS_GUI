@@ -86,7 +86,7 @@ export default function UserDetail() {
                     {currentJobs.map((j) => (
                       <tr key={j.id || j.contract_id} className="border-t">
                         <td className="px-4 py-2">{j.name || j.title || `#${j.id}`}</td>
-                        <td className="px-4 py-2">{j.priority || '—'}</td>
+                        <td className="px-4 py-2">{j.priority}</td>
                         <td className="px-4 py-2">{j.deadline ? new Date(j.deadline).toLocaleDateString('vi-VN') : '—'}</td>
                         <td className="px-4 py-2">
                           <Link to={`/job/${j.id}`} className="inline-block bg-blue-600 text-white px-3 py-1 rounded text-sm">Xem</Link>

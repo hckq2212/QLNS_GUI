@@ -4,7 +4,7 @@ import { useGetCustomerByIdQuery } from '../../services/customer';
 import { useGetAllContractsQuery } from '../../services/contract';
 import { useGetAllDebtsQuery } from '../../services/debt';
 import { formatPrice, formatDate } from '../../utils/FormatValue';
-import { CONTRACT_STATUS_LABELS, DEBT_STATUS } from '../../utils/enums';
+import { CONTRACT_STATUS_LABELS, CUSTOMER_TYPE_LABELS, DEBT_STATUS } from '../../utils/enums';
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -75,6 +75,13 @@ export default function CustomerDetail() {
               </div>
             )}
 
+            {customer.customer_source && (
+              <div>
+                <div className="text-xs text-gray-500">Nguồn</div>
+                <div className="text-sm text-gray-700">{CUSTOMER_TYPE_LABELS[customer.customer_source]}</div>
+              </div>
+            )}
+
             {customer.tax_code && (
               <div>
                 <div className="text-xs text-gray-500">Mã số thuế</div>
@@ -118,11 +125,11 @@ export default function CustomerDetail() {
                 </thead>
                 <tbody>
                   {customerContracts.map((contract) => (
-                    <tr key={contract.id || contract.contract_id} className="border-t">
+                    <tr key={contract.id} className="border-t">
                       <td className="px-3 py-2 align-top">{contract.code || '—'}</td>
                       <td className="px-3 py-2 align-top">
-                        <Link to={`/contract/${contract.id || contract.contract_id}`} className="text-blue-600 hover:underline">
-                          {contract.name || contract.contract_name || '—'}
+                        <Link to={`/contract/${contract.id}`} className="text-blue-600 hover:underline">
+                          {contract.name || '—'}
                         </Link>
                       </td>
                       <td className="px-3 py-2 align-top">{CONTRACT_STATUS_LABELS[contract.status] || contract.status || '—'}</td>

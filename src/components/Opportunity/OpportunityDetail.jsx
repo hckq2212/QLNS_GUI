@@ -293,8 +293,8 @@ export default function OpportunityDetail({ id: propId } = {}) {
         <div className="col-span-4 bg-white rounded shadow p-6 h-fit">
           <div className="text-md font-semibold  flex justify-between text-blue-700">
             Thông tin khách hàng
-              {!editingCustomer ? (
-                <button onClick={() => { setEditingCustomer(true); setCustomerDraft(customer); }} className="text-sm bg-white border px-3 py-1 rounded">Chỉnh sửa</button>
+              {!editingCustomer && opp.status === 'waiting_bod_approval' ? (
+                <button onClick={() => { setEditingCustomer(true); setCustomerDraft(customer); }} className="text-sm bg-white border px-3 py-1 rounded">Thêm thông tin</button>
               ) : null}
           </div>
           <hr className='my-4' />

@@ -20,6 +20,10 @@ const QUOTE_STATUS = {
   rejected:'Cần sửa lại'
 }
 
+const CUSTOMER_TYPE_LABELS = {
+  direct: 'Khách hàng trực tiếp',
+  partner: 'Khách hàng của đối tác',
+}
 
 const JOB_TYPE_LABELS = {
   user: 'Nội bộ',
@@ -112,5 +116,6 @@ export {
     JOB_PRIORITY_OPTIONS,
     DEBT_STATUS,
     ACCEPTANCE_STATUS_LABELS,
-    QUOTE_STATUS
+    QUOTE_STATUS,
+    CUSTOMER_TYPE_LABELS
   }
